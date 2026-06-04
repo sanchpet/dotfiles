@@ -1,5 +1,7 @@
 # dotfiles
 
+[![smoke](https://github.com/sanchpet/dotfiles/actions/workflows/smoke.yml/badge.svg)](https://github.com/sanchpet/dotfiles/actions/workflows/smoke.yml)
+
 Personal macOS development environment, managed declaratively with
 [chezmoi](https://www.chezmoi.io) (dotfiles), [mise](https://mise.jdx.dev) (CLI tools),
 and [Homebrew](https://brew.sh) (GUI apps).
