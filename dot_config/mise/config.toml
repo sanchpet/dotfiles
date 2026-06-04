@@ -1,0 +1,4 @@
+[tools]
+bitwarden = "latest"
+chezmoi = "latest"
+uv = "latest"

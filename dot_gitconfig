@@ -1,0 +1,5 @@
+[user]
+	name = sanchpet
+	email = petrov@sanch.pet
+[push]
+	default = simple

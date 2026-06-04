@@ -1,0 +1,10 @@
+# Репо-операционные файлы — остаются в репозитории, НЕ раскладываются в $HOME.
+# Паттерны — это target-пути относительно $HOME.
+Brewfile
+bootstrap.sh
+README.md
+CLAUDE.md
+LICENSE
+.github
+mise.toml
+.pre-commit-config.yaml
