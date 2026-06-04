@@ -7,10 +7,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  bare-machine-linux:
-    runs-on: ubuntu-latest
+  bare-machine:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Base deps (curl/git/zsh — то, что есть на типичной машине)
+      - name: Base deps (Linux — на macOS curl/git/zsh уже есть)
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y curl git zsh ca-certificates
 
       - name: Clone + bootstrap (как в README quickstart)
@@ -18,7 +23,7 @@ jobs:
           git clone "https://github.com/${{ github.repository }}" "$HOME/dotfiles"
           bash "$HOME/dotfiles/bootstrap.sh"
 
-      - name: Verify bare-machine result
+      - name: Verify (общее — mise / chezmoi / dotfiles / omz)
         shell: bash
         run: |
           export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
@@ -27,7 +32,13 @@ jobs:
           test -f "$HOME/.gitconfig"               || { echo "❌ нет ~/.gitconfig"; exit 1; }
           test -f "$HOME/.config/mise/config.toml"  || { echo "❌ нет mise config"; exit 1; }
           test -d "$HOME/.oh-my-zsh"                || { echo "❌ нет Oh My Zsh"; exit 1; }
-          # origin остаётся HTTPS (в CI нет SSH-ключа → проверяет fallback варианта (в))
           git -C "$HOME/.local/share/chezmoi" remote get-url origin | grep -q '^https://' \
             || { echo "❌ origin не HTTPS в CI"; exit 1; }
-          echo "✅ bare-machine bootstrap OK"
+          echo "✅ core bootstrap OK"
+
+      - name: Verify brew bundle (macOS — casks из Brewfile)
+        if: runner.os == 'macOS'
+        run: |
+          brew bundle check --file="$HOME/dotfiles/Brewfile" \
+            || { echo "❌ brew bundle: не все пакеты из Brewfile установлены"; exit 1; }
+          echo "✅ brew bundle OK (casks установлены)"
