@@ -2,66 +2,117 @@
 #
 # bootstrap.sh — один command → настроенная машина.
 #
-#   Использование:
-#     git clone <repo> dotfiles && cd dotfiles && ./bootstrap.sh
+#   Использование (на голой машине):
+#     git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstrap.sh
 #
-# Идемпотентно: безопасно запускать повторно. Слои настройки:
-#   1. Homebrew      — менеджер пакетов (ставится, если нет)
-#   2. brew bundle   — пакеты и приложения из Brewfile
-#   3. chezmoi apply — раскладка конфигов (секреты — по выбранной стратегии)
+# Идемпотентно: безопасно запускать повторно. Целевой порядок (mise-first):
+#   1. mise           — базовый тул-менеджер (curl) + chezmoi через mise
+#   2. chezmoi init    — создаёт source из репозитория
+#   3. apply mise-cfg  — раскладывает ~/.config/mise/config.toml (разрыв «курица-яйцо»)
+#   4. mise install    — ставит инструменты (bw, uv, …) из конфига
+#   5. bw unlock       — если есть bitwarden-шаблоны (интерактив)
+#   6. Oh My Zsh       — фреймворк zsh (curl; не управляется mise)
+#   7. chezmoi apply   — полная раскладка конфигов
+#   8. brew bundle     — GUI-casks (Homebrew ставится лениво, только под них)
 #
 # Секреты в репозиторий НЕ попадают (см. README, Decision Record по секретам).
 
 set -euo pipefail
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="${DOTFILES_REPO:-https://github.com/sanchpet/dotfiles.git}"
 
 # --- вывод ---
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 
-# --- проверка платформы ---
-[ "$(uname -s)" = "Darwin" ] || warn "Скрипт рассчитан на macOS; на $(uname -s) casks недоступны."
+# --- 1. mise (базовый тул-менеджер) ---
+if ! command -v mise >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/mise" ]; then
+  log "mise не найден — устанавливаю (https://mise.run)"
+  curl -fsSL https://mise.run | sh
+fi
+# mise + его shims в PATH текущей (не-интерактивной) сессии
+export PATH="$HOME/.local/bin:${MISE_DATA_DIR:-$HOME/.local/share/mise}/shims:$PATH"
+command -v mise >/dev/null 2>&1 || die "mise не найден в PATH после установки."
+log "mise готов ($(mise --version 2>/dev/null | head -1))"
 
-# --- 1. Homebrew ---
-if ! command -v brew >/dev/null 2>&1; then
-  log "Homebrew не найден — устанавливаю (потребуется пароль sudo)"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# chezmoi нужен уже для init — ставим его через mise (идемпотентно).
+if ! command -v chezmoi >/dev/null 2>&1; then
+  log "chezmoi не найден — ставлю через mise"
+  mise use -g chezmoi@latest
+  hash -r 2>/dev/null || true
+fi
+command -v chezmoi >/dev/null 2>&1 || die "chezmoi не найден в PATH после установки через mise."
+
+# --- 2. chezmoi init (создаёт source) ---
+chezmoi_src="$(chezmoi source-path 2>/dev/null || true)"
+if [ -n "$chezmoi_src" ] && [ -d "$chezmoi_src" ]; then
+  log "chezmoi source уже инициализирован ($chezmoi_src)"
 else
-  log "Homebrew уже установлен ($(brew --version | head -1))"
+  log "chezmoi init — клонирую source из $REPO"
+  chezmoi init "$REPO"
+  chezmoi_src="$(chezmoi source-path)"
 fi
 
-# brew в PATH текущей сессии (Apple Silicon → /opt/homebrew, Intel → /usr/local)
-if [ -x /opt/homebrew/bin/brew ]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-elif [ -x /usr/local/bin/brew ]; then
-  eval "$(/usr/local/bin/brew shellenv)"
-else
-  command -v brew >/dev/null 2>&1 || die "brew не найден в PATH после установки."
+# --- 3. Разрыв «курица-яйцо»: разложить ТОЛЬКО mise-конфиг до mise install ---
+if [ -f "$chezmoi_src/dot_config/mise/config.toml" ]; then
+  log "chezmoi apply — раскладываю mise-конфиг (до mise install)"
+  chezmoi apply --force "$HOME/.config/mise/config.toml"
 fi
 
-# --- 2. brew bundle ---
-if [ -f "$DOTFILES_DIR/Brewfile" ]; then
-  log "brew bundle — установка пакетов из Brewfile"
-  brew bundle --file="$DOTFILES_DIR/Brewfile"
-else
-  warn "Brewfile не найден в $DOTFILES_DIR — пропускаю установку пакетов."
+# --- 4. mise install (инструменты из конфига: bw, uv, …) ---
+if [ -f "$HOME/.config/mise/config.toml" ]; then
+  log "mise install — установка инструментов из ~/.config/mise/config.toml"
+  mise install
 fi
 
-# --- 3. chezmoi (раскладка конфигов) ---
-if command -v chezmoi >/dev/null 2>&1; then
-  # source-path печатает путь по умолчанию даже если каталога нет — проверяем существование.
-  chezmoi_src="$(chezmoi source-path 2>/dev/null || true)"
-  if [ -n "$chezmoi_src" ] && [ -d "$chezmoi_src" ]; then
-    log "chezmoi apply — раскладываю конфиги"
-    chezmoi apply
+# --- 5. Bitwarden unlock — только если в source есть bitwarden-шаблоны ---
+if grep -rqls "bitwarden" "$chezmoi_src" --include='*.tmpl' 2>/dev/null; then
+  if command -v bw >/dev/null 2>&1; then
+    if [ -z "${BW_SESSION:-}" ]; then
+      log "Обнаружены bitwarden-шаблоны — нужен unlock Bitwarden"
+      bw login --check >/dev/null 2>&1 || bw login
+      BW_SESSION="$(bw unlock --raw)" || die "Не удалось разблокировать Bitwarden."
+      export BW_SESSION
+    fi
   else
-    warn "chezmoi установлен, но source ещё не инициализирован (нет $chezmoi_src)."
-    warn "Инициализация (после выбора секрет-стратегии): chezmoi init --apply <repo-url>"
+    warn "Есть bitwarden-шаблоны, но 'bw' не установлен — секреты не подставятся."
+  fi
+fi
+
+# --- 6. Oh My Zsh (фреймворк zsh; ставим ДО раскладки .zshrc) ---
+# --unattended → RUNZSH=no + CHSH=no; KEEP_ZSHRC=yes → не трогать .zshrc (его кладёт chezmoi).
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
+  log "Oh My Zsh не найден — устанавливаю (без подмены .zshrc и смены shell)"
+  RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+else
+  log "Oh My Zsh уже установлен"
+fi
+
+# --- 7. chezmoi apply (полная раскладка) ---
+log "chezmoi apply — полная раскладка конфигов"
+chezmoi apply
+
+# --- 8. brew bundle (GUI-casks; Homebrew ставится лениво) ---
+BREWFILE="$chezmoi_src/Brewfile"
+if [ -f "$BREWFILE" ] && grep -qE '^[[:space:]]*(cask|brew)[[:space:]]' "$BREWFILE"; then
+  if ! command -v brew >/dev/null 2>&1; then
+    if [ "$(uname -s)" = "Darwin" ]; then
+      log "Homebrew нужен для casks из Brewfile — устанавливаю"
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    else
+      warn "Brewfile с casks есть, но Homebrew нет и это не macOS — пропускаю."
+    fi
+  fi
+  if command -v brew >/dev/null 2>&1 || [ -x /opt/homebrew/bin/brew ] || [ -x /usr/local/bin/brew ]; then
+    [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+    [ -x /usr/local/bin/brew ] && eval "$(/usr/local/bin/brew shellenv)"
+    log "brew bundle — GUI-приложения из Brewfile"
+    brew bundle --file="$BREWFILE"
   fi
 else
-  warn "chezmoi не установлен — проверь, что 'brew \"chezmoi\"' есть в Brewfile."
+  log "Brewfile без casks/формул — brew не нужен (mise-first)."
 fi
 
 log "Готово. Машина настроена."
