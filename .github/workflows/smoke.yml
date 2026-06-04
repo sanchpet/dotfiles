@@ -1,0 +1,33 @@
+name: smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  bare-machine-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Base deps (curl/git/zsh — то, что есть на типичной машине)
+        run: sudo apt-get update && sudo apt-get install -y curl git zsh ca-certificates
+
+      - name: Clone + bootstrap (как в README quickstart)
+        run: |
+          git clone "https://github.com/${{ github.repository }}" "$HOME/dotfiles"
+          bash "$HOME/dotfiles/bootstrap.sh"
+
+      - name: Verify bare-machine result
+        shell: bash
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+          echo "mise:    $(mise --version)"
+          echo "chezmoi: $(chezmoi --version)"
+          test -f "$HOME/.gitconfig"               || { echo "❌ нет ~/.gitconfig"; exit 1; }
+          test -f "$HOME/.config/mise/config.toml"  || { echo "❌ нет mise config"; exit 1; }
+          test -d "$HOME/.oh-my-zsh"                || { echo "❌ нет Oh My Zsh"; exit 1; }
+          # origin остаётся HTTPS (в CI нет SSH-ключа → проверяет fallback варианта (в))
+          git -C "$HOME/.local/share/chezmoi" remote get-url origin | grep -q '^https://' \
+            || { echo "❌ origin не HTTPS в CI"; exit 1; }
+          echo "✅ bare-machine bootstrap OK"

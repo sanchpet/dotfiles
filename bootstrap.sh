@@ -54,6 +54,17 @@ else
   chezmoi_src="$(chezmoi source-path)"
 fi
 
+# Клон делаем по HTTPS (read-доступ к public-репо есть всегда, ключ не нужен — переносимо
+# и работает в CI/на голой машине). Если у машины есть рабочий SSH-ключ к GitHub —
+# переключаем origin на SSH, чтобы рабочий клон владельца был push-ready. Идемпотентно.
+if git -C "$chezmoi_src" remote get-url origin 2>/dev/null | grep -q '^https://github.com/'; then
+  if ssh -T -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    ssh_url="$(git -C "$chezmoi_src" remote get-url origin | sed -E 's#https://github.com/#git@github.com:#')"
+    log "SSH-ключ к GitHub найден — переключаю origin на SSH ($ssh_url)"
+    git -C "$chezmoi_src" remote set-url origin "$ssh_url"
+  fi
+fi
+
 # --- 3. Разрыв «курица-яйцо»: разложить ТОЛЬКО mise-конфиг до mise install ---
 if [ -f "$chezmoi_src/dot_config/mise/config.toml" ]; then
   log "chezmoi apply — раскладываю mise-конфиг (до mise install)"
