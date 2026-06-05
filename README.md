@@ -106,6 +106,22 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
   identity. This keeps a single declarative source of truth and avoids the duplication/drift of
   per-machine dirs.
 
+## Syncing changes (chezmoi)
+
+chezmoi has two locations: the **source** (this repo, `chezmoi source-path`) and the **live** files
+in `$HOME`. Always edit the source, then push it to live — never edit the live file directly.
+
+| Scenario | Command |
+|----------|---------|
+| Changed a dotfile (e.g. `.zshrc`) | edit the source (`dot_zshrc.tmpl`), then `chezmoi apply ~/.zshrc` (alias `cza`) |
+| Pull latest on another machine | `chezmoi update` (= `git pull` + `apply`) (alias `czu`) |
+| Check source ↔ live drift | `chezmoi diff` (alias `czd`) |
+| A tool wrote to a **non-templated** target (e.g. `mise use -g` → `~/.config/mise/config.toml`) | re-import: `chezmoi add <target>` (see the `miseg` helper) |
+
+> **Never run `chezmoi add ~/.zshrc`.** It is a **template** (`dot_zshrc.tmpl`) — `add` would
+> overwrite it with the rendered content and destroy the `{{ ... }}` directives (incl. future
+> secrets). Templated files are source-edited only; `chezmoi add` is for non-templated targets.
+
 ## Secrets
 
 Secrets are **never committed**. They are resolved at apply time from
