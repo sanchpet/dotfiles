@@ -7,12 +7,10 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Репо — macOS-only по природе (Brewfile = Homebrew casks, ставятся только на
+  # macOS). Linux не тестируем: это платформа, которой нет среди целевых машин.
   bare-machine:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     # chezmoi init дёргает .chezmoi.toml.tmpl → promptStringOnce. В не-TTY (CI)
     # интерактивный промпт падает с "could not open a new TTY", поэтому профиль
     # задаём явно через env (env-override в .chezmoi.toml.tmpl). personal — лёгкий
@@ -20,10 +18,6 @@ jobs:
     env:
       DOTFILES_PROFILE: personal
     steps:
-      - name: Base deps (Linux — на macOS curl/git/zsh уже есть)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y curl git zsh ca-certificates
-
       - name: Clone + bootstrap (как в README quickstart)
         run: |
           git clone "https://github.com/${{ github.repository }}" "$HOME/dotfiles"
@@ -42,20 +36,21 @@ jobs:
             || { echo "❌ origin не HTTPS в CI"; exit 1; }
           echo "✅ core bootstrap OK"
 
-      - name: Verify brew bundle (macOS — casks из Brewfile.tmpl)
-        if: runner.os == 'macOS'
+      - name: Verify brew bundle (casks из Brewfile.tmpl)
         run: |
           export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
-          # Brewfile теперь шаблон — рендерим тем же профилем, что выбрал bootstrap
-          # (в CI env DOTFILES_PROFILE не задан → profile=personal), и проверяем его.
+          # Brewfile — шаблон; рендерим тем же профилем, что выбрал bootstrap
+          # (env DOTFILES_PROFILE=personal на job), и проверяем его.
           chezmoi execute-template < "$HOME/dotfiles/Brewfile.tmpl" > /tmp/Brewfile.rendered
           brew bundle check --file=/tmp/Brewfile.rendered \
             || { echo "❌ brew bundle: не все пакеты из Brewfile установлены"; exit 1; }
           echo "✅ brew bundle OK (casks установлены)"
 
-  # Быстрая проверка per-machine логики Brewfile.tmpl — без установки пакетов.
-  # Покрывает ветку profile=work (dotnet-sdk), которую bootstrap-job в CI не ставит,
+  # Быстрая проверка per-machine логики шаблонов — без установки пакетов.
+  # Покрывает ветку profile=work (dotnet-sdk), которую bootstrap-job не ставит,
   # чтобы не тянуть тяжёлый cask + sudo. Рендер сравнивается для обоих профилей.
+  # Чистый рендер шаблонов OS-независим → ubuntu-раннер (быстрее/дешевле macOS);
+  # это НЕ проверка Linux-поддержки.
   templates:
     runs-on: ubuntu-latest
     steps:
