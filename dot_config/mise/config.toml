@@ -16,6 +16,7 @@ terragrunt = "latest"
 yq = "latest"
 awscli = { version = "latest", symlink_bins = "true" }
 fzf = "latest"
+ripgrep = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
