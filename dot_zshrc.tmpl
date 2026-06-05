@@ -1,0 +1,29 @@
+# Managed by chezmoi (source: dot_zshrc.tmpl).
+
+# --- Homebrew (Apple Silicon → /opt/homebrew, Intel → /usr/local) ---
+if [ -x /opt/homebrew/bin/brew ]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [ -x /usr/local/bin/brew ]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# --- Oh My Zsh (только для плагинов; prompt рисует Starship) ---
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME=""                       # тема отключена — prompt отдан Starship
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+source "$ZSH/oh-my-zsh.sh"
+
+# --- mise: активировать после compinit (из oh-my-zsh) ---
+eval "$("$HOME/.local/bin/mise" activate zsh)"
+
+# --- zoxide (умный cd: `z foo`) ---
+eval "$(zoxide init zsh)"
+
+# --- Starship prompt (последним, рисует приглашение) ---
+eval "$(starship init zsh)"
+
+# --- Helpers ---
+# `mise use -g` пишет в target (~/.config/mise/config.toml), а chezmoi source
+# сам не обновляет → следующий `chezmoi apply` откатил бы изменение. miseg делает
+# точечный re-add source сразу после установки — drift не накапливается.
+miseg() { mise use -g "$@" && chezmoi add ~/.config/mise/config.toml; }
