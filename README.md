@@ -41,6 +41,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 |------|---------|------|
 | Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
 | uv | Fast Python package & project manager | [docs](https://docs.astral.sh/uv/) · [github](https://github.com/astral-sh/uv) |
+| Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
 
 ### Quality / dev workflow
 
