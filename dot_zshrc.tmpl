@@ -27,3 +27,9 @@ eval "$(starship init zsh)"
 # сам не обновляет → следующий `chezmoi apply` откатил бы изменение. miseg делает
 # точечный re-add source сразу после установки — drift не накапливается.
 miseg() { mise use -g "$@" && chezmoi add ~/.config/mise/config.toml; }
+
+# chezmoi-синк. .zshrc — ШАБЛОН: правим source (dot_zshrc.tmpl) и раскатываем,
+# НИКОГДА не `chezmoi add ~/.zshrc` (затрёт template-директивы, напр. секреты).
+alias cza='chezmoi apply'    # source → live (напр.: cza ~/.zshrc)
+alias czu='chezmoi update'   # git pull + apply (подтянуть с другой машины)
+alias czd='chezmoi diff'     # показать дрейф source ↔ live
