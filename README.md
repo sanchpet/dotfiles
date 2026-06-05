@@ -51,6 +51,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Starship | Cross-shell prompt (zsh prompt; `starship init` in `.zshrc`) | [docs](https://starship.rs) |
 | zoxide | Smarter `cd` (`z`) | [github](https://github.com/ajeetdsouza/zoxide) |
 | fzf | Fuzzy finder (`fzf --zsh` in `.zshrc`) | [github](https://github.com/junegunn/fzf) |
+| ripgrep (`rg`) | Fast recursive search | [github](https://github.com/BurntSushi/ripgrep) |
 | python | Python runtime | [docs](https://www.python.org) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
 | terragrunt | Terraform/OpenTofu wrapper | [docs](https://terragrunt.gruntwork.io) |
