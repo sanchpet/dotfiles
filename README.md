@@ -91,9 +91,11 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
   are present.
 - **Per-machine via `profile`, not per-machine directories.** One source tree; machine-specific
   variation is driven by a single `profile` value (`work`/`personal`), prompted once at
-  `chezmoi init` and stored in the machine-local chezmoi config (never in this repo). Templates
-  branch on it (e.g. `Brewfile.tmpl` installs the .NET SDK only when `profile == "work"`). This
-  keeps a single declarative source of truth and avoids the duplication/drift of per-machine dirs.
+  `chezmoi init` (override in CI/headless with `DOTFILES_PROFILE`) and stored in the machine-local
+  chezmoi config (never in this repo). Templates branch on it — `Brewfile.tmpl` installs the .NET
+  SDK only when `profile == "work"`, and `dot_gitconfig.tmpl` selects the work vs personal git
+  identity. This keeps a single declarative source of truth and avoids the duplication/drift of
+  per-machine dirs.
 
 ## Secrets
 

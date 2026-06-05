@@ -82,3 +82,22 @@ jobs:
             echo "❌ personal: dotnet-sdk просочился в personal-профиль"; exit 1
           fi
           echo "✅ Brewfile.tmpl: work=freelens+dotnet-sdk, personal=freelens"
+
+      - name: dot_gitconfig.tmpl — правильная identity по профилю
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          printf '[data]\n  profile = "work"\n'     > /tmp/work.toml
+          printf '[data]\n  profile = "personal"\n' > /tmp/personal.toml
+          gwork=$(chezmoi --config /tmp/work.toml execute-template < dot_gitconfig.tmpl)
+          gpers=$(chezmoi --config /tmp/personal.toml execute-template < dot_gitconfig.tmpl)
+
+          if ! grep -q 'email = petrov_ad@magnit.ru' <<<"$gwork"; then
+            echo "❌ work: нет рабочей почты"; exit 1
+          fi
+          if ! grep -q 'email = petrov@sanch.pet' <<<"$gpers"; then
+            echo "❌ personal: нет личной почты"; exit 1
+          fi
+          if grep -q 'magnit.ru' <<<"$gpers"; then
+            echo "❌ personal: рабочая почта просочилась в personal-профиль"; exit 1
+          fi
+          echo "✅ dot_gitconfig.tmpl: work=magnit, personal=sanch.pet"

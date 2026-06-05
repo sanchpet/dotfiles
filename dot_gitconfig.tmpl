@@ -1,0 +1,12 @@
+# Git identity — per-machine через .profile (см. .chezmoi.toml.tmpl).
+# work → рабочая identity, иначе → личная. dig защищает от missing-key.
+[user]
+{{- if eq (dig "profile" "personal" .) "work" }}
+	name = petrov_ad
+	email = petrov_ad@magnit.ru
+{{- else }}
+	name = sanchpet
+	email = petrov@sanch.pet
+{{- end }}
+[push]
+	default = simple
