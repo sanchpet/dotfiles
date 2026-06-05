@@ -1,0 +1,19 @@
+# Brewfile — декларативный манифест пакетов machine (chezmoi-шаблон).
+# Рендерится в bootstrap.sh через `chezmoi execute-template` и подаётся в `brew bundle`.
+# В $HOME не раскладывается (см. .chezmoiignore) — потребляется операционно.
+# Установка:   chezmoi execute-template < Brewfile.tmpl | brew bundle --file=/dev/stdin
+# Снимок:      brew bundle dump --force --describe --file=Brewfile   (затем перенести в .tmpl)
+#
+# Per-machine: блоки под `if eq .profile "..."` ставятся только на машинах
+# с соответствующим profile (задаётся один раз при `chezmoi init`, см. .chezmoi.toml.tmpl).
+
+# CLI-инструменты — через mise (mise-first), см. ~/.config/mise/config.toml.
+# В Brewfile только GUI-casks и формулы, которых нет в mise.
+
+# === GUI-приложения (casks) — все машины ===
+cask "freelens" # Kubernetes IDE (open-source форк Lens)
+
+# === Только рабочая машина (profile = work) ===
+{{ if eq (dig "profile" "personal" .) "work" -}}
+cask "dotnet-sdk" # .NET SDK — нужен только на рабочей машине
+{{- end }}

@@ -13,7 +13,8 @@
 #   5. bw unlock       — если есть bitwarden-шаблоны (интерактив)
 #   6. Oh My Zsh       — фреймворк zsh (curl; не управляется mise)
 #   7. chezmoi apply   — полная раскладка конфигов
-#   8. brew bundle     — GUI-casks (Homebrew ставится лениво, только под них)
+#   8. brew bundle     — рендер Brewfile.tmpl (per-machine profile) → GUI-casks
+#                        (Homebrew ставится лениво, только под них)
 #
 # Секреты в репозиторий НЕ попадают (см. README, Decision Record по секретам).
 
@@ -106,8 +107,16 @@ log "chezmoi apply — полная раскладка конфигов"
 chezmoi apply
 
 # --- 8. brew bundle (GUI-casks; Homebrew ставится лениво) ---
-BREWFILE="$chezmoi_src/Brewfile"
-if [ -f "$BREWFILE" ] && grep -qE '^[[:space:]]*(cask|brew)[[:space:]]' "$BREWFILE"; then
+# Brewfile — chezmoi-шаблон (per-machine через .profile). Рендерим его тем же
+# движком, что и dotfiles, во временный файл, и только потом отдаём в brew bundle.
+BREWFILE_TMPL="$chezmoi_src/Brewfile.tmpl"
+BREWFILE="$(mktemp -t Brewfile)"
+trap 'rm -f "$BREWFILE"' EXIT
+if [ -f "$BREWFILE_TMPL" ]; then
+  log "render Brewfile через chezmoi execute-template (per-machine profile)"
+  chezmoi execute-template < "$BREWFILE_TMPL" > "$BREWFILE"
+fi
+if [ -s "$BREWFILE" ] && grep -qE '^[[:space:]]*(cask|brew)[[:space:]]' "$BREWFILE"; then
   if ! command -v brew >/dev/null 2>&1; then
     if [ "$(uname -s)" = "Darwin" ]; then
       log "Homebrew нужен для casks из Brewfile — устанавливаю"

@@ -1,0 +1,11 @@
+# Генератор per-machine конфига chezmoi (~/.config/chezmoi/chezmoi.toml).
+# Выполняется один раз при `chezmoi init`; результат НЕ попадает в репозиторий.
+# `promptStringOnce` спрашивает значение только если оно ещё не задано на машине —
+# повторный init/apply ничего не переспрашивает.
+#
+# profile — роль машины. Управляет per-machine вариациями в шаблонах
+# (напр. work-only casks в Brewfile.tmpl: {{ if eq .profile "work" }}).
+{{- $profile := promptStringOnce . "profile" "Machine profile (work/personal)" "personal" -}}
+
+[data]
+    profile = {{ $profile | quote }}

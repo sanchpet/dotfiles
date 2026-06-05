@@ -53,9 +53,10 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 
 ### GUI (Homebrew cask)
 
-| Tool | Purpose | Link |
-|------|---------|------|
-| Freelens | Kubernetes IDE (open-source Lens fork) | [github](https://github.com/freelensapp/freelens) |
+| Tool | Purpose | Profile | Link |
+|------|---------|---------|------|
+| Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
+| .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
 ## Repository layout
 
@@ -63,8 +64,9 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 |------|------|
 | `dot_*` | Dotfiles rendered into `$HOME` by chezmoi (e.g. `dot_gitconfig` → `~/.gitconfig`) |
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
+| `.chezmoi.toml.tmpl` | Generates per-machine chezmoi config at `init` (prompts `profile`); never deployed |
 | `bootstrap.sh` | Bare-machine bootstrap (operational, not deployed) |
-| `Brewfile` | GUI casks for `brew bundle` (operational) |
+| `Brewfile.tmpl` | GUI casks for `brew bundle`, templated per `profile` (operational; rendered at bootstrap) |
 | `mise.toml` | Repo-local dev tooling (pre-commit) |
 | `.pre-commit-config.yaml` | Lint hooks (shellcheck + hygiene) |
 | `.chezmoiignore` | Keeps operational files in the repo but out of `$HOME` |
@@ -87,6 +89,11 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 - **Bootstrap ordering.** The mise config is itself a managed dotfile, so it is applied *before*
   `mise install` to break the chicken-and-egg; Homebrew is installed lazily, only when GUI casks
   are present.
+- **Per-machine via `profile`, not per-machine directories.** One source tree; machine-specific
+  variation is driven by a single `profile` value (`work`/`personal`), prompted once at
+  `chezmoi init` and stored in the machine-local chezmoi config (never in this repo). Templates
+  branch on it (e.g. `Brewfile.tmpl` installs the .NET SDK only when `profile == "work"`). This
+  keeps a single declarative source of truth and avoids the duplication/drift of per-machine dirs.
 
 ## Secrets
 
