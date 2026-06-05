@@ -1,5 +1,5 @@
-# Git identity — per-machine через .profile (см. .chezmoi.toml.tmpl).
-# work → рабочая identity, иначе → личная. dig защищает от missing-key.
+# Git identity — per-machine via .profile (see .chezmoi.toml.tmpl).
+# work → work identity, otherwise → personal. dig guards against a missing key.
 [user]
 {{- if eq (dig "profile" "personal" .) "work" }}
 	name = petrov_ad

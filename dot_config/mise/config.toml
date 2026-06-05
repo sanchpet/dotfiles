@@ -8,13 +8,19 @@ glab = "latest"
 kubectl = "latest"
 node = "latest"
 kubectx = "latest"
-starship = "latest"  # zsh prompt — инициализируется в dot_zshrc.tmpl
-zoxide = "latest"    # умный cd — инициализируется в dot_zshrc.tmpl
+starship = "latest"  # zsh prompt — initialized in dot_zshrc.tmpl
+zoxide = "latest"    # smarter cd — initialized in dot_zshrc.tmpl
+python = "latest"
+helm = "latest"
+terragrunt = "latest"
+yq = "latest"
+awscli = { version = "latest", symlink_bins = "true" }
+fzf = "latest"
 
-# Yandex Cloud CLI — нет в реестре mise (закрытый исходник, без GitHub Releases),
-# поэтому http-бэкенд: пиннинг версии + sha256 = воспроизводимость и supply-chain.
-# Обновление = бамп version + url + checksum (sha256 нового бинаря), затем commit.
-# Версия: curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/stable
+# Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
+# so the http backend: version pin + sha256 = reproducibility and supply-chain.
+# To update: bump version + url + checksum (sha256 of the new binary), then commit.
+# Latest version: curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/stable
 [tools."http:yc"]
 version = "1.12.0"
 

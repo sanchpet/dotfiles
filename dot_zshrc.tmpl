@@ -7,29 +7,32 @@ elif [ -x /usr/local/bin/brew ]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 
-# --- Oh My Zsh (только для плагинов; prompt рисует Starship) ---
+# --- Oh My Zsh (plugins only; Starship draws the prompt) ---
 export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME=""                       # тема отключена — prompt отдан Starship
+ZSH_THEME=""                       # theme off — prompt handed to Starship
 plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 source "$ZSH/oh-my-zsh.sh"
 
-# --- mise: активировать после compinit (из oh-my-zsh) ---
+# --- mise: activate after compinit (from oh-my-zsh) ---
 eval "$("$HOME/.local/bin/mise" activate zsh)"
 
-# --- zoxide (умный cd: `z foo`) ---
+# --- zoxide (smarter cd: `z foo`) ---
 eval "$(zoxide init zsh)"
 
-# --- Starship prompt (последним, рисует приглашение) ---
+# --- fzf ---
+eval "$(fzf --zsh)"
+
+# --- Starship prompt (last, draws the prompt) ---
 eval "$(starship init zsh)"
 
 # --- Helpers ---
-# `mise use -g` пишет в target (~/.config/mise/config.toml), а chezmoi source
-# сам не обновляет → следующий `chezmoi apply` откатил бы изменение. miseg делает
-# точечный re-add source сразу после установки — drift не накапливается.
+# `mise use -g` writes to the target (~/.config/mise/config.toml), but chezmoi does not
+# update the source itself → the next `chezmoi apply` would revert it. miseg does a
+# targeted re-add of the source right after install, so drift doesn't accumulate.
 miseg() { mise use -g "$@" && chezmoi add ~/.config/mise/config.toml; }
 
-# chezmoi-синк. .zshrc — ШАБЛОН: правим source (dot_zshrc.tmpl) и раскатываем,
-# НИКОГДА не `chezmoi add ~/.zshrc` (затрёт template-директивы, напр. секреты).
-alias cza='chezmoi apply'    # source → live (напр.: cza ~/.zshrc)
-alias czu='chezmoi update'   # git pull + apply (подтянуть с другой машины)
-alias czd='chezmoi diff'     # показать дрейф source ↔ live
+# chezmoi sync. .zshrc is a TEMPLATE: edit the source (dot_zshrc.tmpl) and apply;
+# NEVER `chezmoi add ~/.zshrc` (it destroys template directives, e.g. secrets).
+alias cza='chezmoi apply'    # source → live (e.g.: cza ~/.zshrc)
+alias czu='chezmoi update'   # git pull + apply (pull from another machine)
+alias czd='chezmoi diff'     # show source ↔ live drift

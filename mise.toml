@@ -1,5 +1,5 @@
-# Project-local тулинг для разработки dotfiles-репо.
-# НЕ деплоится в $HOME (см. .chezmoiignore). Глобальные инструменты пользователя —
-# в dot_config/mise/config.toml (→ ~/.config/mise/config.toml).
+# Project-local tooling for developing the dotfiles repo.
+# NOT deployed to $HOME (see .chezmoiignore). The user's global tools live in
+# dot_config/mise/config.toml (→ ~/.config/mise/config.toml).
 [tools]
 pre-commit = { version = "4.6.0", postinstall = "mise exec -- pre-commit install --install-hooks || true" }

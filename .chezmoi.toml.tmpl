@@ -1,15 +1,15 @@
-# Генератор per-machine конфига chezmoi (~/.config/chezmoi/chezmoi.toml).
-# Выполняется один раз при `chezmoi init`; результат НЕ попадает в репозиторий.
-# `promptStringOnce` спрашивает значение только если оно ещё не задано на машине —
-# повторный init/apply ничего не переспрашивает.
+# Generator for the per-machine chezmoi config (~/.config/chezmoi/chezmoi.toml).
+# Runs once at `chezmoi init`; the result does NOT land in the repository.
+# `promptStringOnce` only asks if the value isn't set yet on the machine —
+# re-running init/apply never re-prompts.
 #
-# profile — роль машины. Управляет per-machine вариациями в шаблонах
-# (напр. work-only casks в Brewfile.tmpl: if eq .profile "work").
+# profile — the machine's role. Drives per-machine variations in templates
+# (e.g. work-only casks in Brewfile.tmpl: if eq .profile "work").
 #
-# Источник значения, по приоритету:
-#   1. env DOTFILES_PROFILE — детерминированно для CI/headless (не-TTY).
-#   2. интерактивный промпт — для живой машины (спрашивается один раз).
-#   3. дефолт "personal" — если не-TTY и env не задан.
+# Value source, by priority:
+#   1. env DOTFILES_PROFILE — deterministic for CI/headless (non-TTY).
+#   2. interactive prompt — for a real machine (asked once).
+#   3. default "personal" — if non-TTY and env is unset.
 {{- $profile := "" -}}
 {{- if env "DOTFILES_PROFILE" -}}
 {{-   $profile = env "DOTFILES_PROFILE" -}}
@@ -17,9 +17,9 @@
 {{-   $profile = promptStringOnce . "profile" "Machine profile (work/personal)" "personal" -}}
 {{- end }}
 
-# Закрепляем source за тем каталогом, из которого прошёл init (.chezmoi.sourceDir),
-# чтобы `chezmoi` без --source всегда смотрел сюда. Без хардкода пути в репо:
-# на голой машине это ~/.local/share/chezmoi, у автора — рабочий клон.
+# Pin the source to the directory init ran from (.chezmoi.sourceDir), so `chezmoi`
+# without --source always looks here. No hardcoded path in the repo: on a bare
+# machine this is ~/.local/share/chezmoi, for the author it's the working clone.
 sourceDir = {{ .chezmoi.sourceDir | quote }}
 
 [data]
