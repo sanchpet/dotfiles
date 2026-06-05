@@ -1,0 +1,19 @@
+# Starship prompt — managed by chezmoi (source: dot_config/starship.toml).
+# Mostly Starship defaults; the deliberate change is enabling the `kubernetes`
+# module (OFF by default) so the active cluster/namespace is always on screen —
+# a guard against running a command against the wrong context.
+
+# Kubernetes: show context + namespace whenever a kubeconfig context is active.
+[kubernetes]
+disabled = false
+format = '[$symbol$context( \($namespace\))]($style) '
+style = 'bold cyan'
+
+# AWS: show the active profile/region (handy when juggling accounts).
+[aws]
+format = '[$symbol($profile )(\($region\) )]($style)'
+style = 'bold yellow'
+
+# Terraform: workspace is more useful (and faster) than the version lookup.
+[terraform]
+format = '[$symbol$workspace]($style) '

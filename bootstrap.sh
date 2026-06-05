@@ -111,7 +111,11 @@ fi
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 for plugin in \
   "zsh-users/zsh-autosuggestions" \
-  "zsh-users/zsh-syntax-highlighting"; do
+  "zsh-users/zsh-syntax-highlighting" \
+  "zsh-users/zsh-completions" \
+  "MichaelAquilina/zsh-you-should-use" \
+  "wfxr/forgit" \
+  "marlonrichert/zsh-autocomplete"; do
   dest="$ZSH_CUSTOM/plugins/${plugin##*/}"
   if [ ! -d "$dest" ]; then
     log "omz plugin: cloning ${plugin##*/}"
