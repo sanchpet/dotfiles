@@ -17,5 +17,10 @@
 {{-   $profile = promptStringOnce . "profile" "Machine profile (work/personal)" "personal" -}}
 {{- end }}
 
+# Закрепляем source за тем каталогом, из которого прошёл init (.chezmoi.sourceDir),
+# чтобы `chezmoi` без --source всегда смотрел сюда. Без хардкода пути в репо:
+# на голой машине это ~/.local/share/chezmoi, у автора — рабочий клон.
+sourceDir = {{ .chezmoi.sourceDir | quote }}
+
 [data]
     profile = {{ $profile | quote }}
