@@ -17,6 +17,10 @@ jobs:
     # путь: ставит только общие casks, без тяжёлого work-only dotnet-sdk.
     env:
       DOTFILES_PROFILE: personal
+      # mise resolves tool versions via the GitHub API; unauthenticated CI hits the
+      # 60 req/hour rate limit (403 → "No versions found"). The auto-provided token
+      # raises it to 5000/hour. mise reads GITHUB_TOKEN.
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Clone + bootstrap (как в README quickstart)
         run: |
