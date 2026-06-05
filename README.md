@@ -48,6 +48,8 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | kubectl | Kubernetes cluster CLI | [docs](https://kubernetes.io/docs/reference/kubectl/) |
 | kubectx | Switch kubectl context / namespace | [github](https://github.com/ahmetb/kubectx) |
 | node | Node.js runtime | [docs](https://nodejs.org) |
+| Starship | Cross-shell prompt (zsh prompt; `starship init` in `.zshrc`) | [docs](https://starship.rs) |
+| zoxide | Smarter `cd` (`z`) | [github](https://github.com/ajeetdsouza/zoxide) |
 
 ### Quality / dev workflow
 
@@ -70,6 +72,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 |------|------|
 | `dot_*` | Dotfiles rendered into `$HOME` by chezmoi (e.g. `dot_gitconfig` → `~/.gitconfig`) |
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
+| `dot_zshrc.tmpl` | `~/.zshrc` — Oh My Zsh (plugins only) + Starship prompt + zoxide + mise; secrets pending |
 | `.chezmoi.toml.tmpl` | Generates per-machine chezmoi config at `init` (prompts `profile`); never deployed |
 | `bootstrap.sh` | Bare-machine bootstrap (operational, not deployed) |
 | `Brewfile.tmpl` | GUI casks for `brew bundle`, templated per `profile` (operational; rendered at bootstrap) |
@@ -109,5 +112,10 @@ Secrets are **never committed**. They are resolved at apply time from
 [Bitwarden](https://bitwarden.com) via chezmoi templates. On a fresh machine, `bootstrap.sh`
 prompts for `bw unlock` only when the source actually contains secret templates.
 
-> The zsh configuration (`.zshrc` + its secret references) is being set up separately and will
-> land here once finalized.
+The zsh config (`dot_zshrc.tmpl`) is managed: Oh My Zsh provides plugins
+(`git`, `zsh-autosuggestions`, `zsh-syntax-highlighting` — the latter two cloned in `bootstrap.sh`),
+[Starship](https://starship.rs) draws the prompt, `zoxide` adds a smarter `cd`, and `mise` is
+activated after `compinit`.
+
+> **Pending:** the `OBSIDIAN_API_KEY` secret reference (via Bitwarden) is not wired yet — `.zshrc`
+> is kept as a `.tmpl` so the `{{ bitwarden ... }}` line can be added without a rename.

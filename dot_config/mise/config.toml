@@ -8,6 +8,8 @@ glab = "latest"
 kubectl = "latest"
 node = "latest"
 kubectx = "latest"
+starship = "latest"  # zsh prompt — инициализируется в dot_zshrc.tmpl
+zoxide = "latest"    # умный cd — инициализируется в dot_zshrc.tmpl
 
 # Yandex Cloud CLI — нет в реестре mise (закрытый исходник, без GitHub Releases),
 # поэтому http-бэкенд: пиннинг версии + sha256 = воспроизводимость и supply-chain.

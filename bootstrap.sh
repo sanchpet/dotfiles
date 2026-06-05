@@ -106,6 +106,19 @@ else
   log "Oh My Zsh уже установлен"
 fi
 
+# Внешние omz-плагины (нет в составе omz) — клонируем в $ZSH_CUSTOM/plugins.
+# starship/zoxide ставятся через mise (см. шаг 4), здесь только zsh-плагины.
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+for plugin in \
+  "zsh-users/zsh-autosuggestions" \
+  "zsh-users/zsh-syntax-highlighting"; do
+  dest="$ZSH_CUSTOM/plugins/${plugin##*/}"
+  if [ ! -d "$dest" ]; then
+    log "omz-плагин: клонирую ${plugin##*/}"
+    git clone --depth=1 "https://github.com/${plugin}.git" "$dest"
+  fi
+done
+
 # --- 7. chezmoi apply (полная раскладка) ---
 log "chezmoi apply — полная раскладка конфигов"
 chezmoi apply
