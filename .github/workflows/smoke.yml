@@ -36,6 +36,17 @@ jobs:
             || { echo "❌ origin не HTTPS в CI"; exit 1; }
           echo "✅ core bootstrap OK"
 
+      - name: Verify .zshrc грузится (omz + starship + zoxide + mise)
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+          test -f "$HOME/.zshrc" || { echo "❌ нет ~/.zshrc"; exit 1; }
+          # Свежий интерактивный zsh должен загрузиться без ошибок и поднять компоненты.
+          out=$(zsh -i -c 'echo "starship=${STARSHIP_SHELL:-no}"; type z >/dev/null 2>&1 && echo "zoxide=yes" || echo "zoxide=no"' 2>&1)
+          echo "$out"
+          grep -q 'starship=zsh' <<<"$out" || { echo "❌ starship не активировался в .zshrc"; exit 1; }
+          grep -q 'zoxide=yes'   <<<"$out" || { echo "❌ zoxide не активировался в .zshrc"; exit 1; }
+          echo "✅ .zshrc loads OK (starship + zoxide активны)"
+
       - name: Verify brew bundle (casks из Brewfile.tmpl)
         run: |
           export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
