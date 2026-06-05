@@ -49,9 +49,17 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | kubectx | Switch kubectl context / namespace | [github](https://github.com/ahmetb/kubectx) |
 | node | Node.js runtime | [docs](https://nodejs.org) |
 | Starship | Cross-shell prompt (zsh prompt; `starship init` in `.zshrc`) | [docs](https://starship.rs) |
-| zoxide | Smarter `cd` (`z`) | [github](https://github.com/ajeetdsouza/zoxide) |
+| zoxide | Frecency `cd` — replaces `cd` (`--cmd cd`); `cdi` = interactive | [github](https://github.com/ajeetdsouza/zoxide) |
 | fzf | Fuzzy finder (`fzf --zsh` in `.zshrc`) | [github](https://github.com/junegunn/fzf) |
 | ripgrep (`rg`) | Fast recursive search | [github](https://github.com/BurntSushi/ripgrep) |
+| bat | `cat` with syntax highlighting & paging (aliased to `cat`) | [github](https://github.com/sharkdp/bat) |
+| eza | Modern `ls` — git-aware, colors (aliased to `ls`/`ll`/`la`/`tree`) | [github](https://github.com/eza-community/eza) |
+| delta | Syntax-highlighting pager for git diffs (wired as git `core.pager`) | [github](https://github.com/dandavison/delta) |
+| dust | Intuitive `du` — disk-usage tree (aliased to `du`) | [github](https://github.com/bootandy/dust) |
+| duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
+| fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
+| broot | Interactive tree navigator (aliased to `br`) | [github](https://github.com/Canop/broot) |
+| rust | Rust toolchain (`cargo`) — also builds `broot` | [docs](https://www.rust-lang.org) |
 | python | Python runtime | [docs](https://www.python.org) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
 | terragrunt | Terraform/OpenTofu wrapper | [docs](https://terragrunt.gruntwork.io) |
@@ -73,13 +81,47 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
+## Zsh shell (Oh My Zsh)
+
+The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — the `kubernetes`, `aws`
+and `terraform` modules are on, so the active cluster / profile / workspace is always visible). Oh
+My Zsh loads **plugins only** (theme off — Starship draws the prompt). Built-in plugins ship with
+Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`.
+
+| Plugin | Source | Purpose |
+|--------|--------|---------|
+| git | built-in | Git aliases (`gst`, `gco`, `gp`, …) |
+| kubectl | built-in | `k*` aliases + completion (`kgp`, `kgaa`, `kdp`, …) |
+| helm | built-in | Helm completion |
+| terraform | built-in | `tf*` aliases + completion + workspace |
+| aws | built-in | `asp`/`acp` profile switch + completion |
+| ansible | built-in | Ansible aliases + completion |
+| gh | built-in | GitHub CLI completion |
+| colored-man-pages | built-in | Colored man pages |
+| extract | built-in | `x <archive>` — extract any archive |
+| sudo | built-in | Double-`Esc` prepends `sudo` |
+| copypath / copybuffer | built-in | Copy `$PWD` / the current command line to the clipboard |
+| dirhistory | built-in | `Alt`+`←/→` directory history, `Alt`+`↑` parent dir |
+| forgit | external | fzf-powered git (`ga`, `glo`, `gd`) |
+| zsh-completions | external | Extra completion definitions |
+| zsh-autosuggestions | external | Fish-style suggestions from history |
+| zsh-you-should-use | external | Reminds you when a typed command already has an alias |
+| zsh-syntax-highlighting | external | Command-line syntax highlighting |
+| zsh-autocomplete | external | Live menu completion (loaded **last** so its keybindings win) |
+
+> **Load order matters.** `zsh-autocomplete` owns the completion/history UI, so it loads last, and
+> plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are
+> deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`,
+> `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg` helper.
+
 ## Repository layout
 
 | Path | Role |
 |------|------|
 | `dot_*` | Dotfiles rendered into `$HOME` by chezmoi (e.g. `dot_gitconfig` → `~/.gitconfig`) |
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
-| `dot_zshrc.tmpl` | `~/.zshrc` — Oh My Zsh (plugins only) + Starship prompt + zoxide + mise; secrets pending |
+| `dot_config/starship.toml` | Starship prompt config → `~/.config/starship.toml` (kubernetes/aws/terraform modules) |
+| `dot_zshrc.tmpl` | `~/.zshrc` — Oh My Zsh (plugins only) + Starship prompt + zoxide + mise + aliases (kubectl, modern CLI); secrets pending |
 | `.chezmoi.toml.tmpl` | Generates per-machine chezmoi config at `init` (prompts `profile`); never deployed |
 | `bootstrap.sh` | Bare-machine bootstrap (operational, not deployed) |
 | `Brewfile.tmpl` | GUI casks for `brew bundle`, templated per `profile` (operational; rendered at bootstrap) |
@@ -135,10 +177,9 @@ Secrets are **never committed**. They are resolved at apply time from
 [Bitwarden](https://bitwarden.com) via chezmoi templates. On a fresh machine, `bootstrap.sh`
 prompts for `bw unlock` only when the source actually contains secret templates.
 
-The zsh config (`dot_zshrc.tmpl`) is managed: Oh My Zsh provides plugins
-(`git`, `zsh-autosuggestions`, `zsh-syntax-highlighting` — the latter two cloned in `bootstrap.sh`),
-[Starship](https://starship.rs) draws the prompt, `zoxide` adds a smarter `cd`, and `mise` is
-activated after `compinit`.
+The zsh config (`dot_zshrc.tmpl`) is kept as a `.tmpl` so a `{{ bitwarden ... }}` secret line can
+be added later without a rename — see [Zsh shell](#zsh-shell-oh-my-zsh) for the plugin set and
+prompt.
 
 > **Pending:** the `OBSIDIAN_API_KEY` secret reference (via Bitwarden) is not wired yet — `.zshrc`
 > is kept as a `.tmpl` so the `{{ bitwarden ... }}` line can be added without a rename.
