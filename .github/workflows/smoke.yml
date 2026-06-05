@@ -13,6 +13,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    # chezmoi init дёргает .chezmoi.toml.tmpl → promptStringOnce. В не-TTY (CI)
+    # интерактивный промпт падает с "could not open a new TTY", поэтому профиль
+    # задаём явно через env (env-override в .chezmoi.toml.tmpl). personal — лёгкий
+    # путь: ставит только общие casks, без тяжёлого work-only dotnet-sdk.
+    env:
+      DOTFILES_PROFILE: personal
     steps:
       - name: Base deps (Linux — на macOS curl/git/zsh уже есть)
         if: runner.os == 'Linux'
@@ -36,9 +42,43 @@ jobs:
             || { echo "❌ origin не HTTPS в CI"; exit 1; }
           echo "✅ core bootstrap OK"
 
-      - name: Verify brew bundle (macOS — casks из Brewfile)
+      - name: Verify brew bundle (macOS — casks из Brewfile.tmpl)
         if: runner.os == 'macOS'
         run: |
-          brew bundle check --file="$HOME/dotfiles/Brewfile" \
+          export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+          # Brewfile теперь шаблон — рендерим тем же профилем, что выбрал bootstrap
+          # (в CI env DOTFILES_PROFILE не задан → profile=personal), и проверяем его.
+          chezmoi execute-template < "$HOME/dotfiles/Brewfile.tmpl" > /tmp/Brewfile.rendered
+          brew bundle check --file=/tmp/Brewfile.rendered \
             || { echo "❌ brew bundle: не все пакеты из Brewfile установлены"; exit 1; }
           echo "✅ brew bundle OK (casks установлены)"
+
+  # Быстрая проверка per-machine логики Brewfile.tmpl — без установки пакетов.
+  # Покрывает ветку profile=work (dotnet-sdk), которую bootstrap-job в CI не ставит,
+  # чтобы не тянуть тяжёлый cask + sudo. Рендер сравнивается для обоих профилей.
+  templates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install chezmoi
+        run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+
+      - name: Brewfile.tmpl рендерится корректно для обоих профилей
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          printf '[data]\n  profile = "work"\n'     > /tmp/work.toml
+          printf '[data]\n  profile = "personal"\n' > /tmp/personal.toml
+          work=$(chezmoi --config /tmp/work.toml execute-template < Brewfile.tmpl)
+          personal=$(chezmoi --config /tmp/personal.toml execute-template < Brewfile.tmpl)
+
+          if ! grep -q 'cask "freelens"' <<<"$work"; then
+            echo "❌ work: нет общего cask freelens"; exit 1
+          fi
+          if ! grep -q 'cask "dotnet-sdk"' <<<"$work"; then
+            echo "❌ work: нет work-only cask dotnet-sdk"; exit 1
+          fi
+          if grep -q 'cask "dotnet-sdk"' <<<"$personal"; then
+            echo "❌ personal: dotnet-sdk просочился в personal-профиль"; exit 1
+          fi
+          echo "✅ Brewfile.tmpl: work=freelens+dotnet-sdk, personal=freelens"

@@ -4,8 +4,18 @@
 # повторный init/apply ничего не переспрашивает.
 #
 # profile — роль машины. Управляет per-machine вариациями в шаблонах
-# (напр. work-only casks в Brewfile.tmpl: {{ if eq .profile "work" }}).
-{{- $profile := promptStringOnce . "profile" "Machine profile (work/personal)" "personal" -}}
+# (напр. work-only casks в Brewfile.tmpl: if eq .profile "work").
+#
+# Источник значения, по приоритету:
+#   1. env DOTFILES_PROFILE — детерминированно для CI/headless (не-TTY).
+#   2. интерактивный промпт — для живой машины (спрашивается один раз).
+#   3. дефолт "personal" — если не-TTY и env не задан.
+{{- $profile := "" -}}
+{{- if env "DOTFILES_PROFILE" -}}
+{{-   $profile = env "DOTFILES_PROFILE" -}}
+{{- else -}}
+{{-   $profile = promptStringOnce . "profile" "Machine profile (work/personal)" "personal" -}}
+{{- end }}
 
 [data]
     profile = {{ $profile | quote }}
