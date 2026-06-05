@@ -5,6 +5,10 @@
 #   Использование (на голой машине):
 #     git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstrap.sh
 #
+#   В терминале chezmoi init спросит профиль машины (work/personal).
+#   Headless/CI (не-TTY) — задать заранее, иначе init упадёт на промпте:
+#     DOTFILES_PROFILE=personal ~/dotfiles/bootstrap.sh
+#
 # Идемпотентно: безопасно запускать повторно. Целевой порядок (mise-first):
 #   1. mise           — базовый тул-менеджер (curl) + chezmoi через mise
 #   2. chezmoi init    — создаёт source из репозитория
