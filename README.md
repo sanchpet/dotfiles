@@ -50,6 +50,12 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | node | Node.js runtime | [docs](https://nodejs.org) |
 | Starship | Cross-shell prompt (zsh prompt; `starship init` in `.zshrc`) | [docs](https://starship.rs) |
 | zoxide | Smarter `cd` (`z`) | [github](https://github.com/ajeetdsouza/zoxide) |
+| fzf | Fuzzy finder (`fzf --zsh` in `.zshrc`) | [github](https://github.com/junegunn/fzf) |
+| python | Python runtime | [docs](https://www.python.org) |
+| helm | Kubernetes package manager | [docs](https://helm.sh) |
+| terragrunt | Terraform/OpenTofu wrapper | [docs](https://terragrunt.gruntwork.io) |
+| yq | YAML/JSON processor | [github](https://github.com/mikefarah/yq) |
+| awscli (`aws`) | AWS CLI | [docs](https://aws.amazon.com/cli/) |
 
 ### Quality / dev workflow
 

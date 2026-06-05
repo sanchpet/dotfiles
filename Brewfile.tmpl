@@ -1,19 +1,19 @@
-# Brewfile — декларативный манифест пакетов machine (chezmoi-шаблон).
-# Рендерится в bootstrap.sh через `chezmoi execute-template` и подаётся в `brew bundle`.
-# В $HOME не раскладывается (см. .chezmoiignore) — потребляется операционно.
-# Установка:   chezmoi execute-template < Brewfile.tmpl | brew bundle --file=/dev/stdin
-# Снимок:      brew bundle dump --force --describe --file=Brewfile   (затем перенести в .tmpl)
+# Brewfile — declarative machine package manifest (chezmoi template).
+# Rendered in bootstrap.sh via `chezmoi execute-template` and fed to `brew bundle`.
+# Not deployed to $HOME (see .chezmoiignore) — consumed operationally.
+# Install:   chezmoi execute-template < Brewfile.tmpl | brew bundle --file=/dev/stdin
+# Snapshot:  brew bundle dump --force --describe --file=Brewfile   (then port into .tmpl)
 #
-# Per-machine: блоки под `if eq .profile "..."` ставятся только на машинах
-# с соответствующим profile (задаётся один раз при `chezmoi init`, см. .chezmoi.toml.tmpl).
+# Per-machine: blocks under `if eq .profile "..."` are installed only on machines
+# with the matching profile (set once at `chezmoi init`, see .chezmoi.toml.tmpl).
 
-# CLI-инструменты — через mise (mise-first), см. ~/.config/mise/config.toml.
-# В Brewfile только GUI-casks и формулы, которых нет в mise.
+# CLI tools — via mise (mise-first), see ~/.config/mise/config.toml.
+# Brewfile holds only GUI casks and formulae that mise can't provide.
 
-# === GUI-приложения (casks) — все машины ===
-cask "freelens" # Kubernetes IDE (open-source форк Lens)
+# === GUI apps (casks) — all machines ===
+cask "freelens" # Kubernetes IDE (open-source Lens fork)
 
-# === Только рабочая машина (profile = work) ===
+# === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
-cask "dotnet-sdk" # .NET SDK — нужен только на рабочей машине
+cask "dotnet-sdk" # .NET SDK — needed on the work machine only
 {{- end }}
