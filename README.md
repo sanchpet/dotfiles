@@ -42,6 +42,12 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
 | uv | Fast Python package & project manager | [docs](https://docs.astral.sh/uv/) · [github](https://github.com/astral-sh/uv) |
 | Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
+| Claude Code (`claude`) | Anthropic agentic CLI | [docs](https://docs.claude.com/en/docs/claude-code) |
+| GitHub CLI (`gh`) | GitHub from the terminal | [docs](https://cli.github.com) |
+| GitLab CLI (`glab`) | GitLab from the terminal | [docs](https://gitlab.com/gitlab-org/cli) |
+| kubectl | Kubernetes cluster CLI | [docs](https://kubernetes.io/docs/reference/kubectl/) |
+| kubectx | Switch kubectl context / namespace | [github](https://github.com/ahmetb/kubectx) |
+| node | Node.js runtime | [docs](https://nodejs.org) |
 
 ### Quality / dev workflow
 
