@@ -1,5 +1,5 @@
-# Репо-операционные файлы — остаются в репозитории, НЕ раскладываются в $HOME.
-# Паттерны — это target-пути относительно $HOME.
+# Repo-operational files — kept in the repo, NOT deployed into $HOME.
+# Patterns are target paths relative to $HOME.
 Brewfile
 bootstrap.sh
 README.md
