@@ -16,6 +16,11 @@ Personal dotfiles repository.
 If a CLI tool can be installed via [mise](https://mise.jdx.dev), use mise (mise-first).
 Anything mise can't manage (e.g. GUI casks) is installed via [Homebrew](https://brew.sh).
 
+When adding a tool that keeps a cache or writes outside its own install dir (a package
+manager, language toolchain, etc.), check whether `~/.local/bin/cleanup` should learn it —
+a Tier 1 cache-clean or a Tier 2 orphan entry. External backend caches like rustup's
+`~/.rustup` or cargo's `~/.cargo` are exactly what the script otherwise misses.
+
 ## chezmoi templates (`*.tmpl`)
 
 - chezmoi parses `{{ ... }}` **everywhere in a `.tmpl` file, including inside `#` comments**.
