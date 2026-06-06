@@ -1,8 +1,18 @@
+# Claude Code is managed by mise (backend aqua:anthropics/claude-code), updated via
+# `mise up claude`. Disable the built-in self-updater: otherwise it recreates the
+# native copy in ~/.local/share/claude, resurrecting a duplicate next to the mise one.
+[env]
+DISABLE_AUTOUPDATER = "1"
+
+[settings]
+# `pipx:` backend installs PyPI CLIs through uv (not standalone pipx) — single Python engine.
+pipx.uvx = true
+
 [tools]
 bitwarden = "latest"
 chezmoi = "latest"
 uv = "latest"
-claude = "latest"
+claude = "latest"     # CLI; update via `mise up claude` (self-update off in [env])
 gh = "latest"
 glab = "latest"
 kubectl = "latest"
@@ -23,8 +33,17 @@ delta = "latest"
 dust = "latest"
 duf = "latest"
 rust = "latest"
+go = "latest"
 "cargo:broot" = "latest"
 fd = "latest"
+typst = "latest"
+terraform = "latest"
+vault = "latest"
+cfssl = "latest"
+flux2 = "latest"
+"pipx:ansible-core" = "latest" # engine + CLIs via uv (bundle `ansible` needs --include-deps/pipx)
+yamllint = "latest"            # pipx backend → uv tool install
+"pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
