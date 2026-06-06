@@ -7,14 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Репо — macOS-only по природе (Brewfile = Homebrew casks, ставятся только на
-  # macOS). Linux не тестируем: это платформа, которой нет среди целевых машин.
+  # The repo is macOS-only by nature (Brewfile = Homebrew casks, installed only on
+  # macOS). Linux is not tested: it is not among the target machines.
   bare-machine:
     runs-on: macos-latest
-    # chezmoi init дёргает .chezmoi.toml.tmpl → promptStringOnce. В не-TTY (CI)
-    # интерактивный промпт падает с "could not open a new TTY", поэтому профиль
-    # задаём явно через env (env-override в .chezmoi.toml.tmpl). personal — лёгкий
-    # путь: ставит только общие casks, без тяжёлого work-only dotnet-sdk.
+    # chezmoi init triggers .chezmoi.toml.tmpl → promptStringOnce. In a non-TTY (CI)
+    # the interactive prompt fails with "could not open a new TTY", so the profile is
+    # set explicitly via env (env-override in .chezmoi.toml.tmpl). personal is the light
+    # path: it installs only the shared casks, without the heavy work-only dotnet-sdk.
     env:
       DOTFILES_PROFILE: personal
       # mise resolves tool versions via the GitHub API; unauthenticated CI hits the
@@ -22,50 +22,50 @@ jobs:
       # raises it to 5000/hour. mise reads GITHUB_TOKEN.
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Clone + bootstrap (как в README quickstart)
+      - name: Clone + bootstrap (as in the README quickstart)
         run: |
           git clone "https://github.com/${{ github.repository }}" "$HOME/dotfiles"
           bash "$HOME/dotfiles/bootstrap.sh"
 
-      - name: Verify (общее — mise / chezmoi / dotfiles / omz)
+      - name: Verify (core — mise / chezmoi / dotfiles / omz)
         shell: bash
         run: |
           export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
           echo "mise:    $(mise --version)"
           echo "chezmoi: $(chezmoi --version)"
-          test -f "$HOME/.gitconfig"               || { echo "❌ нет ~/.gitconfig"; exit 1; }
-          test -f "$HOME/.config/mise/config.toml"  || { echo "❌ нет mise config"; exit 1; }
-          test -d "$HOME/.oh-my-zsh"                || { echo "❌ нет Oh My Zsh"; exit 1; }
+          test -f "$HOME/.gitconfig"               || { echo "❌ missing ~/.gitconfig"; exit 1; }
+          test -f "$HOME/.config/mise/config.toml"  || { echo "❌ missing mise config"; exit 1; }
+          test -d "$HOME/.oh-my-zsh"                || { echo "❌ missing Oh My Zsh"; exit 1; }
           git -C "$HOME/.local/share/chezmoi" remote get-url origin | grep -q '^https://' \
-            || { echo "❌ origin не HTTPS в CI"; exit 1; }
+            || { echo "❌ origin is not HTTPS in CI"; exit 1; }
           echo "✅ core bootstrap OK"
 
-      - name: Verify .zshrc грузится (omz + starship + zoxide + mise)
+      - name: Verify .zshrc loads (omz + starship + zoxide + mise)
         run: |
           export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
-          test -f "$HOME/.zshrc" || { echo "❌ нет ~/.zshrc"; exit 1; }
-          # Свежий интерактивный zsh должен загрузиться без ошибок и поднять компоненты.
+          test -f "$HOME/.zshrc" || { echo "❌ missing ~/.zshrc"; exit 1; }
+          # A fresh interactive zsh must load without errors and bring up the components.
           out=$(zsh -i -c 'echo "starship=${STARSHIP_SHELL:-no}"; type z >/dev/null 2>&1 && echo "zoxide=yes" || echo "zoxide=no"' 2>&1)
           echo "$out"
-          grep -q 'starship=zsh' <<<"$out" || { echo "❌ starship не активировался в .zshrc"; exit 1; }
-          grep -q 'zoxide=yes'   <<<"$out" || { echo "❌ zoxide не активировался в .zshrc"; exit 1; }
-          echo "✅ .zshrc loads OK (starship + zoxide активны)"
+          grep -q 'starship=zsh' <<<"$out" || { echo "❌ starship did not activate in .zshrc"; exit 1; }
+          grep -q 'zoxide=yes'   <<<"$out" || { echo "❌ zoxide did not activate in .zshrc"; exit 1; }
+          echo "✅ .zshrc loads OK (starship + zoxide active)"
 
-      - name: Verify brew bundle (casks из Brewfile.tmpl)
+      - name: Verify brew bundle (casks from Brewfile.tmpl)
         run: |
           export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
-          # Brewfile — шаблон; рендерим тем же профилем, что выбрал bootstrap
-          # (env DOTFILES_PROFILE=personal на job), и проверяем его.
+          # Brewfile is a template; render it with the same profile bootstrap chose
+          # (env DOTFILES_PROFILE=personal on the job) and check it.
           chezmoi execute-template < "$HOME/dotfiles/Brewfile.tmpl" > /tmp/Brewfile.rendered
           brew bundle check --file=/tmp/Brewfile.rendered \
-            || { echo "❌ brew bundle: не все пакеты из Brewfile установлены"; exit 1; }
-          echo "✅ brew bundle OK (casks установлены)"
+            || { echo "❌ brew bundle: not all packages from the Brewfile are installed"; exit 1; }
+          echo "✅ brew bundle OK (casks installed)"
 
-  # Быстрая проверка per-machine логики шаблонов — без установки пакетов.
-  # Покрывает ветку profile=work (dotnet-sdk), которую bootstrap-job не ставит,
-  # чтобы не тянуть тяжёлый cask + sudo. Рендер сравнивается для обоих профилей.
-  # Чистый рендер шаблонов OS-независим → ubuntu-раннер (быстрее/дешевле macOS);
-  # это НЕ проверка Linux-поддержки.
+  # Quick check of the per-machine template logic — without installing packages.
+  # Covers the profile=work branch (dotnet-sdk) that the bootstrap job does not install,
+  # to avoid pulling the heavy cask + sudo. Rendering is compared for both profiles.
+  # Pure template rendering is OS-independent → ubuntu runner (faster/cheaper than macOS);
+  # this is NOT a Linux-support check.
   templates:
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +74,7 @@ jobs:
       - name: Install chezmoi
         run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
 
-      - name: Brewfile.tmpl рендерится корректно для обоих профилей
+      - name: Brewfile.tmpl renders correctly for both profiles
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           printf '[data]\n  profile = "work"\n'     > /tmp/work.toml
@@ -83,17 +83,17 @@ jobs:
           personal=$(chezmoi --config /tmp/personal.toml execute-template < Brewfile.tmpl)
 
           if ! grep -q 'cask "freelens"' <<<"$work"; then
-            echo "❌ work: нет общего cask freelens"; exit 1
+            echo "❌ work: missing shared cask freelens"; exit 1
           fi
           if ! grep -q 'cask "dotnet-sdk"' <<<"$work"; then
-            echo "❌ work: нет work-only cask dotnet-sdk"; exit 1
+            echo "❌ work: missing work-only cask dotnet-sdk"; exit 1
           fi
           if grep -q 'cask "dotnet-sdk"' <<<"$personal"; then
-            echo "❌ personal: dotnet-sdk просочился в personal-профиль"; exit 1
+            echo "❌ personal: dotnet-sdk leaked into the personal profile"; exit 1
           fi
           echo "✅ Brewfile.tmpl: work=freelens+dotnet-sdk, personal=freelens"
 
-      - name: dot_gitconfig.tmpl — правильная identity по профилю
+      - name: dot_gitconfig.tmpl — correct identity per profile
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           printf '[data]\n  profile = "work"\n'     > /tmp/work.toml
@@ -102,12 +102,12 @@ jobs:
           gpers=$(chezmoi --config /tmp/personal.toml execute-template < dot_gitconfig.tmpl)
 
           if ! grep -q 'email = petrov_ad@magnit.ru' <<<"$gwork"; then
-            echo "❌ work: нет рабочей почты"; exit 1
+            echo "❌ work: missing work email"; exit 1
           fi
           if ! grep -q 'email = petrov@sanch.pet' <<<"$gpers"; then
-            echo "❌ personal: нет личной почты"; exit 1
+            echo "❌ personal: missing personal email"; exit 1
           fi
           if grep -q 'magnit.ru' <<<"$gpers"; then
-            echo "❌ personal: рабочая почта просочилась в personal-профиль"; exit 1
+            echo "❌ personal: work email leaked into the personal profile"; exit 1
           fi
           echo "✅ dot_gitconfig.tmpl: work=magnit, personal=sanch.pet"
