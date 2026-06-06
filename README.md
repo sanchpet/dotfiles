@@ -127,7 +127,8 @@ Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`
 > **Load order matters.** `zsh-autocomplete` owns the completion/history UI, so it loads last, and
 > plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are
 > deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`,
-> `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg` helper.
+> `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`
+helpers (add / remove a global mise tool and re-import the config).
 
 ## Repository layout
 

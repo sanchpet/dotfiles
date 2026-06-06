@@ -49,10 +49,13 @@ eval "$(fzf --zsh)"
 eval "$(starship init zsh)"
 
 # --- Helpers ---
-# `mise use -g` writes to the target (~/.config/mise/config.toml), but chezmoi does not
-# update the source itself → the next `chezmoi apply` would revert it. miseg does a
-# targeted re-add of the source right after install, so drift doesn't accumulate.
-miseg() { mise use -g "$@" && chezmoi add ~/.config/mise/config.toml; }
+# `mise use -g` / `mise unuse -g` write to the target (~/.config/mise/config.toml), but
+# chezmoi does not update the source itself → the next `chezmoi apply` would revert it.
+# miseg/miserm re-add the source right after the change, so drift doesn't accumulate.
+miseg()  { mise use   -g "$@" && chezmoi add ~/.config/mise/config.toml; }   # add a tool
+# miserm also uninstalls the binary. External backend caches (rustup's ~/.rustup,
+# cargo's ~/.cargo, …) are NOT cleaned — purge those by hand if a backend leaves them.
+miserm() { mise unuse -g "$@" && mise uninstall "$@" 2>/dev/null; chezmoi add ~/.config/mise/config.toml; }   # remove a tool
 
 # --- Aliases: kubectl extras (the omz `kubectl` plugin provides k/kl/kgp/kgaa/...) ---
 # Only what the plugin lacks. Note: plugin's `kga` = `get all`, all-namespaces = `kgaa`.
