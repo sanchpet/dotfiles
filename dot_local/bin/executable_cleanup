@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# cleanup — reclaim disk: package-manager cruft, regenerable caches, and the
+# leftovers of removed tools. Safe by default (reports only); --apply deletes.
+# App data and ambiguous caches stay report-only — use `dua` (interactive disk
+# explorer) or Pearcleaner (app leftovers) for those.
+#
+#   cleanup                 # dry-run report
+#   cleanup --apply         # delete Tier 1 + Tier 2
+#   cleanup --apply --deep  # also drop the Go module cache (heavy; re-downloads)
+#
+# mise installs are NOT pruned here: the mise config is the source of truth and
+# miseg/miserm keep it in sync, so nothing accumulates to sweep.
+set -uo pipefail
+
+apply=false
+deep=false
+for arg in "$@"; do
+  case "$arg" in
+    --apply) apply=true ;;
+    --deep) deep=true ;;
+    -h | --help) sed -n '2,12p' "$0"; exit 0 ;;
+    *) echo "cleanup: unknown option '$arg' (use --apply / --deep)" >&2; exit 2 ;;
+  esac
+done
+
+have() { command -v "$1" >/dev/null 2>&1; }
+sz() { du -sh "$1" 2>/dev/null | cut -f1; }
+run() {
+  if $apply; then printf '  ✔ %s\n' "$*"; "$@" >/dev/null 2>&1 || true
+  else printf '  · would: %s\n' "$*"; fi
+}
+
+echo "── Tier 1: regenerable caches ──"
+have brew && run brew cleanup -s
+have brew && run brew autoremove
+have uv && run uv cache clean
+have pre-commit && run pre-commit gc
+have go && run go clean -cache
+if $deep; then
+  have go && run go clean -modcache # module cache: heavy, re-downloads on next build
+fi
+
+echo "── Tier 2: orphan caches (tool gone, cache left) ──"
+orphan() { # $1=cache dir  $2=guard command (present ⇒ still in use)
+  [ -d "$1" ] || return 0
+  if have "$2"; then
+    printf '  keep     %-6s %s\n' "$(sz "$1")" "$1"
+  elif $apply; then
+    local before; before="$(sz "$1")"
+    rm -rf "$1" && printf '  ✔ rm     %-6s %s\n' "$before" "$1"
+  else
+    printf '  · orphan %-6s %s (%s gone)\n' "$(sz "$1")" "$1" "$2"
+  fi
+}
+orphan "$HOME/.gradle" gradle
+orphan "$HOME/.rustup" rustc
+orphan "$HOME/.cargo" cargo
+orphan "$HOME/.m2" mvn
+
+echo "── Tier 3: report-only (your call — app data / big caches) ──"
+for d in "$HOME/Library/Caches" "$HOME/Library/Containers" "$HOME/.Trash"; do
+  [ -e "$d" ] && printf '  %-6s %s\n' "$(sz "$d")" "$d"
+done
+echo "  → drill in:  dua i ~/Library/Caches    ·    app leftovers:  Pearcleaner"
+
+if ! $apply; then
+  echo
+  echo "(dry-run — add --apply to delete Tier 1 + Tier 2; --deep adds the Go modcache)"
+fi
