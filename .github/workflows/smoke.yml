@@ -45,7 +45,8 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
           test -f "$HOME/.zshrc" || { echo "❌ missing ~/.zshrc"; exit 1; }
           # A fresh interactive zsh must load without errors and bring up the components.
-          out=$(zsh -i -c 'echo "starship=${STARSHIP_SHELL:-no}"; type z >/dev/null 2>&1 && echo "zoxide=yes" || echo "zoxide=no"' 2>&1)
+          # zoxide is configured with `--cmd cd`, so it provides `cd`/`cdi` (no `z`).
+          out=$(zsh -i -c 'echo "starship=${STARSHIP_SHELL:-no}"; type cdi >/dev/null 2>&1 && echo "zoxide=yes" || echo "zoxide=no"' 2>&1)
           echo "$out"
           grep -q 'starship=zsh' <<<"$out" || { echo "❌ starship did not activate in .zshrc"; exit 1; }
           grep -q 'zoxide=yes'   <<<"$out" || { echo "❌ zoxide did not activate in .zshrc"; exit 1; }
