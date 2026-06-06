@@ -40,9 +40,9 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Tool | Purpose | Link |
 |------|---------|------|
 | Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
-| uv | Fast Python package & project manager | [docs](https://docs.astral.sh/uv/) · [github](https://github.com/astral-sh/uv) |
+| uv | Fast Python package & project manager — also backs mise's `pipx:` tools (`settings.pipx.uvx`) | [docs](https://docs.astral.sh/uv/) · [github](https://github.com/astral-sh/uv) |
 | Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
-| Claude Code (`claude`) | Anthropic agentic CLI | [docs](https://docs.claude.com/en/docs/claude-code) |
+| Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | GitHub CLI (`gh`) | GitHub from the terminal | [docs](https://cli.github.com) |
 | GitLab CLI (`glab`) | GitLab from the terminal | [docs](https://gitlab.com/gitlab-org/cli) |
 | kubectl | Kubernetes cluster CLI | [docs](https://kubernetes.io/docs/reference/kubectl/) |
@@ -65,6 +65,15 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | terragrunt | Terraform/OpenTofu wrapper | [docs](https://terragrunt.gruntwork.io) |
 | yq | YAML/JSON processor | [github](https://github.com/mikefarah/yq) |
 | awscli (`aws`) | AWS CLI | [docs](https://aws.amazon.com/cli/) |
+| go | Go toolchain | [docs](https://go.dev) |
+| terraform | Infrastructure as code | [docs](https://developer.hashicorp.com/terraform) |
+| vault | Secrets management CLI | [docs](https://developer.hashicorp.com/vault) |
+| flux2 (`flux`) | GitOps continuous delivery for Kubernetes | [docs](https://fluxcd.io) |
+| cfssl | Cloudflare PKI/TLS toolkit | [github](https://github.com/cloudflare/cfssl) |
+| typst | Markup-based typesetting (LaTeX alternative) | [github](https://github.com/typst/typst) |
+| ansible (`ansible-core`) | IT automation engine — installed via uv (`pipx:` backend) | [docs](https://docs.ansible.com) |
+| ansible-lint | Ansible playbook linter (via uv) | [github](https://github.com/ansible/ansible-lint) |
+| yamllint | YAML linter (via uv) | [github](https://github.com/adrienverge/yamllint) |
 
 ### Quality / dev workflow
 
@@ -78,8 +87,16 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 
 | Tool | Purpose | Profile | Link |
 |------|---------|---------|------|
+| Visual Studio Code | Primary code editor (self-updating; adopted into brew) | all | [docs](https://code.visualstudio.com) |
 | Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
+| WakaTime | Menu-bar time tracker — whole-system activity beyond editor plugins | all | [docs](https://wakatime.com/mac) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
+
+### Homebrew formulae (CLI mise can't provide)
+
+| Tool | Purpose | Profile | Link |
+|------|---------|---------|------|
+| sshpass | Non-interactive ssh password auth (used by ansible) — not in the mise registry | all | [docs](https://sourceforge.net/projects/sshpass/) |
 
 ## Zsh shell (Oh My Zsh)
 
@@ -135,8 +152,9 @@ Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`
   secret handling, and a source tree where dotfiles stay *visible* (`dot_` prefix) instead of
   hidden. Stow only symlinks; bare-git has no templating or secrets.
 - **mise-first for CLI tools.** All CLI tooling is declared in mise (`config.toml`), versioned and
-  cross-machine. Homebrew is reserved for what mise can't provide — GUI casks. This keeps the
-  toolchain reproducible and the Brewfile minimal.
+  cross-machine. Homebrew is reserved for what mise can't provide — GUI casks, plus the rare CLI
+  with heavy native deps or no upstream release (e.g. `sshpass`). This keeps the toolchain
+  reproducible and the Brewfile minimal.
 - **Bitwarden for secrets.** Secrets are pulled from Bitwarden at `chezmoi apply` via
   `{{ bitwarden ... }}` templates — nothing secret (encrypted or otherwise) lives in this public
   repo. Trade-off: bootstrap needs an interactive `bw unlock` before applying secret-bearing files

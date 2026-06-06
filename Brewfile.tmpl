@@ -10,8 +10,13 @@
 # CLI tools — via mise (mise-first), see ~/.config/mise/config.toml.
 # Brewfile holds only GUI casks and formulae that mise can't provide.
 
+# === CLI formulae mise can't provide — all machines ===
+brew "sshpass" # non-interactive ssh password auth (used by ansible) — not in mise registry
+
 # === GUI apps (casks) — all machines ===
-cask "freelens" # Kubernetes IDE (open-source Lens fork)
+cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
+cask "freelens"           # Kubernetes IDE (open-source Lens fork)
+cask "wakatime" # Menu-bar time tracker — whole-system activity beyond editor plugins
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
