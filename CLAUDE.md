@@ -6,6 +6,10 @@ Personal dotfiles repository.
 
 - When making any change to this repository, make sure `README.md` stays up to date.
 - This repo and code are maintained in English
+- After pushing a change, check the `smoke` CI workflow and investigate any failure it
+  surfaces — a red smoke run is a defect to fix, not to ignore. List runs with
+  `gh run list --workflow=smoke.yml` (`gh` is a mise tool) and inspect a failure with
+  `gh run view <id> --log-failed`.
 
 ## Installing tools
 
