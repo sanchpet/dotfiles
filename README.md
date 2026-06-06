@@ -58,8 +58,6 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | dust | Intuitive `du` — disk-usage tree (aliased to `du`) | [github](https://github.com/bootandy/dust) |
 | duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
 | fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
-| broot | Interactive tree navigator (aliased to `br`) | [github](https://github.com/Canop/broot) |
-| rust | Rust toolchain (`cargo`) — also builds `broot` | [docs](https://www.rust-lang.org) |
 | python | Python runtime | [docs](https://www.python.org) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
 | terragrunt | Terraform/OpenTofu wrapper | [docs](https://terragrunt.gruntwork.io) |
