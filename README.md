@@ -57,6 +57,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | delta | Syntax-highlighting pager for git diffs (wired as git `core.pager`) | [github](https://github.com/dandavison/delta) |
 | dust | Intuitive `du` — disk-usage tree (aliased to `du`) | [github](https://github.com/bootandy/dust) |
 | duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
+| dua (`dua i`) | Interactive disk-usage explorer — find & delete big dirs | [github](https://github.com/Byron/dua-cli) |
 | fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
 | python | Python runtime | [docs](https://www.python.org) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
@@ -88,6 +89,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Visual Studio Code | Primary code editor (self-updating; adopted into brew) | all | [docs](https://code.visualstudio.com) |
 | Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
 | WakaTime | Menu-bar time tracker — whole-system activity beyond editor plugins | all | [docs](https://wakatime.com/mac) |
+| Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
 ### Homebrew formulae (CLI mise can't provide)
@@ -138,6 +140,7 @@ helpers (add / remove a global mise tool and re-import the config).
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
 | `dot_config/starship.toml` | Starship prompt config → `~/.config/starship.toml` (kubernetes/aws/terraform modules) |
 | `dot_zshrc.tmpl` | `~/.zshrc` — Oh My Zsh (plugins only) + Starship prompt + zoxide + mise + aliases (kubectl, modern CLI); secrets pending |
+| `dot_local/bin/executable_cleanup` | `~/.local/bin/cleanup` — disk-reclaim tool (reports by default; `--apply` deletes Tier 1 caches + orphan caches of removed tools, `--deep` adds Go modcache) |
 | `.chezmoi.toml.tmpl` | Generates per-machine chezmoi config at `init` (prompts `profile`); never deployed |
 | `bootstrap.sh` | Bare-machine bootstrap (operational, not deployed) |
 | `Brewfile.tmpl` | GUI casks for `brew bundle`, templated per `profile` (operational; rendered at bootstrap) |

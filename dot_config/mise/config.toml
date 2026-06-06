@@ -32,6 +32,7 @@ eza = "latest"
 delta = "latest"
 dust = "latest"
 duf = "latest"
+"aqua:Byron/dua-cli" = "latest" # dua — interactive disk explorer (aqua, not cargo → no rust)
 go = "latest"
 fd = "latest"
 typst = "latest"
@@ -42,6 +43,7 @@ flux2 = "latest"
 "pipx:ansible-core" = "latest" # engine + CLIs via uv (bundle `ansible` needs --include-deps/pipx)
 yamllint = "latest"            # pipx backend → uv tool install
 "pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
+hyperfine = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
