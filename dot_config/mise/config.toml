@@ -44,6 +44,7 @@ flux2 = "latest"
 yamllint = "latest"            # pipx backend → uv tool install
 "pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
 hyperfine = "latest"
+opencode = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
