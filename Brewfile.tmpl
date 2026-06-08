@@ -18,6 +18,7 @@ cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates,
 cask "freelens"           # Kubernetes IDE (open-source Lens fork)
 cask "wakatime"           # Menu-bar time tracker — whole-system activity beyond editor plugins
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
+cask "docker-desktop"     # Docker Desktop — container engine + CLI + VM (launch once to start the daemon)
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
