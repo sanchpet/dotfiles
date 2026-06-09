@@ -103,6 +103,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Tool | Purpose | Profile | Link |
 |------|---------|---------|------|
 | sshpass | Non-interactive ssh password auth (used by ansible) — not in the mise registry | all | [docs](https://sourceforge.net/projects/sshpass/) |
+| libpq | PostgreSQL client (`psql`, `pg_dump`, …) without the server — mise's `postgres` builds the full server; keg-only, so `.zshrc` adds its `bin` to `PATH` | all | [docs](https://formulae.brew.sh/formula/libpq) |
 
 ## Zsh shell (Oh My Zsh)
 
