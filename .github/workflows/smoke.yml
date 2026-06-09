@@ -1,9 +1,18 @@
 name: smoke
 
 on:
+  # Docs (*.md, LICENSE) don't affect the setup process, so skip the smoke run for
+  # doc-only changes. A commit touching both docs and real files still runs (paths-ignore
+  # skips only when every changed file matches). workflow_dispatch is the manual escape.
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - LICENSE
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - LICENSE
   workflow_dispatch:
 
 jobs:
