@@ -6,10 +6,19 @@ Personal dotfiles repository.
 
 - When making any change to this repository, make sure `README.md` stays up to date.
 - This repo and code are maintained in English
-- After pushing a change, check the `smoke` CI workflow and investigate any failure it
-  surfaces — a red smoke run is a defect to fix, not to ignore. List runs with
-  `gh run list --workflow=smoke.yml` (`gh` is a mise tool) and inspect a failure with
-  `gh run view <id> --log-failed`.
+- **Check CI at the start of work, not by blocking after every push.** The `smoke`
+  workflow has two jobs: a fast `templates` job (ubuntu, ~8s, renders the chezmoi
+  templates) and a slow `bare-machine` job (macOS, full bootstrap + package install,
+  8+ min). When you first touch this repo in a session, check the latest run on `main`
+  (`gh run list --workflow=smoke.yml --branch main --limit 1`; `gh` is a mise tool).
+  If it failed, fix it before starting new work — a red `main` is a defect, not
+  something to ignore (another machine's `chezmoi update` would apply broken config).
+  Inspect failures with `gh run view <id> --log-failed`.
+- After pushing, a quick glance at the fast `templates` job is worth it, but **do not
+  block waiting on the slow `bare-machine` job** — its result is picked up by the
+  start-of-work check above.
+- Doc-only changes (`**.md`, e.g. this file or `README.md`) do not trigger `smoke`
+  (see `paths-ignore` in `smoke.yml`), so they need no CI check at all.
 
 ## Installing tools
 
