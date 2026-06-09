@@ -1,0 +1,9 @@
+{
+  "theme": "dark",
+  "statusLine": {
+    "type": "command",
+    "command": "claudeline",
+    "padding": 0,
+    "refreshInterval": 5
+  }
+}
