@@ -94,21 +94,28 @@ jobs:
           fi
           echo "✅ Brewfile.tmpl: work=freelens+dotnet-sdk, personal=freelens"
 
-      - name: dot_gitconfig.tmpl — correct identity per profile
+      - name: git identity — personal default, work scoped to ~/IWE/magnit
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          printf '[data]\n  profile = "work"\n'     > /tmp/work.toml
-          printf '[data]\n  profile = "personal"\n' > /tmp/personal.toml
-          gwork=$(chezmoi --config /tmp/work.toml execute-template < dot_gitconfig.tmpl)
-          gpers=$(chezmoi --config /tmp/personal.toml execute-template < dot_gitconfig.tmpl)
+          # Identity is directory-based, not profile-based: dot_gitconfig.tmpl always
+          # renders the personal identity + an includeIf delegating work repos to
+          # work.inc. The signing block is gated on the SSH key, which the runner does
+          # not have, so it is correctly absent from the rendered output here.
+          g=$(chezmoi execute-template < dot_gitconfig.tmpl)
 
-          if ! grep -q 'email = petrov_ad@magnit.ru' <<<"$gwork"; then
-            echo "❌ work: missing work email"; exit 1
+          if ! grep -q 'email = petrov@sanch.pet' <<<"$g"; then
+            echo "❌ gitconfig: missing personal email in the base config"; exit 1
           fi
-          if ! grep -q 'email = petrov@sanch.pet' <<<"$gpers"; then
-            echo "❌ personal: missing personal email"; exit 1
+          if grep -q 'magnit.ru' <<<"$g"; then
+            echo "❌ gitconfig: work email must never appear in the base config"; exit 1
           fi
-          if grep -q 'magnit.ru' <<<"$gpers"; then
-            echo "❌ personal: work email leaked into the personal profile"; exit 1
+          if ! grep -q 'gitdir:~/IWE/magnit/' <<<"$g"; then
+            echo "❌ gitconfig: missing work includeIf for ~/IWE/magnit/"; exit 1
           fi
-          echo "✅ dot_gitconfig.tmpl: work=magnit, personal=sanch.pet"
+          if ! grep -q 'email = petrov_ad@magnit.ru' dot_config/git/work.inc; then
+            echo "❌ work.inc: missing work email"; exit 1
+          fi
+          if ! grep -q 'gpgsign = false' dot_config/git/work.inc; then
+            echo "❌ work.inc: signing must be disabled for work repos"; exit 1
+          fi
+          echo "✅ git identity: base=sanch.pet + includeIf, work.inc=magnit (signing off)"
