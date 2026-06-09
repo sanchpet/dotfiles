@@ -1,12 +1,18 @@
-# Git identity — per-machine via .profile (see .chezmoi.toml.tmpl).
-# work → work identity, otherwise → personal. dig guards against a missing key.
+# Git identity. Personal (sanchpet) is the default everywhere, with SSH commit
+# signing whenever the signing key is present. Work repos under ~/IWE/magnit/
+# switch to the work identity (signing off) via the includeIf at the bottom.
 [user]
-{{- if eq (dig "profile" "personal" .) "work" }}
-	name = petrov_ad
-	email = petrov_ad@magnit.ru
-{{- else }}
 	name = sanchpet
 	email = petrov@sanch.pet
+{{- $key := joinPath .chezmoi.homeDir ".ssh/id_ed25519.pub" }}
+{{- if stat $key }}
+	signingkey = {{ $key }}
+[gpg]
+	format = ssh
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
 {{- end }}
 [push]
 	default = simple
@@ -23,3 +29,8 @@
 	line-numbers = true
 [merge]
 	conflictStyle = zdiff3
+
+# Work repos live under ~/IWE/magnit/. Override to the work identity and turn
+# signing off there; everything else stays personal and signed.
+[includeIf "gitdir:~/IWE/magnit/"]
+	path = ~/.config/git/work.inc
