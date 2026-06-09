@@ -39,9 +39,6 @@ source "$ZSH/oh-my-zsh.sh"
 # --- mise: activate after compinit (from oh-my-zsh) ---
 eval "$("$HOME/.local/bin/mise" activate zsh)"
 
-# --- zoxide (replaces cd with frecency jumping; `cdi` = interactive picker) ---
-eval "$(zoxide init zsh --cmd cd)"
-
 # --- fzf ---
 eval "$(fzf --zsh)"
 
@@ -87,3 +84,7 @@ alias czd='chezmoi diff'     # show source ↔ live drift
 # --- zsh-autosuggestions tuning ---
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE="20"   # don't suggest for very long buffers
 ZSH_AUTOSUGGEST_USE_ASYNC=1            # compute suggestions in the background
+
+# --- zoxide (replaces cd with frecency jumping; `cdi` = interactive picker) ---
+# has to be the last to override cd (after oh-my-zsh and plugins)
+eval "$(zoxide init zsh --cmd cd)"
