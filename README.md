@@ -59,6 +59,8 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
 | dua (`dua i`) | Interactive disk-usage explorer — find & delete big dirs | [github](https://github.com/Byron/dua-cli) |
 | fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
+| hyperfine | Command-line benchmarking tool | [github](https://github.com/sharkdp/hyperfine) |
+| opencode | Terminal-based AI coding agent | [docs](https://opencode.ai) · [github](https://github.com/sst/opencode) |
 | python | Python runtime | [docs](https://www.python.org) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
 | terragrunt | Terraform/OpenTofu wrapper | [docs](https://terragrunt.gruntwork.io) |
@@ -91,6 +93,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | WakaTime | Menu-bar time tracker — whole-system activity beyond editor plugins | all | [docs](https://wakatime.com/mac) |
 | Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
 | Docker Desktop | Container engine + CLI + VM (launch once to start the daemon) | all | [docs](https://docs.docker.com/desktop/setup/install/mac-install/) |
+| Yandex Music | Desktop music player (self-updating cask) | all | [site](https://music.yandex.ru) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
 ### Homebrew formulae (CLI mise can't provide)
@@ -131,7 +134,10 @@ Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`
 > plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are
 > deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`,
 > `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`
-helpers (add / remove a global mise tool and re-import the config).
+helpers (add / remove a global mise tool and re-import the config). `tg` aliases `terragrunt`
+(the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no
+completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` +
+`complete -C` and shared with the `tg` alias through `compdef`.
 
 ## Repository layout
 
