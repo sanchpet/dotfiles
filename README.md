@@ -16,13 +16,14 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 `bootstrap.sh` is idempotent and runs, in order (mise-first):
 
 1. **mise** — install the base tool manager (`curl https://mise.run`), then `chezmoi` via mise
-2. **chezmoi init** — clone this repo into chezmoi's source
+2. **chezmoi source** — point chezmoi at **this clone** as its source (`chezmoi init --source`), so edits apply with no commit/push/re-clone round-trip and no duplicate clone in `~/.local/share/chezmoi`. Also generate a per-machine `ed25519` SSH key if missing (no passphrase; disk is encrypted) — it must exist **before** step 7 so the rendered git config turns commit signing on
 3. **apply mise config** — lay down `~/.config/mise/config.toml` *before* installing tools (breaks the chicken-and-egg: the mise config is itself a managed dotfile)
 4. **mise install** — install CLI tools from the config (bitwarden-cli, uv, …)
 5. **Bitwarden unlock** — only if the source contains `*.tmpl` secrets (interactive)
 6. **Oh My Zsh** — install the zsh framework (without touching `.zshrc` or changing the shell)
 7. **chezmoi apply** — render and place all dotfiles
-8. **brew bundle** — GUI casks (Homebrew is installed lazily, only if the Brewfile needs it)
+8. **GitHub SSH keys** — register this machine's key (generated in step 2) on GitHub as both an *authentication* key (push) and a *signing* key (Verified badge), then switch the dotfiles clone's origin from HTTPS to SSH so it's push-ready. Interactive on a TTY: runs `gh auth login` if unauthenticated and refreshes the token scope when needed. Idempotent; on CI / headless it prints the key and skips
+9. **brew bundle** — GUI casks (Homebrew is installed lazily, only if the Brewfile needs it)
 
 ## Tools
 
@@ -92,6 +93,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 |------|---------|---------|------|
 | Visual Studio Code | Primary code editor (self-updating; adopted into brew) | all | [docs](https://code.visualstudio.com) |
 | Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
+| cmux | Ghostty-based terminal with vertical tabs + notifications for AI coding agents | all | [site](https://www.cmux.dev/) |
 | WakaTime | Menu-bar time tracker — whole-system activity beyond editor plugins | all | [docs](https://wakatime.com/mac) |
 | Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
 | Docker Desktop | Container engine + CLI + VM (launch once to start the daemon) | all | [docs](https://docs.docker.com/desktop/setup/install/mac-install/) |
