@@ -2,29 +2,33 @@
 #
 # bootstrap.sh — one command → a configured machine.
 #
-#   Usage (bare machine):
+#   Usage: clone the repo (HTTPS) and run this script from it —
 #     git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstrap.sh
+#   chezmoi uses that clone as its source; step 8 flips its origin to SSH once the key is set.
 #
-#   In a terminal, `chezmoi init` prompts for the machine profile (work/personal).
-#   Headless/CI (non-TTY): set it beforehand, otherwise init fails on the prompt:
+#   `chezmoi init` prompts for the machine profile (work/personal). Headless/CI (non-TTY): set
+#   it beforehand, otherwise init blocks on the prompt:
 #     DOTFILES_PROFILE=personal ~/dotfiles/bootstrap.sh
 #
 # Idempotent: safe to re-run. Order (mise-first):
 #   1. mise           — base tool manager (curl) + chezmoi via mise
-#   2. chezmoi init    — create the source from the repository
+#   2. chezmoi source  — use THIS clone as chezmoi's source; generate ed25519 SSH key
 #   3. apply mise cfg  — lay down ~/.config/mise/config.toml (break the chicken-and-egg)
 #   4. mise install    — install tools (bw, uv, …) from the config
 #   5. bw unlock       — only if bitwarden templates exist (interactive)
 #   6. Oh My Zsh       — zsh framework (curl; not managed by mise)
 #   7. chezmoi apply   — full dotfiles apply
-#   8. brew bundle     — render Brewfile.tmpl (per-machine profile) → GUI casks
+#   8. github ssh keys — register on GitHub (gh login + auth+signing) + switch origin→SSH (interactive on TTY)
+#   9. brew bundle     — render Brewfile.tmpl (per-machine profile) → GUI casks
 #                        (Homebrew installed lazily, only when needed)
 #
 # Secrets never land in the repository (see README, secrets Decision Record).
 
 set -euo pipefail
 
-REPO="${DOTFILES_REPO:-https://github.com/sanchpet/dotfiles.git}"
+# Absolute dir this script lives in — the dotfiles clone you ran bootstrap from. chezmoi uses it
+# directly as its source (step 2), and step 8 flips its origin to SSH once the key is registered.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # --- output ---
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
@@ -49,26 +53,36 @@ if ! command -v chezmoi >/dev/null 2>&1; then
 fi
 command -v chezmoi >/dev/null 2>&1 || die "chezmoi not on PATH after installing via mise."
 
-# --- 2. chezmoi init (creates the source) ---
-chezmoi_src="$(chezmoi source-path 2>/dev/null || true)"
-if [ -n "$chezmoi_src" ] && [ -d "$chezmoi_src" ]; then
-  log "chezmoi source already initialized ($chezmoi_src)"
+# --- 2. chezmoi source + per-machine config ---
+# bootstrap is always run from a clone of the dotfiles (git clone … && ./bootstrap.sh), so use
+# THAT clone as chezmoi's source directly (chezmoi init --source): no second copy in
+# ~/.local/share/chezmoi, and edits apply with no commit/push/re-clone. .chezmoi.toml.tmpl pins
+# sourceDir to wherever init ran with --source. The per-machine config (chezmoi.toml) must exist,
+# else every `chezmoi apply` re-evaluates the config template and re-prompts (promptStringOnce),
+# which hangs on a TTY — so (re)generate it whenever it's missing or points elsewhere.
+[ -f "$SCRIPT_DIR/.chezmoi.toml.tmpl" ] || die "run bootstrap.sh from a dotfiles clone (no .chezmoi.toml.tmpl beside it)."
+chezmoi_config="${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi/chezmoi.toml"
+chezmoi_src="$SCRIPT_DIR"
+if [ "$(chezmoi source-path 2>/dev/null || true)" != "$chezmoi_src" ] || [ ! -f "$chezmoi_config" ]; then
+  log "chezmoi init — using this clone as source ($chezmoi_src)"
+  chezmoi init --source="$chezmoi_src"
 else
-  log "chezmoi init — cloning source from $REPO"
-  chezmoi init "$REPO"
-  chezmoi_src="$(chezmoi source-path)"
+  log "chezmoi source already points at this clone ($chezmoi_src)"
 fi
 
-# Clone over HTTPS (read access to a public repo always works, no key needed — portable
-# and works in CI / on a bare machine). If the machine has a working GitHub SSH key,
-# switch origin to SSH so the owner's working clone is push-ready. Idempotent.
-if git -C "$chezmoi_src" remote get-url origin 2>/dev/null | grep -q '^https://github.com/'; then
-  if ssh -T -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
-    ssh_url="$(git -C "$chezmoi_src" remote get-url origin | sed -E 's#https://github.com/#git@github.com:#')"
-    log "GitHub SSH key found — switching origin to SSH ($ssh_url)"
-    git -C "$chezmoi_src" remote set-url origin "$ssh_url"
-  fi
+# Ensure a per-machine SSH key exists *before* chezmoi apply (step 7). dot_gitconfig.tmpl only
+# enables commit signing when ~/.ssh/id_ed25519.pub is present at render time — generate it now
+# or apply would write a gitconfig with signing off. ed25519 (SOTA for user keys), no passphrase
+# (protected by full-disk encryption). Idempotent: never overwrites. GitHub registration is
+# step 8 (it needs gh, installed at step 4).
+ssh_key="$HOME/.ssh/id_ed25519"
+if [ ! -f "$ssh_key" ]; then
+  log "no SSH key — generating ed25519 (machine: $(hostname -s))"
+  mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+  ssh-keygen -t ed25519 -C "$(whoami)@$(hostname -s)" -f "$ssh_key" -N ""
 fi
+# The source was cloned over HTTPS above (portable — works in CI / on a bare machine, no key
+# needed). Switching origin to SSH waits until the key is registered on GitHub (end of step 8).
 
 # --- 3. Break the chicken-and-egg: apply ONLY the mise config before mise install ---
 if [ -f "$chezmoi_src/dot_config/mise/config.toml" ]; then
@@ -127,7 +141,63 @@ done
 log "chezmoi apply — full dotfiles apply"
 chezmoi apply
 
-# --- 8. brew bundle (GUI casks; Homebrew installed lazily) ---
+# --- 8. GitHub SSH keys — register this machine's key on GitHub (push + Verified) ---
+# The key was generated in step 2 (before apply, so commit signing turned on). git signs commits
+# with it (dot_gitconfig.tmpl) and pushes over SSH; both need it on the GitHub account — as an
+# authentication key (push) and a signing key (Verified badge). Register both (idempotent).
+# Interactive on a TTY: runs `gh auth login` if unauthenticated and refreshes the token scope
+# when needed (both open a browser). On a non-TTY run (CI / headless) it prints the key and
+# skips. Finally, now that the key is on GitHub, switch the dotfiles clone's origin to SSH so
+# it's push-ready — same run, no second bootstrap needed (idempotent; stays HTTPS when SSH auth
+# isn't working: CI, or registration was declined/failed).
+ssh_key="$HOME/.ssh/id_ed25519"
+gh_scopes="admin:public_key,admin:ssh_signing_key"
+if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
+  if [ -t 0 ]; then
+    log "gh not authenticated — launching interactive login"
+    gh auth login --hostname github.com --git-protocol ssh --scopes "$gh_scopes" || true
+  else
+    warn "gh not authenticated (non-TTY) — register this key on GitHub manually (auth + signing):"
+    warn "  $(cat "$ssh_key.pub")"
+  fi
+fi
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  key_blob="$(awk '{print $2}' "$ssh_key.pub")"
+  for type in authentication signing; do
+    title="$type-$(hostname -s)"
+    if gh ssh-key list 2>/dev/null | awk -F'\t' -v t="$type" '$5 == t { print $2 }' | grep -qF "$key_blob"; then
+      log "GitHub $type key already registered"
+    elif out="$(gh ssh-key add "$ssh_key.pub" --type "$type" --title "$title" 2>&1)"; then
+      log "registered this machine's SSH key as a GitHub $type key"
+    elif printf '%s' "$out" | grep -qiE 'already|duplicate'; then
+      log "GitHub $type key already present"
+    elif [ -t 0 ]; then
+      # add failed — most likely a missing token scope (e.g. admin:public_key for an auth key).
+      # Refresh interactively: this opens a browser/device prompt, so keep its output VISIBLE —
+      # suppressing it turns the wait into a silent hang. One-time; the scope is cached after.
+      log "GitHub needs more scope for the $type key — running 'gh auth refresh', follow the prompt…"
+      if gh auth refresh --hostname github.com --scopes "$gh_scopes" \
+         && gh ssh-key add "$ssh_key.pub" --type "$type" --title "$title"; then
+        log "registered this machine's SSH key as a GitHub $type key (after scope refresh)"
+      else
+        warn "couldn't add $type key — add it manually: gh ssh-key add $ssh_key.pub --type $type"
+      fi
+    else
+      warn "couldn't add $type key: $out"
+      warn "  fix scope then re-run: gh auth refresh -s $gh_scopes"
+    fi
+  done
+  # Key is now on GitHub — switch the dotfiles clone from HTTPS to SSH so it's push-ready.
+  if git -C "$chezmoi_src" remote get-url origin 2>/dev/null | grep -q '^https://github.com/'; then
+    if ssh -T -o BatchMode=yes -o ConnectTimeout=5 git@github.com 2>&1 | grep -q "successfully authenticated"; then
+      ssh_url="$(git -C "$chezmoi_src" remote get-url origin | sed -E 's#https://github.com/#git@github.com:#')"
+      log "GitHub SSH auth works — switching origin to SSH ($ssh_url)"
+      git -C "$chezmoi_src" remote set-url origin "$ssh_url"
+    fi
+  fi
+fi
+
+# --- 9. brew bundle (GUI casks; Homebrew installed lazily) ---
 # Brewfile is a chezmoi template (per-machine via .profile). Render it with the same
 # engine as the dotfiles into a temp file, then hand it to brew bundle.
 BREWFILE_TMPL="$chezmoi_src/Brewfile.tmpl"
