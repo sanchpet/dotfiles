@@ -4,6 +4,7 @@ Personal dotfiles repository.
 
 ## Workflow
 
+- This repo is not versioned and does not have ci/cd. Thus create commits directly in main branch with `--signoff`
 - When making any change to this repository, make sure `README.md` stays up to date.
 - This repo and code are maintained in English
 - **Check CI at the start of work, not by blocking after every push.** The `smoke`
