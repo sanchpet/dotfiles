@@ -45,8 +45,12 @@ jobs:
           test -f "$HOME/.gitconfig"               || { echo "❌ missing ~/.gitconfig"; exit 1; }
           test -f "$HOME/.config/mise/config.toml"  || { echo "❌ missing mise config"; exit 1; }
           test -d "$HOME/.oh-my-zsh"                || { echo "❌ missing Oh My Zsh"; exit 1; }
-          git -C "$HOME/.local/share/chezmoi" remote get-url origin | grep -q '^https://' \
-            || { echo "❌ origin is not HTTPS in CI"; exit 1; }
+          # chezmoi's source is the bootstrap clone itself (chezmoi init --source), not a
+          # second copy in ~/.local/share/chezmoi. Without a registered SSH key the origin→SSH
+          # switch (bootstrap step 8) must not fire, so the clone stays on HTTPS in CI.
+          src="$(chezmoi source-path)"
+          git -C "$src" remote get-url origin | grep -q '^https://' \
+            || { echo "❌ chezmoi source origin is not HTTPS in CI ($src)"; exit 1; }
           echo "✅ core bootstrap OK"
 
       - name: Verify .zshrc loads (omz + starship + zoxide + mise)
