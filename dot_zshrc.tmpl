@@ -101,4 +101,7 @@ ZSH_AUTOSUGGEST_USE_ASYNC=1            # compute suggestions in the background
 
 # --- zoxide (replaces cd with frecency jumping; `cdi` = interactive picker) ---
 # has to be the last to override cd (after oh-my-zsh and plugins)
+# zoxide's "doctor" heuristic misfires in non-interactive shells that still source this file
+# (tool / CI / subshells) even though init IS last here — silence it; placement above is correct.
+export _ZO_DOCTOR=0
 eval "$(zoxide init zsh --cmd cd)"
