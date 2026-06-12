@@ -7,6 +7,10 @@ DISABLE_AUTOUPDATER = "1"
 [settings]
 # `pipx:` backend installs PyPI CLIs through uv (not standalone pipx) — single Python engine.
 pipx.uvx = true
+# Enable mise hooks (enter/leave/cd). Lets a project's mise.toml self-activate its git
+# hooks via `[hooks] enter = "git config core.hooksPath .githooks"` — no manual `git config`
+# on every new machine. Machine-level default, so repos carry only [hooks], not this flag.
+experimental = true
 
 [tools]
 bitwarden = "latest"
