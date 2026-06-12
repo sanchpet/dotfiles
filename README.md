@@ -180,6 +180,10 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
 - **Bootstrap ordering.** The mise config is itself a managed dotfile, so it is applied *before*
   `mise install` to break the chicken-and-egg; Homebrew is installed lazily, only when GUI casks
   are present.
+- **mise hooks enabled (`settings.experimental`).** Turned on globally so a project's
+  `mise.toml` can self-activate its git hooks with `[hooks] enter = "git config core.hooksPath
+  .githooks"`, instead of a manual `git config` on every clone/machine. Kept at the machine level
+  (not duplicated per repo) so individual projects only declare the `[hooks]` they need.
 - **Per-machine via `profile`, not per-machine directories.** One source tree; machine-specific
   variation is driven by a single `profile` value (`work`/`personal`), prompted once at
   `chezmoi init` (override in CI/headless with `DOTFILES_PROFILE`) and stored in the machine-local
