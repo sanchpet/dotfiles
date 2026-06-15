@@ -78,6 +78,9 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | ansible (`ansible-core`) | IT automation engine — installed via uv (`pipx:` backend) | [docs](https://docs.ansible.com) |
 | ansible-lint | Ansible playbook linter (via uv) | [github](https://github.com/ansible/ansible-lint) |
 | yamllint | YAML linter (via uv) | [github](https://github.com/adrienverge/yamllint) |
+| crane | Inspect/copy/manage remote container images & registries | [github](https://github.com/google/go-containerregistry/tree/main/cmd/crane) |
+| regctl | Registry client — manifests, tags, copy/retag without a daemon | [github](https://github.com/regclient/regclient) |
+| oras | OCI registry client for arbitrary artifacts (push/pull non-image content) | [docs](https://oras.land) · [github](https://github.com/oras-project/oras) |
 
 ### Quality / dev workflow
 
@@ -98,6 +101,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
 | Docker Desktop | Container engine + CLI + VM (launch once to start the daemon) | all | [docs](https://docs.docker.com/desktop/setup/install/mac-install/) |
 | Yandex Music | Desktop music player (self-updating cask) | all | [site](https://music.yandex.ru) |
+| Tunnelblick | Free/open-source OpenVPN GUI client — double-click `.ovpn` to import, connect from the menu bar | all | [site](https://tunnelblick.net) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
 ### Homebrew formulae (CLI mise can't provide)
@@ -106,6 +110,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 |------|---------|---------|------|
 | sshpass | Non-interactive ssh password auth (used by ansible) — not in the mise registry | all | [docs](https://sourceforge.net/projects/sshpass/) |
 | libpq | PostgreSQL client (`psql`, `pg_dump`, …) without the server — mise's `postgres` builds the full server; keg-only, so `.zshrc` adds its `bin` to `PATH` | all | [docs](https://formulae.brew.sh/formula/libpq) |
+| skopeo | Inspect/copy/sign OCI & container images without a daemon — not in the mise registry | all | [docs](https://github.com/containers/skopeo) |
 
 ## Zsh shell (Oh My Zsh)
 
