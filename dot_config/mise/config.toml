@@ -51,6 +51,9 @@ hyperfine = "latest"
 opencode = "latest"
 aqua = "latest"
 "github:lexfrei/claudeline" = "latest"
+crane = "latest"
+regctl = "latest"
+oras = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.

@@ -13,6 +13,7 @@
 # === CLI formulae mise can't provide — all machines ===
 brew "sshpass" # non-interactive ssh password auth (used by ansible) — not in mise registry
 brew "libpq"   # PostgreSQL client only (psql, pg_dump, …) without the server — mise's postgres builds the full server; keg-only, PATH added in .zshrc
+brew "skopeo"  # inspect/copy/sign OCI & container images without a daemon — not in mise registry
 
 # === GUI apps (casks) — all machines ===
 cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
@@ -22,6 +23,7 @@ cask "wakatime"           # Menu-bar time tracker — whole-system activity beyo
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
 cask "docker-desktop"     # Docker Desktop — container engine + CLI + VM (launch once to start the daemon)
 cask "yandex-music"       # Yandex Music desktop player (self-updating cask)
+cask "tunnelblick"        # free/open-source OpenVPN GUI client — double-click .ovpn to import, connect from menu bar
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
