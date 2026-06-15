@@ -41,6 +41,12 @@ plugins=(
 )
 source "$ZSH/oh-my-zsh.sh"
 
+# zsh-you-should-use registers three preexec hooks; its global-alias check runs
+# `alias -g | sort | ...`, which zsh-autocomplete's job-control rewrite turns into a
+# stray background job that fails and prints `[1] done ... exit 2 sort` after every
+# command. Drop only that hook — the regular and git-alias nags keep working.
+add-zsh-hook -d preexec _check_global_aliases
+
 # --- mise: activate after compinit (from oh-my-zsh) ---
 eval "$("$HOME/.local/bin/mise" activate zsh)"
 
