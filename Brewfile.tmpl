@@ -13,7 +13,12 @@
 # === CLI formulae mise can't provide — all machines ===
 brew "sshpass" # non-interactive ssh password auth (used by ansible) — not in mise registry
 brew "libpq"   # PostgreSQL client only (psql, pg_dump, …) without the server — mise's postgres builds the full server; keg-only, PATH added in .zshrc
+<<<<<<< Updated upstream
 brew "skopeo"  # inspect/copy/sign OCI & container images without a daemon — not in mise registry
+||||||| Stash base
+=======
+brew "unar"
+>>>>>>> Stashed changes
 
 # === GUI apps (casks) — all machines ===
 cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
