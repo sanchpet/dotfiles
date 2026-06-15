@@ -84,6 +84,9 @@ alias kctx="kubectx"               # context switch (separate tool)
 # its binary answers COMP_LINE/COMP_POINT (posener-style) → drive it via bash-style `complete -C`.
 # bashcompinit must run after compinit (loaded by oh-my-zsh.sh above).
 alias tg="terragrunt"
+# Silence terragrunt's own wrapper logging (the `time=… level=… msg=…` lines) so only
+# the underlying OpenTofu/Terraform output shows. Per-command override: TG_LOG_DISABLE=false tg ...
+export TG_LOG_DISABLE=true
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C terragrunt terragrunt
 compdef tg=terragrunt   # the tg alias inherits terragrunt's completion
