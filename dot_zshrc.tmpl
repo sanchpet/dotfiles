@@ -12,6 +12,13 @@ if [ -d "$(brew --prefix 2>/dev/null)/opt/libpq/bin" ]; then
   export PATH="$(brew --prefix)/opt/libpq/bin:$PATH"
 fi
 
+# --- Ansible fork-safety on macOS ---
+# macOS' Objective-C runtime forbids fork() after an ObjC class has begun initializing
+# in another thread; Ansible forks worker processes and crashes with
+# "+[NSCharacterSet initialize] may have been in progress ... Crashing instead".
+# This opt-out restores the pre-High-Sierra fork behavior so Ansible runs cleanly.
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+
 # --- Oh My Zsh (plugins only; Starship draws the prompt) ---
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME=""                       # theme off — prompt handed to Starship
