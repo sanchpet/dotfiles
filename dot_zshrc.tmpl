@@ -111,6 +111,18 @@ alias cza='chezmoi apply'    # source → live (e.g.: cza ~/.zshrc)
 alias czu='chezmoi update'   # git pull + apply (pull from another machine)
 alias czd='chezmoi diff'     # show source ↔ live drift
 
+# --- git: always sign off commits ---
+# oh-my-zsh's git plugin commit shortcuts call `git commit` directly, bypassing
+# the `ci = commit -s` git alias. Re-define the ones we actually use so they add
+# a Signed-off-by trailer. A shell-level override (not a git hook) keeps the
+# pre-commit framework working.
+alias gc='git commit --verbose --signoff'
+alias gca='git commit --verbose --all --signoff'
+alias gcam='git commit --all --signoff --message'
+alias gcmsg='git commit --signoff --message'
+alias 'gc!'='git commit --verbose --signoff --amend'
+alias 'gca!'='git commit --verbose --all --signoff --amend'
+
 # --- zsh-autosuggestions tuning ---
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE="20"   # don't suggest for very long buffers
 ZSH_AUTOSUGGEST_USE_ASYNC=1            # compute suggestions in the background
