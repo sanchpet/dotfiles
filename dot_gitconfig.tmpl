@@ -23,6 +23,11 @@
 	rebase = true
 [rebase]
 	autoStash = true
+# `git ci` = commit with a Signed-off-by trailer. Plain `git commit` and the
+# oh-my-zsh `gc`/`gcmsg` shortcuts don't go through this alias — those shell
+# shortcuts are overridden with --signoff in ~/.zshrc instead.
+[alias]
+	ci = commit -s
 
 # delta: syntax-highlighting pager for diffs (installed via mise).
 [core]
