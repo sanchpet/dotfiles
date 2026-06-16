@@ -1,4 +1,18 @@
-{{ $key := joinPath .chezmoi.homeDir ".ssh/id_ed25519.pub" -}}
-{{ if stat $key -}}
-petrov@sanch.pet namespaces="git" {{ output "cat" $key | trim }}
-{{ end -}}
+{{- /* Trusted SSH signing keys for verifying our own git commits (public keys only). */ -}}
+{{- /* bootstrap.sh generates a SEPARATE key per machine, so to verify commits made on */ -}}
+{{- /* another machine, that machine's pubkey must be listed here. Onboard a new machine */ -}}
+{{- /* by appending a line to $keys below:                                              */ -}}
+{{- /*   printf 'ssh-ed25519 %s\n' "$(cut -d' ' -f2- ~/.ssh/id_ed25519.pub)"            */ -}}
+{{- $p := `petrov@sanch.pet namespaces="git"` -}}
+{{- $keys := list
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClhHPS1tykz5l1eFtbMgHxGzbF0Jn7dqwOVUofWv+Q5 petrov_ad@m00office1622"
+-}}
+{{- /* Always trust this machine's own key, even if not yet committed to the list above. */ -}}
+{{- $local := joinPath .chezmoi.homeDir ".ssh/id_ed25519.pub" -}}
+{{- if stat $local -}}
+{{-   $lk := output "cat" $local | trim -}}
+{{-   if not (has $lk $keys) -}}{{- $keys = append $keys $lk -}}{{- end -}}
+{{- end -}}
+{{- $lines := list -}}
+{{- range $keys -}}{{- $lines = append $lines (printf "%s %s" $p .) -}}{{- end -}}
+{{- join "\n" $lines }}
