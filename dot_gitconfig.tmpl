@@ -9,6 +9,10 @@
 	signingkey = {{ $key }}
 [gpg]
 	format = ssh
+[gpg "ssh"]
+	# Trust our own signing key so `git log --show-signature` / verify-commit
+	# report Verified locally. Generated per-machine from ~/.ssh/id_ed25519.pub.
+	allowedSignersFile = {{ .chezmoi.homeDir }}/.config/git/allowed_signers
 [commit]
 	gpgsign = true
 [tag]
