@@ -16,6 +16,13 @@
 {{- end }}
 [push]
 	default = simple
+# Default `git pull` to rebase instead of merge, so pulling a shared branch
+# replays local commits on top rather than creating a merge bubble. autoStash
+# lets it run with a dirty worktree (stash → rebase → pop).
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
 
 # delta: syntax-highlighting pager for diffs (installed via mise).
 [core]
