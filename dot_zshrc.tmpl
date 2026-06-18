@@ -160,3 +160,20 @@ ZSH_AUTOSUGGEST_USE_ASYNC=1            # compute suggestions in the background
 # (tool / CI / subshells) even though init IS last here — silence it; placement above is correct.
 export _ZO_DOCTOR=0
 eval "$(zoxide init zsh --cmd cd)"
+
+# --- Daily update check (mise + brew) ---
+# First interactive shell of the day: print the cached summary instantly, then refresh it in
+# the background. Never blocks the prompt — the network checks (slow: mise's endpoint is
+# DPI-throttled abroad) run detached. Run `updates` anytime, `updates -r` to recheck now.
+# Logic lives in ~/.local/bin/updates.
+if [[ -o interactive ]] && (( $+commands[updates] )); then
+  () {
+    emulate -L zsh
+    local marker="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-updates/shown-on" today
+    today="$(date +%F)"
+    [[ "$(<"$marker" 2>/dev/null)" == "$today" ]] && return   # already shown today (other tabs stay quiet)
+    mkdir -p "${marker:h}" && print -r -- "$today" >| "$marker"
+    updates --quiet                  # show last cached summary (instant; silent if up to date)
+    ( updates --bg & ) &>/dev/null    # refresh cache in the background for next time
+  }
+fi
