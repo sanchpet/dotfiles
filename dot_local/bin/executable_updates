@@ -29,11 +29,21 @@ _collect() {
     brew update >/dev/null 2>&1 || true               # refreshes Homebrew itself + tap metadata
     local formulae casks n
     formulae="$(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --quiet --formula 2>/dev/null)"
-    casks="$(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --quiet --cask 2>/dev/null)"
     if [ -n "$formulae" ]; then
       n="$(printf '%s\n' "$formulae" | count_lines)"
       printf 'brew formulae (%s): %s\n' "$n" "$(printf '%s\n' "$formulae" | join_lines)"
     fi
+    # Casks: brew lists auto_updates casks as outdated even though the app self-updates, so
+    # `brew upgrade` would only redundantly reinstall them — drop those, keep casks that
+    # genuinely need a manual upgrade. (brew prints "(auto_updates)" next to the version.)
+    casks=""
+    local c
+    while IFS= read -r c; do
+      [ -z "$c" ] && continue
+      brew info --cask "$c" 2>/dev/null | grep -qF '(auto_updates)' && continue
+      casks+="$c"$'\n'
+    done < <(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --quiet --cask 2>/dev/null)
+    casks="$(printf '%s' "$casks" | sed '/^[[:space:]]*$/d')"
     if [ -n "$casks" ]; then
       n="$(printf '%s\n' "$casks" | count_lines)"
       printf 'brew casks (%s): %s\n' "$n" "$(printf '%s\n' "$casks" | join_lines)"
