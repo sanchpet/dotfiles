@@ -146,7 +146,10 @@ Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`
 > `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`
 helpers (add / remove a global mise tool and re-import the config). `brewdiff` reports drift between
 installed Homebrew packages and the rendered `Brewfile.tmpl` (brew has no `miseg`-style auto-sync —
-the manifest is a curated template, so new packages are ported in by hand). `tg` aliases `terragrunt`
+the manifest is a curated template, so new packages are ported in by hand). `updates` reports
+available mise + Homebrew package updates (cached; the first interactive shell of the day refreshes
+it in the background and prints the summary — never blocks the prompt; `updates -r` rechecks now,
+upgrades stay manual via `brew upgrade` / `mise upgrade` / `mise self-update`). `tg` aliases `terragrunt`
 (the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no
 completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` +
 `complete -C` and shared with the `tg` alias through `compdef`.
