@@ -50,7 +50,10 @@ yamllint = "latest"            # pipx backend → uv tool install
 hyperfine = "latest"
 opencode = "latest"
 aqua = "latest"
-"github:lexfrei/claudeline" = "latest"
+# claudeline — Claude Code statusline. aqua backend: checksum-verified, per-version installs
+# (vs the github backend's best-effort asset guess). Switched once the aqua-registry entry
+# landed (aquaproj/aqua-registry#55083). Fallback if aqua ever lags: "github:lexfrei/claudeline".
+"aqua:lexfrei/claudeline" = "latest"
 crane = "latest"
 regctl = "latest"
 oras = "latest"
