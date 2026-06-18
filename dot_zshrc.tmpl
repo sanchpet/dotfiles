@@ -171,7 +171,8 @@ if [[ -o interactive ]] && (( $+commands[updates] )); then
     emulate -L zsh
     local marker="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-updates/shown-on" today
     today="$(date +%F)"
-    [[ "$(<"$marker" 2>/dev/null)" == "$today" ]] && return   # already shown today (other tabs stay quiet)
+    # zsh's $(<file) errors loudly on a missing file (2>/dev/null won't catch it) — guard with -f
+    [[ -f "$marker" && "$(<"$marker")" == "$today" ]] && return   # already shown today (other tabs stay quiet)
     mkdir -p "${marker:h}" && print -r -- "$today" >| "$marker"
     updates --quiet                  # show last cached summary (instant; silent if up to date)
     ( updates --bg & ) &>/dev/null    # refresh cache in the background for next time
