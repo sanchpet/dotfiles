@@ -19,6 +19,13 @@ fi
 # This opt-out restores the pre-High-Sierra fork behavior so Ansible runs cleanly.
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 
+# --- Resource limits ---
+# macOS GUI-launched terminals (cmux/Ghostty from /Applications) inherit launchd's low
+# RLIMIT_NOFILE soft limit (256). fd-hungry workloads + zsh-autocomplete's zpty async (see
+# below) blow past it → "_zsh_highlight: cannot duplicate fd 1: too many open files". Raise
+# toward the per-process kernel cap (kern.maxfilesperproc=61440); only ever raises.
+(( $(ulimit -Sn) < 49152 )) && ulimit -Sn 49152
+
 # --- Oh My Zsh (plugins only; Starship draws the prompt) ---
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME=""                       # theme off — prompt handed to Starship
@@ -46,6 +53,13 @@ plugins=(
   zsh-syntax-highlighting
   zsh-autocomplete                # live menu completion
 )
+
+# zsh-autocomplete's async completion runs in a zsh/zpty subshell that Ghostty/cmux fails to
+# reap, leaking ~16KB pipe pairs per completion until the fd ceiling is hit (observed: panes
+# holding 1300+ pipes). Disable async → live menu stays, completion is synchronous, no zpty.
+# Must be set BEFORE oh-my-zsh sources the plugin.
+zstyle ':autocomplete:*' async no
+
 source "$ZSH/oh-my-zsh.sh"
 
 # zsh-you-should-use registers three preexec hooks; its global-alias check runs
