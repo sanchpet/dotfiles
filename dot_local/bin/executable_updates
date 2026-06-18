@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# updates — report (never apply) available updates for Homebrew + mise and their packages.
+# Network checks are cached under $XDG_CACHE_HOME/dotfiles-updates; the .zshrc daily hook
+# refreshes them in the background so the prompt never blocks (mise's version endpoint is
+# DPI-throttled abroad and can hang ~20s). Upgrades stay manual — this only prints commands.
+#
+#   updates            report the cached summary (+ how stale it is)
+#   updates -r         refresh now (foreground), then report
+#   updates --bg       refresh quietly into the cache (used by the .zshrc daily hook)
+#   updates --quiet    print the cached summary only if updates exist (used by the hook)
+#
+# Apply with:
+#   brew update && brew upgrade      Homebrew itself + formulae/casks
+#   mise upgrade                     mise-managed tools (all pinned `latest`)
+#   mise self-update                 mise itself
+set -uo pipefail
+
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-updates"
+summary="$cache/summary.txt"
+stamp="$cache/checked-at"
+mkdir -p "$cache"
+
+join_lines() { tr '\n' ' ' | sed 's/ *$//'; }        # newline list → space-joined
+count_lines() { grep -c . 2>/dev/null || true; }      # count non-empty lines
+
+# Probe all sources and emit one human line per source that has updates (nothing if all clean).
+_collect() {
+  if command -v brew >/dev/null 2>&1; then
+    brew update >/dev/null 2>&1 || true               # refreshes Homebrew itself + tap metadata
+    local formulae casks n
+    formulae="$(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --quiet --formula 2>/dev/null)"
+    casks="$(HOMEBREW_NO_AUTO_UPDATE=1 brew outdated --quiet --cask 2>/dev/null)"
+    if [ -n "$formulae" ]; then
+      n="$(printf '%s\n' "$formulae" | count_lines)"
+      printf 'brew formulae (%s): %s\n' "$n" "$(printf '%s\n' "$formulae" | join_lines)"
+    fi
+    if [ -n "$casks" ]; then
+      n="$(printf '%s\n' "$casks" | count_lines)"
+      printf 'brew casks (%s): %s\n' "$n" "$(printf '%s\n' "$casks" | join_lines)"
+    fi
+  fi
+
+  if command -v mise >/dev/null 2>&1; then
+    local tools n self
+    # short fetch timeout: the mise-versions endpoint is DPI-throttled abroad (can hang ~20s)
+    tools="$(MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=8s mise outdated 2>/dev/null | awk 'NF{print $1}')"
+    if [ -n "$tools" ]; then
+      n="$(printf '%s\n' "$tools" | count_lines)"
+      printf 'mise tools (%s): %s\n' "$n" "$(printf '%s\n' "$tools" | join_lines)"
+    fi
+    # mise itself warns on stderr when a newer release exists ("mise version X.Y.Z available")
+    self="$( { mise version >/dev/null; } 2>&1 | sed -nE 's/.*mise version ([0-9.]+) available.*/\1/p' | head -1)"
+    [ -n "$self" ] && printf 'mise itself: %s available  (mise self-update)\n' "$self"
+  fi
+}
+
+_write() {
+  local out; out="$(_collect)"
+  # trailing newline only when non-empty: an empty file (size 0) is the "all up to date" signal,
+  # so a lone "\n" must not slip in (it would read as size>0 → false "updates available").
+  if [ -n "$out" ]; then printf '%s\n' "$out" >"$summary"; else : >"$summary"; fi
+  date '+%Y-%m-%d %H:%M' >"$stamp"
+}
+
+_report() {                                            # $1 = full | quiet
+  local mode="${1:-full}" checked
+  checked="$(cat "$stamp" 2>/dev/null || true)"
+  if [ -z "$checked" ]; then
+    [ "$mode" = quiet ] && return 0
+    echo "ℹ️  no check yet — run: updates -r"
+    return 0
+  fi
+  if [ -s "$summary" ]; then
+    printf '📦 updates available (checked %s):\n' "$checked"
+    sed 's/^/  /' "$summary"
+    printf '   apply → brew update && brew upgrade · mise upgrade · mise self-update\n'
+  else
+    [ "$mode" = quiet ] && return 0
+    printf '✓ mise + brew up to date (checked %s)\n' "$checked"
+  fi
+}
+
+case "${1:-}" in
+  -r | --refresh) echo "checking mise + brew updates…"; _write; _report full ;;
+  --bg) _write ;;
+  --quiet) _report quiet ;;
+  '' | --show) _report full ;;
+  -h | --help) sed -n '2,15p' "$0" ;;
+  *) echo "updates: unknown option '$1' (use -r / --bg / --quiet)" >&2; exit 2 ;;
+esac
