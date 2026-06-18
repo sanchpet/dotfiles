@@ -144,7 +144,9 @@ Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`
 > plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are
 > deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`,
 > `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`
-helpers (add / remove a global mise tool and re-import the config). `tg` aliases `terragrunt`
+helpers (add / remove a global mise tool and re-import the config). `brewdiff` reports drift between
+installed Homebrew packages and the rendered `Brewfile.tmpl` (brew has no `miseg`-style auto-sync —
+the manifest is a curated template, so new packages are ported in by hand). `tg` aliases `terragrunt`
 (the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no
 completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` +
 `complete -C` and shared with the `tg` alias through `compdef`.
