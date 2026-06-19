@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2029  # subnet is a trusted local value from whois, not user input
+# add-podkop-subnet — add a domain's IP subnet to Podkop on Cudy TR3000 router.
+#
+# Use case: when using FortiClient VPN on Mac, corporate DNS returns real IPs.
+# Domain-based routing (user_domains + FakeIP) doesn't work in this setup.
+# Solution: resolve domain → IP → subnet via whois → add to Podkop subnet list.
+#
+# Podkop intercepts traffic by subnet in nftables (inet PodkopTable, set podkop_subnets).
+# The subnet is marked with 0x00100000 → TPROXY to sing-box → VLESS outbound.
+#
+# Usage:
+#   add-podkop-subnet github.com anthropic.com
+#
+# Requirements:
+#   - SSH access to router (root@192.168.2.1) via SSH key
+#   - dig, whois installed locally
+#
+# After adding, apply changes in LuCI: Services → Podkop → Apply.
+
+set -euo pipefail
+
+readonly ROUTER="root@192.168.2.1"
+
+usage() {
+    echo "Usage: $0 <domain> [domain2 ...]"
+    echo "Example: $0 github.com anthropic.com claude.ai"
+    exit 1
+}
+
+resolve_subnet() {
+    local domain="$1"
+    local ip
+    local subnet
+
+    ip=$(dig +short "$domain" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+    if [[ -z "$ip" ]]; then
+        echo "  ✗ Cannot resolve $domain" >&2
+        return 1
+    fi
+    echo "  IP: $ip"
+
+    subnet=$(whois "$ip" | grep -oP '\d+\.\d+\.\d+\.\d+/\d+' | head -1)
+    if [[ -z "$subnet" ]]; then
+        echo "  ✗ Cannot find CIDR for $ip" >&2
+        return 1
+    fi
+    echo "  Subnet: $subnet"
+
+    # Return subnet via stdout for capture
+    echo "$subnet"
+}
+
+add_subnet() {
+    local domain="$1"
+    local subnet="$2"
+
+    ssh "$ROUTER" "
+        existing=\$(uci get podkop.main.user_subnets 2>/dev/null || true)
+        if echo \"\$existing\" | grep -qF '$subnet'; then
+            echo '  Already in Podkop'
+        else
+            uci add_list podkop.main.user_subnets='$subnet'
+            uci commit podkop
+            echo '  Added to UCI (apply in LuCI to activate nft ruleset)'
+        fi
+    "
+}
+
+list_subnets() {
+    echo "Current subnets in Podkop:"
+    ssh "$ROUTER" "uci get podkop.main.user_subnets 2>/dev/null" | tr ' ' '\n' | grep -v '^$'
+}
+
+main() {
+    if [[ $# -eq 0 ]]; then
+        usage
+    fi
+
+    local added=0
+    for domain in "$@"; do
+        echo "→ $domain"
+        local subnet
+        subnet=$(resolve_subnet "$domain") || continue
+        add_subnet "$domain" "$subnet"
+        ((added++))
+        echo ""
+    done
+
+    if [[ $added -gt 0 ]]; then
+        list_subnets
+    fi
+}
+
+main "$@"
