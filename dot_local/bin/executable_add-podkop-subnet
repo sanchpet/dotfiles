@@ -40,7 +40,7 @@ resolve_subnet() {
     fi
     echo "  IP: $ip"
 
-    subnet=$(whois "$ip" | grep -oP '\d+\.\d+\.\d+\.\d+/\d+' | head -1)
+    subnet=$(whois "$ip" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+' | head -1)
     if [[ -z "$subnet" ]]; then
         echo "  ✗ Cannot find CIDR for $ip" >&2
         return 1
