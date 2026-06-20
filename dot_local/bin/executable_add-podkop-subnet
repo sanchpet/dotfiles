@@ -1,30 +1,44 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2029  # subnet is a trusted local value from whois, not user input
-# add-podkop-subnet — add a domain's IP subnet to Podkop on Cudy TR3000 router.
+# shellcheck disable=SC2029  # values are trusted local data (whois/dig/CLI args), not remote input
+# add-podkop-subnet — route a domain through Podkop (VLESS tunnel) on Cudy TR3000 router.
 #
-# Use case: when using FortiClient VPN on Mac, corporate DNS returns real IPs.
-# Domain-based routing (user_domains + FakeIP) doesn't work in this setup.
-# Solution: resolve domain → IP → subnet via whois → add to Podkop subnet list.
+# Two modes:
+#   subnet (default) — resolve domain → IP → CIDR (whois) → podkop.main.user_subnets.
+#                      Use when FortiClient VPN makes corporate DNS return real IPs and
+#                      domain-based routing (user_domains + FakeIP) does not work.
+#   domain (--domain) — add the name verbatim to podkop.main.user_domains (FakeIP routing).
+#                       Use for normal foreign domains whose anycast IPs are partially
+#                       blackholed on the RU path (e.g. raw.githubusercontent.com — only
+#                       one of GitHub's four CDN IPs is blocked, so direct fetches hang
+#                       ~25% of the time; routing the domain through the tunnel fixes it).
 #
-# Podkop intercepts traffic by subnet in nftables (inet PodkopTable, set podkop_subnets).
-# The subnet is marked with 0x00100000 → TPROXY to sing-box → VLESS outbound.
+# Podkop intercepts subnet traffic in nftables (inet PodkopTable, set podkop_subnets),
+# marks it 0x00100000 → TPROXY → sing-box → VLESS outbound. Domain mode relies on
+# Podkop's FakeIP machinery instead. Both are applied via `/etc/init.d/podkop reload`.
 #
 # Usage:
-#   add-podkop-subnet github.com anthropic.com
+#   add-podkop-subnet github.com anthropic.com          # subnet mode (default)
+#   add-podkop-subnet --domain raw.githubusercontent.com # domain mode
 #
 # Requirements:
 #   - SSH access to router (root@192.168.2.1) via SSH key
-#   - dig, whois installed locally
-#
-# After adding, apply changes in LuCI: Services → Podkop → Apply.
+#   - dig, whois installed locally (subnet mode only)
 
 set -euo pipefail
 
 readonly ROUTER="root@192.168.2.1"
 
+MODE="subnet"
+
 usage() {
-    echo "Usage: $0 <domain> [domain2 ...]"
-    echo "Example: $0 github.com anthropic.com claude.ai"
+    echo "Usage: $0 [--domain] <domain> [domain2 ...]"
+    echo ""
+    echo "  (default)   subnet mode: resolve domain → CIDR → podkop user_subnets"
+    echo "  --domain,-d domain mode: add name verbatim → podkop user_domains"
+    echo ""
+    echo "Examples:"
+    echo "  $0 github.com anthropic.com"
+    echo "  $0 --domain raw.githubusercontent.com codeload.github.com"
     exit 1
 }
 
@@ -38,57 +52,96 @@ resolve_subnet() {
         echo "  ✗ Cannot resolve $domain" >&2
         return 1
     fi
-    echo "  IP: $ip"
+    echo "  IP: $ip" >&2
 
     subnet=$(whois "$ip" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+' | head -1)
     if [[ -z "$subnet" ]]; then
         echo "  ✗ Cannot find CIDR for $ip" >&2
         return 1
     fi
-    echo "  Subnet: $subnet"
+    echo "  Subnet: $subnet" >&2
 
     # Return subnet via stdout for capture
     echo "$subnet"
 }
 
 add_subnet() {
-    local domain="$1"
-    local subnet="$2"
+    local subnet="$1"
 
     ssh "$ROUTER" "
         existing=\$(uci get podkop.main.user_subnets 2>/dev/null || true)
-        if echo \"\$existing\" | grep -qF '$subnet'; then
-            echo '  Already in Podkop'
+        if echo \"\$existing\" | tr ' ' '\n' | grep -qFx '$subnet'; then
+            echo '  Already in Podkop subnets'
         else
             uci add_list podkop.main.user_subnets='$subnet'
             uci commit podkop
-            echo '  Added to UCI (apply in LuCI to activate nft ruleset)'
+            echo '  Added subnet to UCI'
         fi
     "
 }
 
-list_subnets() {
-    echo "Current subnets in Podkop:"
-    ssh "$ROUTER" "uci get podkop.main.user_subnets 2>/dev/null" | tr ' ' '\n' | grep -v '^$'
+add_domain() {
+    local domain="$1"
+
+    ssh "$ROUTER" "
+        existing=\$(uci get podkop.main.user_domains 2>/dev/null || true)
+        if echo \"\$existing\" | tr ' ' '\n' | grep -qFx '$domain'; then
+            echo '  Already in Podkop domains'
+        else
+            uci add_list podkop.main.user_domains='$domain'
+            uci commit podkop
+            echo '  Added domain to UCI'
+        fi
+    "
+}
+
+reload_podkop() {
+    echo "→ Reloading Podkop"
+    ssh "$ROUTER" "/etc/init.d/podkop reload" 2>&1 | sed 's/^/  /' || true
+}
+
+list_current() {
+    echo "Current Podkop $MODE list:"
+    if [[ "$MODE" == "domain" ]]; then
+        ssh "$ROUTER" "uci get podkop.main.user_domains 2>/dev/null"
+    else
+        ssh "$ROUTER" "uci get podkop.main.user_subnets 2>/dev/null"
+    fi | tr ' ' '\n' | grep -v '^$' | sed 's/^/  /'
 }
 
 main() {
-    if [[ $# -eq 0 ]]; then
-        usage
-    fi
+    local -a domains=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -d|--domain) MODE="domain"; shift ;;
+            -s|--subnet) MODE="subnet"; shift ;;
+            -h|--help)   usage ;;
+            -*)          echo "Unknown option: $1" >&2; usage ;;
+            *)           domains+=("$1"); shift ;;
+        esac
+    done
 
-    local added=0
-    for domain in "$@"; do
+    [[ ${#domains[@]} -eq 0 ]] && usage
+
+    local changed=0
+    for domain in "${domains[@]}"; do
         echo "→ $domain"
-        local subnet
-        subnet=$(resolve_subnet "$domain") || continue
-        add_subnet "$domain" "$subnet"
-        ((added++))
+        if [[ "$MODE" == "domain" ]]; then
+            add_domain "$domain"
+            ((changed++)) || true
+        else
+            local subnet
+            subnet=$(resolve_subnet "$domain") || continue
+            add_subnet "$subnet"
+            ((changed++)) || true
+        fi
         echo ""
     done
 
-    if [[ $added -gt 0 ]]; then
-        list_subnets
+    if [[ $changed -gt 0 ]]; then
+        reload_podkop
+        echo ""
+        list_current
     fi
 }
 

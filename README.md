@@ -166,7 +166,7 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
 | `dot_local/bin/` | Executable scripts symlinked to `~/.local/bin/` by chezmoi |
 | `dot_local/bin/executable_cleanup` | `~/.local/bin/cleanup` — disk-reclaim tool (reports by default; `--apply` deletes Tier 1 caches + orphan caches of removed tools, `--deep` adds Go modcache) |
 | `dot_local/bin/executable_updates` | `~/.local/bin/updates` — reports available mise + Homebrew package updates |
-| `dot_local/bin/add-podkop-subnet` | `~/.local/bin/add-podkop-subnet` — resolve domain → subnet → add to Podkop on Cudy router. Use when FortiClient VPN prevents FakeIP routing |
+| `dot_local/bin/add-podkop-subnet` | `~/.local/bin/add-podkop-subnet` — route a domain through Podkop (VLESS) on Cudy router, then `podkop reload`. Default: resolve domain → subnet → `user_subnets` (for FortiClient VPN, where FakeIP routing fails). `--domain`: add the name verbatim → `user_domains` (FakeIP), e.g. for a domain whose anycast IPs are partially blackholed on the RU path |
 | `.chezmoi.toml.tmpl` | Generates per-machine chezmoi config at `init` (prompts `profile`); never deployed |
 | `bootstrap.sh` | Bare-machine bootstrap (operational, not deployed) |
 | `Brewfile.tmpl` | GUI casks for `brew bundle`, templated per `profile` (operational; rendered at bootstrap) |
