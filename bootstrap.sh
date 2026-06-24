@@ -219,6 +219,19 @@ if [ -s "$BREWFILE" ] && grep -qE '^[[:space:]]*(cask|brew)[[:space:]]' "$BREWFI
   if command -v brew >/dev/null 2>&1 || [ -x /opt/homebrew/bin/brew ] || [ -x /usr/local/bin/brew ]; then
     [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
     [ -x /usr/local/bin/brew ] && eval "$(/usr/local/bin/brew shellenv)"
+    # App Store sign-in gate: `mas` entries need the App Store signed in. Apple blocks
+    # CLI sign-in (mas 7 dropped `signin`/`account`), so this can only be a TTY prompt.
+    # CI renders no mas entries (Brewfile guards them behind `not (env "CI")`) → skipped.
+    if grep -qE '^[[:space:]]*mas[[:space:]]' "$BREWFILE"; then
+      if [ -t 0 ]; then
+        log "Brewfile lists Mac App Store apps — opening the App Store to sign in"
+        open -a "App Store" 2>/dev/null || true
+        printf '\033[1;34m==>\033[0m Sign in to the App Store, then press Enter to continue… '
+        read -r _
+      else
+        warn "Brewfile lists mas apps but no TTY to prompt for App Store sign-in — those installs may fail; sign in and re-run."
+      fi
+    fi
     log "brew bundle — GUI apps from Brewfile"
     brew bundle --file="$BREWFILE"
   fi
