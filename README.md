@@ -101,7 +101,6 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
 | Docker Desktop | Container engine + CLI + VM (launch once to start the daemon) | all | [docs](https://docs.docker.com/desktop/setup/install/mac-install/) |
 | Yandex Music | Desktop music player (self-updating cask) | all | [site](https://music.yandex.ru) |
-| Tunnelblick | Free/open-source OpenVPN GUI client — double-click `.ovpn` to import, connect from the menu bar | all | [site](https://tunnelblick.net) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
 ### Mac App Store (mas)
@@ -111,6 +110,12 @@ Installed via the `mas` CLI. A one-time App Store sign-in is the only step that 
 | App | Purpose | Profile | Link |
 |------|---------|---------|------|
 | one sec | Delay distracting apps — digital-hygiene gate (a mindful pause before Telegram/feeds) | all | [site](https://one-sec.app/mac/) |
+| Bitwarden | Password manager | all | [site](https://bitwarden.com) |
+| Focus To-Do | Pomodoro timer + time tracking — core to the self-development practice | all | [site](https://www.focustodo.cn) |
+| WireGuard | WireGuard VPN client | all | [site](https://www.wireguard.com) |
+| v2RayTun | V2Ray / proxy client | all | [site](https://v2raytun.com) |
+| Endel | Adaptive focus/sleep soundscapes | all | [site](https://endel.io) |
+| MKPlayer | Media player | all | — |
 
 ### Homebrew formulae (CLI mise can't provide)
 

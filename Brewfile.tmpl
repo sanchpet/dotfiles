@@ -26,7 +26,6 @@ cask "wakatime"           # Menu-bar time tracker — whole-system activity beyo
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
 cask "docker-desktop"     # Docker Desktop — container engine + CLI + VM (launch once to start the daemon)
 cask "yandex-music"       # Yandex Music desktop player (self-updating cask)
-cask "tunnelblick"        # free/open-source OpenVPN GUI client — double-click .ovpn to import, connect from menu bar
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
@@ -40,5 +39,11 @@ cask "windows-app" # Microsoft's official RDP client (formerly Remote Desktop; m
 # machine needs a one-time App Store sign-in before bootstrap — the only step here
 # that cannot live in code.
 {{ if not (env "CI") -}}
-mas "one sec", id: 1532875441 # delay distracting apps — digital-hygiene gate (pause before Telegram/feeds)
+mas "one sec", id: 1532875441     # delay distracting apps — digital-hygiene gate (pause before Telegram/feeds)
+mas "Bitwarden", id: 1352778147   # password manager
+mas "Focus To-Do", id: 1258530160 # Pomodoro + time tracking — core to the self-development practice
+mas "WireGuard", id: 1451685025   # WireGuard VPN client
+mas "v2RayTun", id: 6476628951    # V2Ray / proxy client
+mas "Endel", id: 1346247457       # adaptive focus/sleep soundscapes
+mas "MKPlayer", id: 1335612105    # media player
 {{- end }}
