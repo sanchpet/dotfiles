@@ -15,6 +15,7 @@ brew "sshpass" # non-interactive ssh password auth (used by ansible) — not in 
 brew "libpq"   # PostgreSQL client only (psql, pg_dump, …) without the server — mise's postgres builds the full server; keg-only, PATH added in .zshrc
 brew "skopeo"  # inspect/copy/sign OCI & container images without a daemon — not in mise registry
 brew "unar"    # universal unarchiver (rar, 7z, …) — not in mise registry
+brew "mas"     # Mac App Store CLI — declares/installs the App Store apps listed below; not in mise
 
 # === GUI apps (casks) — all machines ===
 cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
@@ -31,4 +32,13 @@ cask "tunnelblick"        # free/open-source OpenVPN GUI client — double-click
 {{ if eq (dig "profile" "personal" .) "work" -}}
 cask "dotnet-sdk"  # .NET SDK — needed on the work machine only
 cask "windows-app" # Microsoft's official RDP client (formerly Remote Desktop; microsoft-remote-desktop discontinued 2025-10) — connect to Windows over RDP
+{{- end }}
+
+# === Mac App Store apps (mas) — real machines only ===
+# Skipped in CI: the macOS runner is not signed into the App Store, so `mas install`
+# (bootstrap) and `brew bundle check` (smoke) would fail on these entries. A real
+# machine needs a one-time App Store sign-in before bootstrap — the only step here
+# that cannot live in code.
+{{ if not (env "CI") -}}
+mas "one sec", id: 1532875441 # delay distracting apps — digital-hygiene gate (pause before Telegram/feeds)
 {{- end }}

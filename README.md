@@ -104,6 +104,14 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Tunnelblick | Free/open-source OpenVPN GUI client — double-click `.ovpn` to import, connect from the menu bar | all | [site](https://tunnelblick.net) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
+### Mac App Store (mas)
+
+Installed via the `mas` CLI. A one-time App Store sign-in is the only step that can't live in code; the entries are skipped in CI (the runner isn't signed in).
+
+| App | Purpose | Profile | Link |
+|------|---------|---------|------|
+| one sec | Delay distracting apps — digital-hygiene gate (a mindful pause before Telegram/feeds) | all | [site](https://one-sec.app/mac/) |
+
 ### Homebrew formulae (CLI mise can't provide)
 
 | Tool | Purpose | Profile | Link |
@@ -111,6 +119,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | sshpass | Non-interactive ssh password auth (used by ansible) — not in the mise registry | all | [docs](https://sourceforge.net/projects/sshpass/) |
 | libpq | PostgreSQL client (`psql`, `pg_dump`, …) without the server — mise's `postgres` builds the full server; keg-only, so `.zshrc` adds its `bin` to `PATH` | all | [docs](https://formulae.brew.sh/formula/libpq) |
 | skopeo | Inspect/copy/sign OCI & container images without a daemon — not in the mise registry | all | [docs](https://github.com/containers/skopeo) |
+| mas | Mac App Store CLI — installs/declares the App Store apps above | all | [github](https://github.com/mas-cli/mas) |
 
 ## Zsh shell (Oh My Zsh)
 
@@ -169,7 +178,7 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
 | `dot_local/bin/add-podkop-subnet` | `~/.local/bin/add-podkop-subnet` — route a domain through Podkop (VLESS) on Cudy router, then `podkop reload`. Default: resolve domain → subnet → `user_subnets` (for FortiClient VPN, where FakeIP routing fails). `--domain`: add the name verbatim → `user_domains` (FakeIP), e.g. for a domain whose anycast IPs are partially blackholed on the RU path |
 | `.chezmoi.toml.tmpl` | Generates per-machine chezmoi config at `init` (prompts `profile`); never deployed |
 | `bootstrap.sh` | Bare-machine bootstrap (operational, not deployed) |
-| `Brewfile.tmpl` | GUI casks for `brew bundle`, templated per `profile` (operational; rendered at bootstrap) |
+| `Brewfile.tmpl` | GUI casks + Mac App Store apps for `brew bundle`, templated per `profile` (operational; rendered at bootstrap) |
 | `mise.toml` | Repo-local dev tooling (pre-commit) |
 | `.pre-commit-config.yaml` | Lint hooks (shellcheck + hygiene) |
 | `.chezmoiignore` | Keeps operational files in the repo but out of `$HOME` |
