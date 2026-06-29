@@ -71,6 +71,9 @@ add-zsh-hook -d preexec _check_global_aliases
 # --- mise: activate after compinit (from oh-my-zsh) ---
 eval "$("$HOME/.local/bin/mise" activate zsh)"
 
+# --- sweb: completion (Cobra-generated native zsh; sweb is a mise tool, on PATH above) ---
+command -v sweb >/dev/null && source <(sweb completion zsh)
+
 # --- fzf ---
 eval "$(fzf --zsh)"
 
