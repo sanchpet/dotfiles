@@ -1,6 +1,7 @@
 # Git identity. Personal (sanchpet) is the default everywhere, with SSH commit
-# signing whenever the signing key is present. Work repos under ~/IWE/magnit/
-# switch to the work identity (signing off) via the includeIf at the bottom.
+# signing whenever the signing key is present. Work repos under
+# ~/hypomnemata/.repos/magnit/ switch to the work identity (signing off) via the
+# includeIf at the bottom.
 [user]
 	name = sanchpet
 	email = petrov@sanch.pet
@@ -46,7 +47,11 @@
 [merge]
 	conflictStyle = zdiff3
 
-# Work repos live under ~/IWE/magnit/. Override to the work identity and turn
-# signing off there; everything else stays personal and signed.
+# Work repos live under ~/hypomnemata/.repos/magnit/ (corp clones, ADR-0022);
+# ~/IWE/magnit/ is the pre-migration location, kept for any leftover clones.
+# Override to the work identity and turn signing off there; everything else stays
+# personal and signed.
+[includeIf "gitdir:~/hypomnemata/.repos/magnit/"]
+	path = ~/.config/git/work.inc
 [includeIf "gitdir:~/IWE/magnit/"]
 	path = ~/.config/git/work.inc
