@@ -11,6 +11,10 @@ pipx.uvx = true
 # hooks via `[hooks] enter = "git config core.hooksPath .githooks"` — no manual `git config`
 # on every new machine. Machine-level default, so repos carry only [hooks], not this flag.
 experimental = true
+# `sweb` is my own published CLI — exclude it from the minimum_release_age supply-chain
+# delay so my freshly-tagged releases install immediately. The delay stays on for every
+# other (third-party) tool.
+minimum_release_age_excludes = ["github:sanchpet/sweb"]
 
 [tools]
 bitwarden = "latest"
@@ -57,6 +61,7 @@ aqua = "latest"
 crane = "latest"
 regctl = "latest"
 oras = "latest"
+"github:sanchpet/sweb" = "latest" # my SpaceWeb hosting CLI (excluded from minimum_release_age above)
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
