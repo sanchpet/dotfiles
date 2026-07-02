@@ -68,6 +68,13 @@ source "$ZSH/oh-my-zsh.sh"
 # command. Drop only that hook — the regular and git-alias nags keep working.
 add-zsh-hook -d preexec _check_global_aliases
 
+# --- GitHub token for mise (raise the anonymous API limit 60/h → 5000/h) ---
+# Several tools install via mise's `github:` backend (sops, age, sweb, …); on a shared
+# egress IP the anonymous limit is exhausted fast → 403 "rate limit exceeded". Pull a token
+# from gh's store (nothing hardcoded here) so mise's GitHub calls authenticate.
+# MISE_GITHUB_TOKEN scopes it to mise only (doesn't override gh's own auth or leak elsewhere).
+(( $+commands[gh] )) && export MISE_GITHUB_TOKEN="$(gh auth token 2>/dev/null)"
+
 # --- mise: activate after compinit (from oh-my-zsh) ---
 eval "$("$HOME/.local/bin/mise" activate zsh)"
 
