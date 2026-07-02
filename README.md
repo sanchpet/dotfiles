@@ -159,8 +159,10 @@ Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`
 > **Load order matters.** `zsh-autocomplete` owns the completion/history UI, so it loads last, and
 > plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are
 > deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`,
-> `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`
-helpers (add / remove a global mise tool and re-import the config). `brewdiff` reports drift between
+> `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`/`miseup`
+helpers (add / remove a global mise tool and re-import the config; `miseup` upgrades with a fresh
+version list — clears mise's cached release list first so a just-published release is picked up).
+`brewdiff` reports drift between
 installed Homebrew packages and the rendered `Brewfile.tmpl` (brew has no `miseg`-style auto-sync —
 the manifest is a curated template, so new packages are ported in by hand). `updates` reports
 available mise + Homebrew package updates (cached; the first interactive shell of the day refreshes
