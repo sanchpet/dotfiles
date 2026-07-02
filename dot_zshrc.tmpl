@@ -95,6 +95,10 @@ miseg()  { mise use   -g "$@" && chezmoi add ~/.config/mise/config.toml; }   # a
 # miserm also uninstalls the binary. External backend caches (rustup's ~/.rustup,
 # cargo's ~/.cargo, …) are NOT cleaned — purge those by hand if a backend leaves them.
 miserm() { mise unuse -g "$@" && mise uninstall "$@" 2>/dev/null; chezmoi add ~/.config/mise/config.toml; }   # remove a tool
+# miseup: upgrade with a FRESH version list. mise caches the remote release list (~24h) to
+# spare the GitHub API, so a just-published release stays invisible until the cache expires;
+# clear it first. `miseup` upgrades all tools; `miseup <tool>` just one.
+miseup() { mise cache clear && mise upgrade "$@"; }   # upgrade (cache-fresh)
 # brew has no miseg-style auto-sync: Brewfile.tmpl is a curated chezmoi template (per-machine
 # `if profile` + a description per line), so `brew bundle dump` can't be snapshotted back without
 # erasing that structure. brewdiff instead just reports drift vs the rendered manifest — port new
