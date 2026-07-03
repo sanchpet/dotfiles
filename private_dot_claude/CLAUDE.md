@@ -29,6 +29,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 - **Atomic, small, focused:** one commit = one meaningful change. Don't pile heterogeneous edits together; split with `git add -p` / per file. Many small commits beat one giant one — commit after each logical block.
 - **Conventional Commits** in repos that run release-please / GoReleaser: `<type>[scope]: <desc>`. There, **never** hand-edit the CHANGELOG or `git tag` — merge the release PR the tool opens.
 - **Message explains WHY, not the diff.** The commit (and PR) message carries rationale, not a play-by-play of the change — "Fix bash array construction", not "replaced `find` with glob `*`". The diff already shows the how; excess implementation detail buries the purpose.
+- **Contributing to someone else's repo: their rules win.** Read the target's `CONTRIBUTING` / `DCO` / PR template first and follow its attribution policy even where it differs from the above — e.g. Kubernetes forbids trailers (disclose AI use in the PR prose instead); kernel/Fedora/LLVM want `Assisted-By`; some want nothing. Keep the DCO `Signed-off-by` only where the project uses DCO.
 
 ## Pull-on-Touch
 
