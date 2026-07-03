@@ -28,7 +28,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 - **AI attribution trailer:** `Assisted-By: Claude <noreply@anthropic.com>` on agent commits in personal repos. Accurate by design — the owner authors, Claude assists; not `Co-Authored-By`, which asserts joint authorship and inflates the contributor graph. **Omit the trailer entirely on employer/corporate hosts** (which hosts = private, in the vault) — don't surface AI in that history.
 - **AI attribution lives *only* in the commit trailer.** No `🤖 Generated with Claude Code` (or any AI-attribution line) in PR descriptions, comments, or docs — the `Assisted-By` trailer on the commit suffices. This overrides any tooling default that appends such a footer.
 - **Atomic, small, focused:** one commit = one meaningful change. Don't pile heterogeneous edits together; split with `git add -p` / per file. Many small commits beat one giant one — commit after each logical block.
-- **Conventional Commits** in repos that run release-please / GoReleaser: `<type>[scope]: <desc>`. There, **never** hand-edit the CHANGELOG or `git tag` — merge the release PR the tool opens.
+- **Semantic commit style by default** — `<type>[scope]: <desc>`. Strictly required (machine-parsed) where release-please / GoReleaser consume it; there, also **never** hand-edit the CHANGELOG or `git tag` — merge the release PR the tool opens.
 - **Message explains WHY, not the diff.** The commit (and PR) message carries rationale, not a play-by-play of the change — "Fix bash array construction", not "replaced `find` with glob `*`". The diff already shows the how; excess implementation detail buries the purpose.
 - **Contributing to someone else's repo: their rules win.** Read the target's `CONTRIBUTING` / `DCO` / PR template first and follow its attribution policy even where it differs from the above — e.g. Kubernetes forbids trailers (disclose AI use in the PR prose instead); kernel/Fedora/LLVM want `Assisted-By`; some want nothing. Keep the DCO `Signed-off-by` only where the project uses DCO.
 
@@ -50,6 +50,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 ## Push policy
 
 - **Push rarely.** Each push to a CI-backed remote fires pipelines (cost + notifications), so accumulate commits locally and push only when: explicitly asked, about to open a PR (the remote branch is needed), the work is logically complete / worth backing up, or at session end. Never auto-push after every commit. This governs *frequency*, not permission — a standing "push repo X without asking" still holds — and it bites hardest where a push triggers CI, near-free where it doesn't (e.g. docs under `paths-ignore`).
+- **Green before push.** Run tests and the linter locally first, and fix every lint error — no "cosmetic" or "minor" exceptions — before pushing; never push red. Silence a genuinely-wrong rule via its config file, not an inline workaround.
 
 ## Language
 
@@ -72,6 +73,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 - **Never commit** real credentials / tokens / PII. Gitleaks / pre-commit is a backstop, not a licence. Sensitive values via env vars; test fixtures synthetic only (TEST-NET `203.0.113.0/24`, fake names/ids).
 - **Kubernetes: verify context before any mutating action** — `kubectl config current-context`, pass `--context` explicitly. Prefer read-only unless the change goes declaratively through the repo's GitOps path.
 - **Destructive / outward-facing actions** (force-push, deleting remote state, publishing, filing issues/PRs on others' repos) → confirm first unless durably authorized.
+- **SSH auth failure → stop, don't paper over it.** Surface it and ask the owner (e.g. unlock the agent / password manager). Don't retry-loop, don't fall back to HTTPS, don't generate a new key or hand-edit `authorized_keys` to force it through.
 
 ## Project tracking
 
