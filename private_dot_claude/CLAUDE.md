@@ -60,6 +60,13 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 - **mise-first:** if a CLI tool can be installed via mise, use mise. What mise can't manage (GUI casks, etc.) → Homebrew.
 - **`gh`** for all GitHub operations (PRs, issues, runs, API).
 
+## Code quality
+
+- **DRY, KISS, YAGNI** — the working defaults: no needless duplication, prefer the simple solution, don't build for a hypothetical future.
+- **Prefer editing an existing file to creating a new one**; write code that reads like it was already there — match the surrounding structure, naming, and comment density.
+- **Handle errors explicitly** — no silent swallow; surface and deal with failures (idiomatic for Go especially).
+- **Self-documenting**: names carry intent; comments explain *why*, not *what*; sparse over verbose.
+
 ## Secrets & safety
 
 - **Never commit** real credentials / tokens / PII. Gitleaks / pre-commit is a backstop, not a licence. Sensitive values via env vars; test fixtures synthetic only (TEST-NET `203.0.113.0/24`, fake names/ids).
