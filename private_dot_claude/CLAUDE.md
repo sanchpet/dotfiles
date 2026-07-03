@@ -38,7 +38,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 
 - **Branch + PR from the first change** — no committing straight to `main`, no bootstrap-and-forget. Exception: repos explicitly designated for direct-to-main (a teaching/learning repo, a personal dotfiles repo) — those say so in their own `CLAUDE.md`.
 - **No self-merge.** Creating and pushing the PR is fine; merging is the owner's call — after CI is green, send the clickable PR link and ask; wait for an explicit go-ahead.
-- **Draft by default** (`gh pr create --draft`); check for a `.github/` PR template and satisfy it. PR body says **WHAT/WHY**, not HOW (the diff shows how).
+- **Draft while the work is genuinely in progress** (more commits coming, spans sessions) — `gh pr create --draft`; open it **ready** when it's a complete change the owner will review and merge promptly (in a solo repo they're the sole reviewer, so a needless draft step just adds friction). Either way, check for a `.github/` PR template and satisfy it; the PR body says **WHAT/WHY**, not HOW (the diff shows how).
 - **Branch on the upstream repo when you have push access** — create the feature branch on `origin`, not a personal fork. Fork PRs don't receive CI secrets (registry push, etc.), so their pipelines can't go green. Fork only when you lack upstream push access.
 - **Never @-mention the owner in a PR** — it's already from their account and they see it automatically; a self-mention reads oddly from the outside.
 
