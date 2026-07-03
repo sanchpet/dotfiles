@@ -59,7 +59,10 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 
 ## Delegation & context hygiene
 
-- Keep architecture, state, and decisions in the main context; offload noisy output (repo-wide searches, many-file reads, long runs) to subagents and keep their conclusions, not the dumps.
+- Keep durable knowledge in the main context yourself — architecture, current state, decisions, constraints; offload noisy, token-heavy work to subagents that run in their own context and return only conclusions.
+- **Delegate when** the output is noisy and only the conclusion is needed (repo-wide search, many files, long test/build runs, broad investigation), the work is independent/parallelisable, and the done-criterion is fully specifiable in the prompt.
+- **Do it yourself when** the target file/symbol is known, the task needs tight iteration or the full chat history (subagents can't see it), or it's architectural / precision-critical work where a lossy summary is costly — and there, make the agent return **evidence** (`file:line`, exact output), not just a verdict.
+- Delegation saves the **main window, not total tokens** (each agent reloads its own prompt) — so don't delegate trivial work, and don't re-do what a running agent already covers. Default long delegated runs to background and stay responsive (take the next task or fan out more, fold results in when notified); use foreground only when the next step depends on that output. Relay the conclusion to the owner — the agent's transcript isn't shown to them.
 
 ## Maintaining this file
 
