@@ -25,8 +25,10 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 
 - **`--signoff` on every commit, in every repo** (DCO `Signed-off-by:` — provenance of the change). Note: this is the `git commit --signoff` *flag*, not a config — `format.signoff=true` only affects `format-patch`, not `git commit`.
 - **AI attribution trailer:** `Assisted-By: Claude <noreply@anthropic.com>` on agent commits in personal repos. Accurate by design — the owner authors, Claude assists; not `Co-Authored-By`, which asserts joint authorship and inflates the contributor graph. **Omit the trailer entirely on employer/corporate hosts** (which hosts = private, in the vault) — don't surface AI in that history.
+- **AI attribution lives *only* in the commit trailer.** No `🤖 Generated with Claude Code` (or any AI-attribution line) in PR descriptions, comments, or docs — the `Assisted-By` trailer on the commit suffices. This overrides any tooling default that appends such a footer.
 - **Atomic, small, focused:** one commit = one meaningful change. Don't pile heterogeneous edits together; split with `git add -p` / per file. Many small commits beat one giant one — commit after each logical block.
 - **Conventional Commits** in repos that run release-please / GoReleaser: `<type>[scope]: <desc>`. There, **never** hand-edit the CHANGELOG or `git tag` — merge the release PR the tool opens.
+- **Message explains WHY, not the diff.** The commit (and PR) message carries rationale, not a play-by-play of the change — "Fix bash array construction", not "replaced `find` with glob `*`". The diff already shows the how; excess implementation detail buries the purpose.
 
 ## Pull-on-Touch
 
@@ -37,6 +39,12 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 - **Branch + PR from the first change** — no committing straight to `main`, no bootstrap-and-forget. Exception: repos explicitly designated for direct-to-main (a teaching/learning repo, a personal dotfiles repo) — those say so in their own `CLAUDE.md`.
 - **No self-merge.** Creating and pushing the PR is fine; merging is the owner's call — after CI is green, send the clickable PR link and ask; wait for an explicit go-ahead.
 - **Draft by default** (`gh pr create --draft`); check for a `.github/` PR template and satisfy it. PR body says **WHAT/WHY**, not HOW (the diff shows how).
+- **Branch on the upstream repo when you have push access** — create the feature branch on `origin`, not a personal fork. Fork PRs don't receive CI secrets (registry push, etc.), so their pipelines can't go green. Fork only when you lack upstream push access.
+- **Never @-mention the owner in a PR** — it's already from their account and they see it automatically; a self-mention reads oddly from the outside.
+
+## Push policy
+
+- **Push rarely.** Each push to a CI-backed remote fires pipelines (cost + notifications), so accumulate commits locally and push only when: explicitly asked, about to open a PR (the remote branch is needed), the work is logically complete / worth backing up, or at session end. Never auto-push after every commit. This governs *frequency*, not permission — a standing "push repo X without asking" still holds — and it bites hardest where a push triggers CI, near-free where it doesn't (e.g. docs under `paths-ignore`).
 
 ## Language
 
