@@ -38,9 +38,12 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 
 - **Branch + PR from the first change** — no committing straight to `main`, no bootstrap-and-forget. Exception: repos explicitly designated for direct-to-main (a teaching/learning repo, a personal dotfiles repo) — those say so in their own `CLAUDE.md`.
 - **No self-merge.** Creating and pushing the PR is fine; merging is the owner's call — after CI is green, send the clickable PR link and ask; wait for an explicit go-ahead.
-- **Draft while the work is genuinely in progress** (more commits coming, spans sessions) — `gh pr create --draft`; open it **ready** when it's a complete change the owner will review and merge promptly (in a solo repo they're the sole reviewer, so a needless draft step just adds friction). Either way, check for a `.github/` PR template and satisfy it; the PR body says **WHAT/WHY**, not HOW (the diff shows how).
+- **Draft while the work is genuinely in progress** (more commits coming, spans sessions) — `gh pr create --draft`; open it **ready** when it's a complete change the owner will review and merge promptly (in a solo repo they're the sole reviewer, so a needless draft step just adds friction). The PR body says **WHAT/WHY**, not HOW (the diff shows how).
 - **Branch on the upstream repo when you have push access** — create the feature branch on `origin`, not a personal fork. Fork PRs don't receive CI secrets (registry push, etc.), so their pipelines can't go green. Fork only when you lack upstream push access.
 - **Never @-mention the owner in a PR** — it's already from their account and they see it automatically; a self-mention reads oddly from the outside.
+- **Find and honour the PR template** — search `.github/` for `pull_request_template.md`, `PULL_REQUEST_TEMPLATE.md`, or `.github/PULL_REQUEST_TEMPLATE/`; keep its full structure, fill it genuinely, and never tick a checkbox for work not done — if a requirement can't be met, say why in the body.
+- **PR title is a semantic commit line** — `type(scope): concise title`, specific scope. Squash-merge uses it as the commit subject, so it must read as one.
+- **PR body:** WHAT/WHY (above), **no commit hashes**, and **quantify claims where you can** — a precise number beats a vague "significantly"; spare the body line-level diff detail, not the facts. Don't auto-close issues with `Fixes #N` unless intended; link an issue when it aids traceability.
 
 ## Push policy
 
