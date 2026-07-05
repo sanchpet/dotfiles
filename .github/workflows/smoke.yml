@@ -117,7 +117,7 @@ jobs:
           if ! grep -q 'email = petrov@sanch.pet' <<<"$g"; then
             echo "❌ gitconfig: missing personal email in the base config"; exit 1
           fi
-          if grep -q 'includeIf' <<<"$g"; then
+          if grep -qE '^\[includeIf' <<<"$g"; then
             echo "❌ gitconfig: work includeIf must be absent without work data"; exit 1
           fi
           # Work render: inject dummy work data via a temp config (never a real value);
