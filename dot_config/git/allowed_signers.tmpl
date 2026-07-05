@@ -2,10 +2,12 @@
 {{- /* bootstrap.sh generates a SEPARATE key per machine, so to verify commits made on */ -}}
 {{- /* another machine, that machine's pubkey must be listed here. Onboard a new machine */ -}}
 {{- /* by appending a line to $keys below:                                              */ -}}
-{{- /*   printf 'ssh-ed25519 %s\n' "$(cut -d' ' -f2- ~/.ssh/id_ed25519.pub)"            */ -}}
+{{- /*   printf 'ssh-ed25519 %s\n' "$(cut -d' ' -f2 ~/.ssh/id_ed25519.pub)"             */ -}}
+{{- /* List key type + blob only, never the trailing comment (it can carry a machine   */ -}}
+{{- /* or user name); the principal below is what identifies the signer.               */ -}}
 {{- $p := `petrov@sanch.pet namespaces="git"` -}}
 {{- $keys := list
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClhHPS1tykz5l1eFtbMgHxGzbF0Jn7dqwOVUofWv+Q5 petrov_ad@m00office1622"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClhHPS1tykz5l1eFtbMgHxGzbF0Jn7dqwOVUofWv+Q5"
 -}}
 {{- /* Always trust this machine's own key, even if not yet committed to the list above. */ -}}
 {{- $local := joinPath .chezmoi.homeDir ".ssh/id_ed25519.pub" -}}

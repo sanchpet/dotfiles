@@ -219,15 +219,16 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
   variation is driven by a single `profile` value (`work`/`personal`), prompted once at
   `chezmoi init` (override in CI/headless with `DOTFILES_PROFILE`) and stored in the machine-local
   chezmoi config (never in this repo). Templates branch on it — `Brewfile.tmpl` installs the .NET
-  SDK only when `profile == "work"`. Git identity, by contrast, is **directory**-based:
-  `dot_gitconfig.tmpl` defaults to the personal identity (`sanchpet`) with SSH commit signing
-  everywhere, and an `includeIf "gitdir:~/hypomnemata/.repos/magnit/"` pulls in
-  `dot_config/git/work.inc` to switch to the work identity (signing off) for the corporate repos
-  cloned under `~/hypomnemata/.repos/magnit/` (the pre-migration `~/IWE/magnit/` is still matched
-  for any leftover clones). Defaulting to personal keeps the corporate email opt-in — it can only
-  ever appear under those work paths — and signing is gated on the key existing so a machine without it still
-  commits. This keeps a single declarative source of truth and avoids the duplication/drift of
-  per-machine dirs.
+  SDK only when `profile == "work"`. Git identity, by contrast, is **directory**-based and kept
+  out of this public repo: `dot_gitconfig.tmpl` defaults to the personal identity (`sanchpet`) with
+  SSH commit signing everywhere. A machine that also does corporate work sets its work identity
+  (`work.name` / `work.email`) and the dir its repos live under (`work.gitdir`) in the machine-local
+  chezmoi data — never in this repo. When `work.email` is set, an `includeIf "gitdir:…"` pulls in
+  `dot_config/git/work.inc` to switch to that identity (signing off) under the work dir; a machine
+  with no corporate identity gets neither the `includeIf` nor `work.inc`. Signing is gated on the key
+  existing so a machine without it still commits. This keeps a single declarative source of truth,
+  keeps the employer identity out of the public repo, and avoids the duplication/drift of per-machine
+  dirs.
 
 ## Syncing changes (chezmoi)
 

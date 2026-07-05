@@ -8,3 +8,7 @@ LICENSE
 .github
 mise.toml
 .pre-commit-config.yaml
+
+# Work git identity — deployed only on a machine that has a corporate identity
+# (work.email set). Omitted entirely elsewhere so no empty stub lands in $HOME.
+{{ if not (dig "work" "email" "" .) }}.config/git/work.inc{{ end }}

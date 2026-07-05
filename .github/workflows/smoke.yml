@@ -107,28 +107,42 @@ jobs:
           fi
           echo "✅ Brewfile.tmpl: work=freelens+dotnet-sdk, personal=freelens"
 
-      - name: git identity — personal default, work scoped to ~/IWE/magnit
+      - name: git identity — personal default, corporate identity data-driven & out of repo
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          # Identity is directory-based, not profile-based: dot_gitconfig.tmpl always
-          # renders the personal identity + an includeIf delegating work repos to
-          # work.inc. The signing block is gated on the SSH key, which the runner does
-          # not have, so it is correctly absent from the rendered output here.
+          # Personal render (no work data): the base personal identity, and NO work
+          # includeIf. The signing block is gated on the SSH key, which the runner does
+          # not have, so it is correctly absent here.
           g=$(chezmoi execute-template < dot_gitconfig.tmpl)
-
           if ! grep -q 'email = petrov@sanch.pet' <<<"$g"; then
             echo "❌ gitconfig: missing personal email in the base config"; exit 1
           fi
-          if grep -q 'magnit.ru' <<<"$g"; then
-            echo "❌ gitconfig: work email must never appear in the base config"; exit 1
+          if grep -q 'includeIf' <<<"$g"; then
+            echo "❌ gitconfig: work includeIf must be absent without work data"; exit 1
           fi
-          if ! grep -q 'gitdir:~/IWE/magnit/' <<<"$g"; then
-            echo "❌ gitconfig: missing work includeIf for ~/IWE/magnit/"; exit 1
+          # Work render: inject dummy work data via a temp config (never a real value);
+          # the includeIf appears with the given gitdir and work.inc renders the email.
+          printf '[data]\n  profile = "work"\n[data.work]\n  name = "ci-work"\n  email = "ci-work@example.test"\n  gitdir = "~/work-repos/"\n' > /tmp/work.toml
+          gw=$(chezmoi --config /tmp/work.toml execute-template < dot_gitconfig.tmpl)
+          if ! grep -q 'gitdir:~/work-repos/' <<<"$gw"; then
+            echo "❌ gitconfig: work includeIf missing when work.gitdir is set"; exit 1
           fi
-          if ! grep -q 'email = petrov_ad@magnit.ru' dot_config/git/work.inc; then
-            echo "❌ work.inc: missing work email"; exit 1
+          wi=$(chezmoi --config /tmp/work.toml execute-template < dot_config/git/work.inc.tmpl)
+          if ! grep -q 'email = ci-work@example.test' <<<"$wi"; then
+            echo "❌ work.inc: work email not rendered from data"; exit 1
           fi
-          if ! grep -q 'gpgsign = false' dot_config/git/work.inc; then
+          if ! grep -q 'gpgsign = false' <<<"$wi"; then
             echo "❌ work.inc: signing must be disabled for work repos"; exit 1
           fi
-          echo "✅ git identity: base=sanch.pet + includeIf, work.inc=magnit (signing off)"
+          echo "✅ git identity: personal base + data-driven work identity (out of repo)"
+
+      - name: opsec — no employer identity in the source tree
+        run: |
+          # The public repo must never carry the employer name, corporate user/email,
+          # or an internal hostname. Values live only in machine-local chezmoi data.
+          # Tokens are split with '' so this guard never matches its own pattern.
+          pat='magn''it|tan''der|petrov''_''ad|m00''office'
+          if grep -rInE "$pat" --exclude-dir=.git .; then
+            echo "❌ opsec: employer identity leaked into the public source"; exit 1
+          fi
+          echo "✅ opsec: no employer identity in source"
