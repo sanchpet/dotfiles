@@ -6,16 +6,33 @@
 # profile — the machine's role. Drives per-machine variations in templates
 # (e.g. work-only casks in Brewfile.tmpl: if eq .profile "work").
 #
-# Value source, by priority:
-#   1. env DOTFILES_PROFILE — deterministic for CI/headless (non-TTY).
+# work.* — corporate git identity (name/email) and the dir its repos live under.
+# Kept out of this PUBLIC repo entirely: the values exist only in the generated
+# machine-local config. Blank work.email means the machine has no corporate
+# identity, and the work includeIf / work.inc are omitted. NEVER put a real
+# employer value in a default below — it would land in the public source.
+#
+# Value source, by priority (per key):
+#   1. env DOTFILES_* — deterministic for CI/headless (non-TTY).
 #   2. interactive prompt — for a real machine (asked once).
-#   3. default "personal" — if non-TTY and env is unset.
+#   3. default — personal, no corporate identity.
 {{- $profile := "" -}}
 {{- if env "DOTFILES_PROFILE" -}}
 {{-   $profile = env "DOTFILES_PROFILE" -}}
 {{- else -}}
 {{-   $profile = promptStringOnce . "profile" "Machine profile (work/personal)" "personal" -}}
-{{- end }}
+{{- end -}}
+{{- /* Work prompts default to blank in a non-TTY (CI/headless) run — only DOTFILES_* */ -}}
+{{- /* env or an interactive TTY sets them, so bare-machine bootstrap never blocks.   */ -}}
+{{- $workName := "" -}}
+{{- if env "DOTFILES_WORK_NAME" -}}{{- $workName = env "DOTFILES_WORK_NAME" -}}
+{{- else if stdinIsATTY -}}{{- $workName = promptStringOnce . "work.name" "Corporate git user name (blank if none)" "" -}}{{- end -}}
+{{- $workEmail := "" -}}
+{{- if env "DOTFILES_WORK_EMAIL" -}}{{- $workEmail = env "DOTFILES_WORK_EMAIL" -}}
+{{- else if stdinIsATTY -}}{{- $workEmail = promptStringOnce . "work.email" "Corporate git email (blank if none)" "" -}}{{- end -}}
+{{- $workGitdir := "" -}}
+{{- if env "DOTFILES_WORK_GITDIR" -}}{{- $workGitdir = env "DOTFILES_WORK_GITDIR" -}}
+{{- else if stdinIsATTY -}}{{- $workGitdir = promptStringOnce . "work.gitdir" "Dir holding corporate repos, trailing slash (blank if none)" "" -}}{{- end }}
 
 # Pin the source to the directory init ran from (.chezmoi.sourceDir), so `chezmoi`
 # without --source always looks here. No hardcoded path in the repo: on a bare
@@ -24,3 +41,7 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
 
 [data]
     profile = {{ $profile | quote }}
+[data.work]
+    name = {{ $workName | quote }}
+    email = {{ $workEmail | quote }}
+    gitdir = {{ $workGitdir | quote }}
