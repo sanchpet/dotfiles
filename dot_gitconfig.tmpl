@@ -33,6 +33,8 @@
 # shortcuts are overridden with --signoff in ~/.zshrc instead.
 [alias]
 	ci = commit -s
+	# Colored one-line graph log — delta styles diffs, this styles history.
+	lg = log --graph --date=short --pretty=format:'%C(auto)%h %ad %s%d %C(blue)[%an]'
 
 # delta: syntax-highlighting pager for diffs (installed via mise).
 [core]
