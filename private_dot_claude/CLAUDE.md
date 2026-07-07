@@ -36,6 +36,11 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 
 - First time touching any repo in a session → `git status` first. Clean tree → `git pull --rebase`; **dirty tree → skip the pull** (avoid "local changes would be overwritten"). Applies to nested repos too.
 
+## Worktrees & parallel sessions
+
+- **One session, one worktree — never share a working tree.** When more than one agent/session may touch the same clone, they race on the shared `HEAD` and index: a checkout or commit from one session lands on another's branch (commits leak across branches, HEAD jumps mid-task). So branch/commit work never happens in the primary clone when parallelism is possible — each session runs in its **own git worktree placed next to the main clone** (`git worktree add ../<repo>-<branch> -b <branch>`, or the harness-native EnterWorktree). Read-only exploration can stay in the primary clone.
+- **Tear the worktree down when the branch is done** (PR merged, branch gone): `git worktree remove ../<repo>-<branch>` then `git worktree prune`. It's disposable scaffolding, not a second clone to accumulate.
+
 ## Branches & PRs
 
 - **Branch + PR from the first change** — no committing straight to `main`, no bootstrap-and-forget. Exception: repos explicitly designated for direct-to-main (a teaching/learning repo, a personal dotfiles repo) — those say so in their own `CLAUDE.md`.
