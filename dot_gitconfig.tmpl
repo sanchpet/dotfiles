@@ -5,14 +5,23 @@
 [user]
 	name = sanchpet
 	email = petrov@sanch.pet
-{{- $key := joinPath .chezmoi.homeDir ".ssh/id_ed25519.pub" }}
-{{- if stat $key }}
-	signingkey = {{ $key }}
+{{- /* Commit-signing key. With the Bitwarden SSH agent (data.bitwarden.agent) the       */ -}}
+{{- /* private signing key lives in the vault and is served over the agent socket, so we  */ -}}
+{{- /* point git at the signing@personal PUBLIC key (key:: literal) to select that agent  */ -}}
+{{- /* identity. Without the agent, fall back to this machine's on-disk per-machine key.  */ -}}
+{{- $bw := dig "bitwarden" "agent" false . }}
+{{- $localKey := joinPath .chezmoi.homeDir ".ssh/id_ed25519.pub" }}
+{{- if $bw }}
+	signingkey = key::ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnwqHSKmXOt1E0jPvBCAmxvpujzZrvPwDRk5Gvg83s+
+{{- else if stat $localKey }}
+	signingkey = {{ $localKey }}
+{{- end }}
+{{- if or $bw (stat $localKey) }}
 [gpg]
 	format = ssh
 [gpg "ssh"]
 	# Trust our own signing key so `git log --show-signature` / verify-commit
-	# report Verified locally. Generated per-machine from ~/.ssh/id_ed25519.pub.
+	# report Verified locally. Signers listed in allowed_signers.
 	allowedSignersFile = {{ .chezmoi.homeDir }}/.config/git/allowed_signers
 [commit]
 	gpgsign = true

@@ -6,7 +6,10 @@
 {{- /* List key type + blob only, never the trailing comment (it can carry a machine   */ -}}
 {{- /* or user name); the principal below is what identifies the signer.               */ -}}
 {{- $p := `petrov@sanch.pet namespaces="git"` -}}
+{{- /* signing@personal — central key served by the Bitwarden SSH agent (data.bitwarden.agent); */ -}}
+{{- /* signs on machines migrated to the agent, so commits it makes verify everywhere.          */ -}}
 {{- $keys := list
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnwqHSKmXOt1E0jPvBCAmxvpujzZrvPwDRk5Gvg83s+"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClhHPS1tykz5l1eFtbMgHxGzbF0Jn7dqwOVUofWv+Q5"
 -}}
 {{- /* Always trust this machine's own key, even if not yet committed to the list above. */ -}}

@@ -32,7 +32,13 @@
 {{- else if stdinIsATTY -}}{{- $workEmail = promptStringOnce . "work.email" "Corporate git email (blank if none)" "" -}}{{- end -}}
 {{- $workGitdir := "" -}}
 {{- if env "DOTFILES_WORK_GITDIR" -}}{{- $workGitdir = env "DOTFILES_WORK_GITDIR" -}}
-{{- else if stdinIsATTY -}}{{- $workGitdir = promptStringOnce . "work.gitdir" "Dir holding corporate repos, trailing slash (blank if none)" "" -}}{{- end }}
+{{- else if stdinIsATTY -}}{{- $workGitdir = promptStringOnce . "work.gitdir" "Dir holding corporate repos, trailing slash (blank if none)" "" -}}{{- end -}}
+{{- /* bitwarden.agent — route SSH auth + commit signing through the Bitwarden SSH agent, */ -}}
+{{- /* whose vault holds the private keys (nothing bare on disk). Opt-in per machine so an */ -}}
+{{- /* un-migrated machine keeps signing with its own on-disk key. Default off (CI too).   */ -}}
+{{- $bwAgent := false -}}
+{{- if env "DOTFILES_BW_AGENT" -}}{{- $bwAgent = eq (env "DOTFILES_BW_AGENT") "1" -}}
+{{- else if stdinIsATTY -}}{{- $bwAgent = promptBoolOnce . "bitwarden.agent" "Route SSH auth + git signing through the Bitwarden SSH agent" false -}}{{- end }}
 
 # Pin the source to the directory init ran from (.chezmoi.sourceDir), so `chezmoi`
 # without --source always looks here. No hardcoded path in the repo: on a bare
@@ -45,3 +51,5 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     name = {{ $workName | quote }}
     email = {{ $workEmail | quote }}
     gitdir = {{ $workGitdir | quote }}
+[data.bitwarden]
+    agent = {{ $bwAgent }}
