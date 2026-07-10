@@ -12,6 +12,16 @@ if [ -d "$(brew --prefix 2>/dev/null)/opt/libpq/bin" ]; then
   export PATH="$(brew --prefix)/opt/libpq/bin:$PATH"
 fi
 
+{{ if .bitwarden.agent -}}
+# --- SSH agent: Bitwarden ---
+# Route SSH auth + git commit signing through the Bitwarden desktop app's SSH agent, whose
+# vault holds the private keys (nothing bare on disk). Only when the socket is live, so a
+# closed or locked Bitwarden leaves the default agent in place rather than a dead socket.
+_bw_ssh_sock="$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"
+[ -S "$_bw_ssh_sock" ] && export SSH_AUTH_SOCK="$_bw_ssh_sock"
+unset _bw_ssh_sock
+
+{{ end -}}
 # --- Ansible fork-safety on macOS ---
 # macOS' Objective-C runtime forbids fork() after an ObjC class has begun initializing
 # in another thread; Ansible forks worker processes and crashes with
