@@ -64,6 +64,8 @@ oras = "latest"
 "github:sanchpet/sweb" = "latest" # my SpaceWeb hosting CLI (excluded from minimum_release_age above)
 terraform-docs = "latest"
 redis = "latest"
+cilium-cli = "latest"
+age = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
