@@ -235,9 +235,10 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
   and are served only while the vault is unlocked (Touch ID). `dot_gitconfig.tmpl` then points
   `user.signingKey` at the `signing@personal` public key (a `key::` literal) so signatures verify
   everywhere the key is trusted in `allowed_signers`; a machine without the flag keeps signing with
-  its own on-disk per-machine key. The `SSH_AUTH_SOCK` export and `~/.ssh/config` stay out of this
-  public repo (a live token lives in `~/.zprofile`, host topology in the ssh config) and are set on
-  the machine directly.
+  its own on-disk per-machine key. `.zshrc` points `SSH_AUTH_SOCK` at the agent socket under the
+  same flag, guarded by a socket-exists check so a closed/locked Bitwarden falls back to the default
+  agent. `~/.ssh/config` stays out of this public repo (host topology) and is set on the machine
+  directly.
 
 ## Syncing changes (chezmoi)
 
