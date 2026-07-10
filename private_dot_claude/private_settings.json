@@ -1,9 +1,11 @@
 {
-  "theme": "dark",
+  "model": "opus[1m]",
   "statusLine": {
     "type": "command",
     "command": "claudeline",
     "padding": 0,
     "refreshInterval": 5
-  }
+  },
+  "tui": "fullscreen",
+  "theme": "dark"
 }
