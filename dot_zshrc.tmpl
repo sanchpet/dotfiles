@@ -21,6 +21,17 @@ _bw_ssh_sock="$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh
 [ -S "$_bw_ssh_sock" ] && export SSH_AUTH_SOCK="$_bw_ssh_sock"
 unset _bw_ssh_sock
 
+# --- age-archive: resolve its key from Bitwarden (~/.local/bin/age-archive) ---
+# The script greps the AGE-SECRET-KEY out of whatever this prints, so `get item`
+# (full JSON) is field-agnostic — works whether the key is a note or a field.
+export AGE_IDENTITY_CMD='bw get item age-default-crypto-key'
+
+# bwu — Bitwarden CLI: log in (once per machine) + unlock (once per session), export the session.
+bwu() {
+  [ "$(bw status | jq -r .status)" = unauthenticated ] && { bw login || return; }
+  BW_SESSION="$(bw unlock --raw)" && export BW_SESSION && echo "bw ready"
+}
+
 {{ end -}}
 # --- Ansible fork-safety on macOS ---
 # macOS' Objective-C runtime forbids fork() after an ObjC class has begun initializing
