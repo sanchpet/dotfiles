@@ -36,7 +36,6 @@ awscli = { version = "latest", symlink_bins = "true" }
 fzf = "latest"
 ripgrep = "latest"
 bat = "latest"
-eza = "latest"
 delta = "latest"
 dust = "latest"
 duf = "latest"
