@@ -268,6 +268,11 @@ Secrets are **never committed**. They are resolved at apply time from
 [Bitwarden](https://bitwarden.com) via chezmoi templates. On a fresh machine, `bootstrap.sh`
 prompts for `bw unlock` only when the source actually contains secret templates.
 
+For interactive use, `bwu` (defined in `.zshrc`) logs in once per machine and unlocks per session,
+exporting `BW_SESSION`. `~/.local/bin/age-archive` then reads its key via `AGE_IDENTITY_CMD`
+(a `bw get item …`), so the age secret is fetched from the vault at run time — never pasted,
+never on disk.
+
 The zsh config (`dot_zshrc.tmpl`) is kept as a `.tmpl` so a `{{ bitwarden ... }}` secret line can
 be added later without a rename — see [Zsh shell](#zsh-shell-oh-my-zsh) for the plugin set and
 prompt.
