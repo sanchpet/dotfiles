@@ -15,7 +15,7 @@
 #   2. chezmoi source  — use THIS clone as chezmoi's source; generate ed25519 SSH key
 #   3. apply mise cfg  — lay down ~/.config/mise/config.toml (break the chicken-and-egg)
 #   4. mise install    — install tools (bw, uv, …) from the config
-#   5. bw unlock       — only if bitwarden templates exist (interactive)
+#   5. bitwarden       — point CLI at .bitwarden.server, then login+unlock (TTY only)
 #   6. Oh My Zsh       — zsh framework (curl; not managed by mise)
 #   7. chezmoi apply   — full dotfiles apply
 #   8. github ssh keys — register on GitHub (gh login + auth+signing) + switch origin→SSH (interactive on TTY)
@@ -96,14 +96,27 @@ if [ -f "$HOME/.config/mise/config.toml" ]; then
   mise install
 fi
 
-# --- 5. Bitwarden unlock — only if the source has bitwarden templates ---
+# --- 5. Bitwarden: point the CLI at the (self-hosted) server, then log in + unlock ---
+# Only if the source has bitwarden templates. The server URL comes from the per-machine
+# chezmoi config (.bitwarden.server; blank = bitwarden.com) — never hardcoded in this public
+# script. Interactive login is TTY-gated: a non-TTY run (CI/headless) skips it rather than hang.
 if grep -rqls "bitwarden" "$chezmoi_src" --include='*.tmpl' 2>/dev/null; then
   if command -v bw >/dev/null 2>&1; then
+    bw_server="${DOTFILES_BW_SERVER:-$(chezmoi execute-template '{{ dig "bitwarden" "server" "" . }}' 2>/dev/null)}"
+    if [ -n "$bw_server" ] && [ "$(bw config server 2>/dev/null)" != "$bw_server" ]; then
+      log "Bitwarden — pointing CLI at $bw_server"
+      bw logout >/dev/null 2>&1 || true          # switching servers requires a logged-out CLI
+      bw config server "$bw_server"
+    fi
     if [ -z "${BW_SESSION:-}" ]; then
-      log "Bitwarden templates detected — Bitwarden unlock required"
-      bw login --check >/dev/null 2>&1 || bw login
-      BW_SESSION="$(bw unlock --raw)" || die "Failed to unlock Bitwarden."
-      export BW_SESSION
+      if [ -t 0 ]; then
+        log "Bitwarden — login + unlock (interactive)"
+        bw login --check >/dev/null 2>&1 || bw login
+        BW_SESSION="$(bw unlock --raw)" || die "Failed to unlock Bitwarden."
+        export BW_SESSION
+      else
+        warn "Bitwarden templates present but no TTY (CI/headless) — skipping login; secrets won't resolve."
+      fi
     fi
   else
     warn "Bitwarden templates present but 'bw' is not installed — secrets won't be resolved."
