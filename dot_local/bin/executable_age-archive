@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# age-archive — pack a directory, encrypt it to your age key (+ any extra
+# recipients), verify by a round-trip decrypt, then distribute the ciphertext
+# to local dirs and/or rclone remotes. For offline+online backups of a folder.
+#
+# Identity: the age secret key is resolved once, up front, from
+#   $AGE_IDENTITY_CMD  — a shell command that prints the key (wire your secret
+#                        store here, e.g. `export AGE_IDENTITY_CMD='bw get notes <item>'`)
+#   else stdin         — paste the key then Ctrl-D (fallback / testing)
+# The self-recipient is derived from that key, so no age1… goes on the CLI.
+#
+# Safety: plaintext tar is STREAMED into age (never on disk); the secret key is
+# never written to disk; distribution is GATED behind a passing decrypt.
+# Re-runnable: pass extra recipients (e.g. a YubiKey key) to widen access.
+#
+#   SRC_DIR=~/docs age-archive                             # encrypt+verify (key via env or stdin)
+#   SRC_DIR=~/docs OUT=~/docs.tar.age \
+#     DEST_DIRS="/Volumes/CRYPT/bak" RCLONE_REMOTES="gdrive:bak" \
+#     age-archive age1extra...                             # + distribute, + extra recipient
+set -euo pipefail
+umask 077   # anything this script creates is private by default
+
+SRC_DIR="${SRC_DIR:?set SRC_DIR to the directory to archive}"
+OUT="${OUT:-$HOME/age-archive.tar.age}"
+DEST_DIRS="${DEST_DIRS:-}"            # space-separated local dirs (e.g. a mounted encrypted USB)
+RCLONE_REMOTES="${RCLONE_REMOTES:-}"  # space-separated rclone remotes (e.g. "gdrive:backup")
+AGE_IDENTITY_CMD="${AGE_IDENTITY_CMD:-}"
+
+EXTRA_RECIPIENTS=("$@")   # optional additional recipients (public age1… keys)
+[ -d "$SRC_DIR" ]              || { echo "error: SRC_DIR not found: $SRC_DIR"; exit 1; }
+command -v age >/dev/null      || { echo "error: age not installed (mise use age)"; exit 1; }
+command -v age-keygen >/dev/null || { echo "error: age-keygen not found"; exit 1; }
+
+# --- resolve the identity once (needed to derive the self-recipient and to verify) ---
+if [ -n "$AGE_IDENTITY_CMD" ]; then
+  IDENT=$(eval "$AGE_IDENTITY_CMD" | grep -o 'AGE-SECRET-KEY-1[0-9A-Z]*' | head -1)
+else
+  echo "==> paste the age secret key, then Ctrl-D (set AGE_IDENTITY_CMD to fetch it automatically):" >&2
+  IDENT=$(grep -o 'AGE-SECRET-KEY-1[0-9A-Z]*' | head -1)   # from stdin
+fi
+[ -n "$IDENT" ] || { echo "error: no age secret key resolved"; exit 1; }
+
+SELF=$(printf '%s\n' "$IDENT" | age-keygen -y)
+RECIPIENTS=("$SELF")
+[ ${#EXTRA_RECIPIENTS[@]} -gt 0 ] && RECIPIENTS+=("${EXTRA_RECIPIENTS[@]}")
+r_args=(); for r in "${RECIPIENTS[@]}"; do r_args+=(-r "$r"); done
+
+SRC_FILES=$(find "$SRC_DIR" -type f | wc -l | tr -d ' ')
+[ "$SRC_FILES" -gt 0 ] || { echo "error: no files under $SRC_DIR"; exit 1; }
+
+echo "==> pack: $SRC_FILES files from $SRC_DIR -> $OUT  (recipients: ${#RECIPIENTS[@]}, self=$SELF)"
+mkdir -p "$(dirname "$OUT")"
+tar -C "$SRC_DIR" -cf - . | age "${r_args[@]}" -o "$OUT"      # plaintext never hits disk
+
+SHA=$(shasum -a 256 "$OUT" | awk '{print $1}')
+printf '%s  %s\n' "$SHA" "$(basename "$OUT")" > "$OUT.sha256"
+echo "==> encrypted: sha256=$SHA  ($(du -h "$OUT" | awk '{print $1}'))"
+
+echo "==> VERIFY (mandatory gate): decrypt round-trip, listing only (nothing extracted to disk)"
+LIST=$(printf '%s\n' "$IDENT" | age -d -i /dev/stdin "$OUT" | tar -tf - | grep -v '/$' || true)
+unset IDENT
+N=$(printf '%s\n' "$LIST" | grep -c . || true)
+printf '%s\n' "$LIST" | sed 's/^/      /'
+if [ "$N" -ne "$SRC_FILES" ]; then
+  echo "!! verify MISMATCH: source=$SRC_FILES decrypted=$N -- NOT distributing. Investigate."
+  exit 2
+fi
+echo "==> verify OK: $N/$SRC_FILES files decrypted & listed."
+
+for d in $DEST_DIRS; do
+  [ -d "$d" ] || { echo "!! dest dir not present (mounted?): $d -- skipped"; continue; }
+  cp "$OUT" "$OUT.sha256" "$d"/
+  ( cd "$d" && shasum -a 256 -c "$(basename "$OUT").sha256" ) && echo "==> local OK: $d"
+done
+
+for remote in $RCLONE_REMOTES; do
+  command -v rclone >/dev/null || { echo "!! rclone not installed (mise use rclone) -- $remote skipped"; continue; }
+  rclone copy --checksum "$OUT" "$remote/" && rclone copy --checksum "$OUT.sha256" "$remote/" \
+    && echo "==> rclone OK: $remote"
+done
+
+echo "==> done. Recover with:  age -d -i <secret-key-file> $OUT | tar -xf - -C <target>"
