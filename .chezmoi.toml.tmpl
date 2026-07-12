@@ -38,7 +38,12 @@
 {{- /* un-migrated machine keeps signing with its own on-disk key. Default off (CI too).   */ -}}
 {{- $bwAgent := false -}}
 {{- if env "DOTFILES_BW_AGENT" -}}{{- $bwAgent = eq (env "DOTFILES_BW_AGENT") "1" -}}
-{{- else if stdinIsATTY -}}{{- $bwAgent = promptBoolOnce . "bitwarden.agent" "Route SSH auth + git signing through the Bitwarden SSH agent" false -}}{{- end }}
+{{- else if stdinIsATTY -}}{{- $bwAgent = promptBoolOnce . "bitwarden.agent" "Route SSH auth + git signing through the Bitwarden SSH agent" false -}}{{- end -}}
+{{- /* bitwarden.server — point the bw CLI at a self-hosted Vaultwarden (blank = bitwarden.com).  */ -}}
+{{- /* NEVER default a real URL here: it is live infra and this repo is PUBLIC (see work.* above). */ -}}
+{{- $bwServer := "" -}}
+{{- if env "DOTFILES_BW_SERVER" -}}{{- $bwServer = env "DOTFILES_BW_SERVER" -}}
+{{- else if stdinIsATTY -}}{{- $bwServer = promptStringOnce . "bitwarden.server" "Bitwarden/Vaultwarden server URL (blank = bitwarden.com)" "" -}}{{- end }}
 
 # Pin the source to the directory init ran from (.chezmoi.sourceDir), so `chezmoi`
 # without --source always looks here. No hardcoded path in the repo: on a bare
@@ -53,3 +58,4 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     gitdir = {{ $workGitdir | quote }}
 [data.bitwarden]
     agent = {{ $bwAgent }}
+    server = {{ $bwServer | quote }}
