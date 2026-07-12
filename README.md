@@ -19,7 +19,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 2. **chezmoi source** — point chezmoi at **this clone** as its source (`chezmoi init --source`), so edits apply with no commit/push/re-clone round-trip and no duplicate clone in `~/.local/share/chezmoi`. Also generate a per-machine `ed25519` SSH key if missing (no passphrase; disk is encrypted) — it must exist **before** step 7 so the rendered git config turns commit signing on
 3. **apply mise config** — lay down `~/.config/mise/config.toml` *before* installing tools (breaks the chicken-and-egg: the mise config is itself a managed dotfile)
 4. **mise install** — install CLI tools from the config (bitwarden-cli, uv, …)
-5. **Bitwarden unlock** — only if the source contains `*.tmpl` secrets (interactive)
+5. **Bitwarden** — point the `bw` CLI at `.bitwarden.server` (self-hosted, blank = cloud), then login + unlock; interactive, skipped without a TTY (CI)
 6. **Oh My Zsh** — install the zsh framework (without touching `.zshrc` or changing the shell)
 7. **chezmoi apply** — render and place all dotfiles
 8. **GitHub SSH keys** — register this machine's key (generated in step 2) on GitHub as both an *authentication* key (push) and a *signing* key (Verified badge), then switch the dotfiles clone's origin from HTTPS to SSH so it's push-ready. Interactive on a TTY: runs `gh auth login` if unauthenticated and refreshes the token scope when needed. Idempotent; on CI / headless it prints the key and skips
@@ -240,6 +240,11 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
   same flag, guarded by a socket-exists check so a closed/locked Bitwarden falls back to the default
   agent. `~/.ssh/config` stays out of this public repo (host topology) and is set on the machine
   directly.
+- **Bitwarden server — self-hosted, per machine.** `bootstrap.sh` points the `bw` CLI at
+  `.bitwarden.server` (asked once at `chezmoi init`, override `DOTFILES_BW_SERVER`) before login, so
+  a self-hosted Vaultwarden works out of the box; blank keeps the `bitwarden.com` default. The URL is
+  live infra, so it is never defaulted in this public repo — it lives only in the machine-local
+  chezmoi config. Login is TTY-gated: a non-TTY run (CI/headless) skips it instead of hanging.
 
 ## Syncing changes (chezmoi)
 
