@@ -57,7 +57,6 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | fzf | Fuzzy finder (`fzf --zsh` in `.zshrc`) | [github](https://github.com/junegunn/fzf) |
 | ripgrep (`rg`) | Fast recursive search | [github](https://github.com/BurntSushi/ripgrep) |
 | bat | `cat` with syntax highlighting & paging (aliased to `cat`) | [github](https://github.com/sharkdp/bat) |
-| eza | Modern `ls` — git-aware, colors (aliased to `ls`/`ll`/`la`/`tree`) | [github](https://github.com/eza-community/eza) |
 | delta | Syntax-highlighting pager for git diffs (wired as git `core.pager`) | [github](https://github.com/dandavison/delta) |
 | dust | Intuitive `du` — disk-usage tree (aliased to `du`) | [github](https://github.com/bootandy/dust) |
 | duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
@@ -126,6 +125,7 @@ Installed via the `mas` CLI. A one-time App Store sign-in is the only step that 
 | sshpass | Non-interactive ssh password auth (used by ansible) — not in the mise registry | all | [docs](https://sourceforge.net/projects/sshpass/) |
 | libpq | PostgreSQL client (`psql`, `pg_dump`, …) without the server — mise's `postgres` builds the full server; keg-only, so `.zshrc` adds its `bin` to `PATH` | all | [docs](https://formulae.brew.sh/formula/libpq) |
 | skopeo | Inspect/copy/sign OCI & container images without a daemon — not in the mise registry | all | [docs](https://github.com/containers/skopeo) |
+| eza | Modern `ls` — git-aware, colors (aliased to `ls`/`ll`/`la`/`tree`); eza ships no macOS binary upstream so mise can't provide it cleanly (asdf 404s, cargo needs Rust) — brew has a bottle | all | [github](https://github.com/eza-community/eza) |
 | mas | Mac App Store CLI — installs/declares the App Store apps above | all | [github](https://github.com/mas-cli/mas) |
 
 ## Zsh shell (Oh My Zsh)

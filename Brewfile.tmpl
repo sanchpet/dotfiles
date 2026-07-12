@@ -15,6 +15,7 @@ brew "sshpass" # non-interactive ssh password auth (used by ansible) — not in 
 brew "libpq"   # PostgreSQL client only (psql, pg_dump, …) without the server — mise's postgres builds the full server; keg-only, PATH added in .zshrc
 brew "skopeo"  # inspect/copy/sign OCI & container images without a daemon — not in mise registry
 brew "unar"    # universal unarchiver (rar, 7z, …) — not in mise registry
+brew "eza"     # modern ls (git-aware) — eza ships no macOS binary upstream, so mise's asdf backend 404s and cargo needs Rust; brew has a bottle
 brew "mas"     # Mac App Store CLI — declares/installs the App Store apps listed below; not in mise
 
 # === GUI apps (casks) — all machines ===
