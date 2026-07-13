@@ -238,7 +238,10 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
   everywhere the key is trusted in `allowed_signers`; a machine without the flag keeps signing with
   its own on-disk per-machine key. `.zshrc` points `SSH_AUTH_SOCK` at the agent socket under the
   same flag, guarded by a socket-exists check so a closed/locked Bitwarden falls back to the default
-  agent. `~/.ssh/config` stays out of this public repo (host topology) and is set on the machine
+  agent. Because that redirect only reaches login shells, git additionally points `gpg.ssh.program`
+  at a shim (`~/.local/bin/git-bw-sign`) that forces the Bitwarden socket for signing alone — so
+  non-login shells (Claude Code, background agents, scripts) sign too, while ssh/push auth stays on
+  the ambient agent. `~/.ssh/config` stays out of this public repo (host topology) and is set on the machine
   directly. Under the same flag, Teleport's `tsh` is told not to load its short-lived cert into
   this sign-only agent (`TELEPORT_USE_LOCAL_SSH_AGENT=false`) — the add would fail and abort the
   login; `tsh` keeps its certs in `~/.tsh` regardless.

@@ -1,0 +1,16 @@
+#!/bin/sh
+# git commit/tag signing shim — route ssh-keygen to the Bitwarden desktop SSH
+# agent, whose vault serves the signing@personal private key.
+#
+# Interactive login shells get SSH_AUTH_SOCK pointed at the Bitwarden socket by
+# ~/.zshrc, but non-login shells (Claude Code, background agents, plain scripts)
+# don't source it and inherit the default agent, which lacks the vault key — so
+# `git commit -S` fails with "Couldn't find key in agent". Git is pointed here via
+# gpg.ssh.program (only on Bitwarden-agent machines), so signing works everywhere
+# while normal ssh/push auth stays on whatever agent the environment provides.
+#
+# If the socket is absent (Bitwarden closed/locked), fall through to the ambient
+# agent rather than forcing a dead socket — same graceful degradation as ~/.zshrc.
+sock="$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"
+[ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
+exec ssh-keygen "$@"

@@ -23,6 +23,13 @@
 	# Trust our own signing key so `git log --show-signature` / verify-commit
 	# report Verified locally. Signers listed in allowed_signers.
 	allowedSignersFile = {{ .chezmoi.homeDir }}/.config/git/allowed_signers
+{{- if $bw }}
+	# Sign via a shim that forces the Bitwarden agent socket. Non-login shells
+	# (Claude Code, background agents, scripts) don't source ~/.zshrc and so miss
+	# the SSH_AUTH_SOCK redirect, leaving them unable to reach the vault signing
+	# key; the shim fixes signing everywhere without touching ssh/push auth.
+	program = {{ .chezmoi.homeDir }}/.local/bin/git-bw-sign
+{{- end }}
 [commit]
 	gpgsign = true
 [tag]
