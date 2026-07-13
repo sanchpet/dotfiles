@@ -240,7 +240,7 @@ completion script, so its built-in `COMP_LINE` completion is wired via `bashcomp
   same flag, guarded by a socket-exists check so a closed/locked Bitwarden falls back to the default
   agent. `~/.ssh/config` stays out of this public repo (host topology) and is set on the machine
   directly. Under the same flag, Teleport's `tsh` is told not to load its short-lived cert into
-  this sign-only agent (`TELEPORT_USE_LOCAL_SSH_AGENT=no`) — the add would fail and abort the
+  this sign-only agent (`TELEPORT_USE_LOCAL_SSH_AGENT=false`) — the add would fail and abort the
   login; `tsh` keeps its certs in `~/.tsh` regardless.
 - **Bitwarden server — self-hosted, per machine.** `bootstrap.sh` points the `bw` CLI at
   `.bitwarden.server` (asked once at `chezmoi init`, override `DOTFILES_BW_SERVER`) before login, so

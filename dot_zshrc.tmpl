@@ -26,7 +26,7 @@ unset _bw_ssh_sock
 # The Bitwarden agent above is sign-only (serves vault keys, refuses key additions), so the add
 # fails and tsh aborts the whole login. tsh stores its certs in ~/.tsh regardless; kube/app
 # access and `tsh ssh` read them there directly, so opting out of the agent costs nothing here.
-export TELEPORT_USE_LOCAL_SSH_AGENT=no
+export TELEPORT_USE_LOCAL_SSH_AGENT=false
 
 # --- age-archive: resolve its key from Bitwarden (~/.local/bin/age-archive) ---
 # The script greps the AGE-SECRET-KEY out of whatever this prints, so `get item`
