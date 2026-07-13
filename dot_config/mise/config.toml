@@ -36,8 +36,6 @@ awscli = { version = "latest", symlink_bins = "true" }
 fzf = "latest"
 ripgrep = "latest"
 bat = "latest"
-# eza via aqua (prebuilt binaries) — the registry-default asdf plugin fails to build in CI.
-"aqua:eza-community/eza" = "latest"
 delta = "latest"
 dust = "latest"
 duf = "latest"
