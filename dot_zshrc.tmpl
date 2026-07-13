@@ -21,6 +21,13 @@ _bw_ssh_sock="$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh
 [ -S "$_bw_ssh_sock" ] && export SSH_AUTH_SOCK="$_bw_ssh_sock"
 unset _bw_ssh_sock
 
+# --- Teleport: keep tsh out of the Bitwarden agent ---
+# `tsh login` mints a short-lived SSH cert and, by default, tries to ADD it to the ssh-agent.
+# The Bitwarden agent above is sign-only (serves vault keys, refuses key additions), so the add
+# fails and tsh aborts the whole login. tsh stores its certs in ~/.tsh regardless; kube/app
+# access and `tsh ssh` read them there directly, so opting out of the agent costs nothing here.
+export TELEPORT_USE_LOCAL_SSH_AGENT=no
+
 # --- age-archive: resolve its key from Bitwarden (~/.local/bin/age-archive) ---
 # The script greps the AGE-SECRET-KEY out of whatever this prints, so `get item`
 # (full JSON) is field-agnostic — works whether the key is a note or a field.
