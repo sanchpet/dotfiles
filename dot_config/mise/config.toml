@@ -36,6 +36,8 @@ awscli = { version = "latest", symlink_bins = "true" }
 fzf = "latest"
 ripgrep = "latest"
 bat = "latest"
+# eza via aqua (prebuilt binaries) — the registry-default asdf plugin fails to build in CI.
+"aqua:eza-community/eza" = "latest"
 delta = "latest"
 dust = "latest"
 duf = "latest"
@@ -65,6 +67,7 @@ terraform-docs = "latest"
 redis = "latest"
 cilium-cli = "latest"
 age = "latest"
+teleport-community = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
