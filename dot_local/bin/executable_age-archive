@@ -1,82 +1,126 @@
 #!/usr/bin/env bash
-# age-archive — pack a directory, encrypt it to your age key (+ any extra
-# recipients), verify by a round-trip decrypt, then distribute the ciphertext
-# to local dirs and/or rclone remotes. For offline+online backups of a folder.
+# age-archive — encrypt a directory to your age key (with a verify gate), or restore one.
 #
-# Identity: the age secret key is resolved once, up front, from
-#   $AGE_IDENTITY_CMD  — a shell command that prints the key (wire your secret
-#                        store here, e.g. `export AGE_IDENTITY_CMD='bw get notes <item>'`)
-#   else stdin         — paste the key then Ctrl-D (fallback / testing)
-# The self-recipient is derived from that key, so no age1… goes on the CLI.
+# The age secret key is resolved from --identity-cmd (default $AGE_IDENTITY_CMD, e.g. a
+# `bw get item …`) or, failing that, stdin. The self-recipient is derived from it, so no
+# age1… goes on the CLI. Plaintext tar is streamed (never on disk); the key never lands on
+# disk; archive distribution is gated behind a passing decrypt.
 #
-# Safety: plaintext tar is STREAMED into age (never on disk); the secret key is
-# never written to disk; distribution is GATED behind a passing decrypt.
-# Re-runnable: pass extra recipients (e.g. a YubiKey key) to widen access.
-#
-#   SRC_DIR=~/docs age-archive                             # encrypt+verify (key via env or stdin)
-#   SRC_DIR=~/docs OUT=~/docs.tar.age \
-#     DEST_DIRS="/Volumes/CRYPT/bak" RCLONE_REMOTES="gdrive:bak" \
-#     age-archive age1extra...                             # + distribute, + extra recipient
+#   age-archive -s ~/docs -o ~/docs.tar.age -d /Volumes/USB/bak --rclone gdrive:bak
+#   age-archive -s ~/docs -R age1extra…                 # extra recipient (e.g. a YubiKey)
+#   age-archive --restore ~/docs.tar.age ~/restored     # decrypt + extract
 set -euo pipefail
 umask 077   # anything this script creates is private by default
 
-SRC_DIR="${SRC_DIR:?set SRC_DIR to the directory to archive}"
-OUT="${OUT:-$HOME/age-archive.tar.age}"
-DEST_DIRS="${DEST_DIRS:-}"            # space-separated local dirs (e.g. a mounted encrypted USB)
-RCLONE_REMOTES="${RCLONE_REMOTES:-}"  # space-separated rclone remotes (e.g. "gdrive:backup")
-AGE_IDENTITY_CMD="${AGE_IDENTITY_CMD:-}"
+die() { printf 'age-archive: %s\n' "$*" >&2; exit 1; }
+usage() {
+  cat >&2 <<'EOF'
+age-archive — encrypt a directory to your age key (with a verify gate), or restore one.
 
-EXTRA_RECIPIENTS=("$@")   # optional additional recipients (public age1… keys)
-[ -d "$SRC_DIR" ]              || { echo "error: SRC_DIR not found: $SRC_DIR"; exit 1; }
-command -v age >/dev/null      || { echo "error: age not installed (mise use age)"; exit 1; }
-command -v age-keygen >/dev/null || { echo "error: age-keygen not found"; exit 1; }
+  age-archive -s DIR [-o FILE] [-d DEST]… [--rclone REMOTE]… [-R age1…]…
+  age-archive --restore ARCHIVE TARGET
 
-# --- resolve the identity once (needed to derive the self-recipient and to verify) ---
-if [ -n "$AGE_IDENTITY_CMD" ]; then
-  IDENT=$(eval "$AGE_IDENTITY_CMD" | grep -o 'AGE-SECRET-KEY-1[0-9A-Z]*' | head -1)
-else
-  echo "==> paste the age secret key, then Ctrl-D (set AGE_IDENTITY_CMD to fetch it automatically):" >&2
-  IDENT=$(grep -o 'AGE-SECRET-KEY-1[0-9A-Z]*' | head -1)   # from stdin
+  -s, --src DIR          source directory to archive
+  -o, --out FILE         output archive path (default: ~/age-archive.tar.age)
+  -d, --dest DIR         copy the ciphertext into DIR (repeatable; e.g. a mounted USB)
+      --rclone REMOTE    copy the ciphertext to an rclone remote (repeatable)
+  -R, --recipient age1…  extra age recipient (repeatable; e.g. a YubiKey key)
+      --restore A T      decrypt archive A, extract into directory T
+      --identity-cmd CMD command printing the age secret key (default: $AGE_IDENTITY_CMD, else stdin)
+  -h, --help
+
+The self-recipient is derived from the key, so no age1… is needed to encrypt.
+Plaintext never hits disk; the secret key never hits disk; distribution is gated on a passing verify.
+EOF
+}
+
+MODE=archive
+SRC=""
+OUT="$HOME/age-archive.tar.age"
+IDENTITY_CMD="${AGE_IDENTITY_CMD:-}"
+DESTS=(); REMOTES=(); EXTRA=(); POS=()
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -s|--src)         SRC="${2:-}"; shift 2 ;;
+    -o|--out)         OUT="${2:-}"; shift 2 ;;
+    -d|--dest)        DESTS+=("${2:-}"); shift 2 ;;
+    --rclone)         REMOTES+=("${2:-}"); shift 2 ;;
+    -R|--recipient)   EXTRA+=("${2:-}"); shift 2 ;;
+    --identity-cmd)   IDENTITY_CMD="${2:-}"; shift 2 ;;
+    --restore)        MODE=restore; shift ;;
+    -h|--help)        usage; exit 0 ;;
+    --)               shift; while [ $# -gt 0 ]; do POS+=("$1"); shift; done ;;
+    -*)               die "unknown option: $1 (see --help)" ;;
+    *)                POS+=("$1"); shift ;;
+  esac
+done
+
+command -v age >/dev/null        || die "age not installed (mise use age / brew install age)"
+command -v age-keygen >/dev/null || die "age-keygen not found"
+
+resolve_identity() {   # prints the AGE-SECRET-KEY, from IDENTITY_CMD or stdin
+  if [ -n "$IDENTITY_CMD" ]; then
+    eval "$IDENTITY_CMD" | grep -o 'AGE-SECRET-KEY-1[0-9A-Z]*' | head -1
+  else
+    printf 'paste the age secret key, then Ctrl-D (or set AGE_IDENTITY_CMD):\n' >&2
+    grep -o 'AGE-SECRET-KEY-1[0-9A-Z]*' | head -1
+  fi
+}
+
+# --- restore mode ---
+if [ "$MODE" = restore ]; then
+  ARCHIVE="${POS[0]:-}"; TARGET="${POS[1]:-}"
+  { [ -n "$ARCHIVE" ] && [ -n "$TARGET" ]; } || die "restore needs: --restore ARCHIVE TARGET"
+  [ -f "$ARCHIVE" ] || die "archive not found: $ARCHIVE"
+  IDENT="$(resolve_identity)"; [ -n "$IDENT" ] || die "no age secret key resolved"
+  mkdir -p "$TARGET"
+  printf '%s\n' "$IDENT" | age -d -i /dev/stdin "$ARCHIVE" | tar -xf - -C "$TARGET"
+  n=$(find "$TARGET" -type f | wc -l | tr -d ' ')
+  echo "==> restored $n files into $TARGET"
+  exit 0
 fi
-[ -n "$IDENT" ] || { echo "error: no age secret key resolved"; exit 1; }
 
+# --- archive mode ---
+[ ${#POS[@]} -eq 0 ] || die "unexpected args (extra recipients use -R): ${POS[*]}"
+[ -n "$SRC" ] || die "archive mode needs -s/--src DIR (see --help)"
+[ -d "$SRC" ] || die "source dir not found: $SRC"
+SRC_FILES=$(find "$SRC" -type f | wc -l | tr -d ' ')
+[ "$SRC_FILES" -gt 0 ] || die "no files under $SRC"
+
+IDENT="$(resolve_identity)"; [ -n "$IDENT" ] || die "no age secret key resolved"
 SELF=$(printf '%s\n' "$IDENT" | age-keygen -y)
-RECIPIENTS=("$SELF")
-[ ${#EXTRA_RECIPIENTS[@]} -gt 0 ] && RECIPIENTS+=("${EXTRA_RECIPIENTS[@]}")
+RECIPIENTS=("$SELF"); [ ${#EXTRA[@]} -gt 0 ] && RECIPIENTS+=("${EXTRA[@]}")
 r_args=(); for r in "${RECIPIENTS[@]}"; do r_args+=(-r "$r"); done
 
-SRC_FILES=$(find "$SRC_DIR" -type f | wc -l | tr -d ' ')
-[ "$SRC_FILES" -gt 0 ] || { echo "error: no files under $SRC_DIR"; exit 1; }
-
-echo "==> pack: $SRC_FILES files from $SRC_DIR -> $OUT  (recipients: ${#RECIPIENTS[@]}, self=$SELF)"
+echo "==> pack: $SRC_FILES files from $SRC -> $OUT  (recipients: ${#RECIPIENTS[@]}, self=$SELF)"
 mkdir -p "$(dirname "$OUT")"
-tar -C "$SRC_DIR" -cf - . | age "${r_args[@]}" -o "$OUT"      # plaintext never hits disk
+tar -C "$SRC" -cf - . | age "${r_args[@]}" -o "$OUT"      # plaintext never hits disk
 
 SHA=$(shasum -a 256 "$OUT" | awk '{print $1}')
 printf '%s  %s\n' "$SHA" "$(basename "$OUT")" > "$OUT.sha256"
 echo "==> encrypted: sha256=$SHA  ($(du -h "$OUT" | awk '{print $1}'))"
 
-echo "==> VERIFY (mandatory gate): decrypt round-trip, listing only (nothing extracted to disk)"
+echo "==> VERIFY (gate): decrypt round-trip, listing only (nothing extracted to disk)"
 LIST=$(printf '%s\n' "$IDENT" | age -d -i /dev/stdin "$OUT" | tar -tf - | grep -v '/$' || true)
 unset IDENT
 N=$(printf '%s\n' "$LIST" | grep -c . || true)
 printf '%s\n' "$LIST" | sed 's/^/      /'
-if [ "$N" -ne "$SRC_FILES" ]; then
-  echo "!! verify MISMATCH: source=$SRC_FILES decrypted=$N -- NOT distributing. Investigate."
-  exit 2
-fi
+[ "$N" -eq "$SRC_FILES" ] || die "verify MISMATCH: source=$SRC_FILES decrypted=$N — NOT distributing"
 echo "==> verify OK: $N/$SRC_FILES files decrypted & listed."
 
-for d in $DEST_DIRS; do
-  [ -d "$d" ] || { echo "!! dest dir not present (mounted?): $d -- skipped"; continue; }
-  cp "$OUT" "$OUT.sha256" "$d"/
-  ( cd "$d" && shasum -a 256 -c "$(basename "$OUT").sha256" ) && echo "==> local OK: $d"
-done
-
-for remote in $RCLONE_REMOTES; do
-  command -v rclone >/dev/null || { echo "!! rclone not installed (mise use rclone) -- $remote skipped"; continue; }
-  rclone copy --checksum "$OUT" "$remote/" && rclone copy --checksum "$OUT.sha256" "$remote/" \
-    && echo "==> rclone OK: $remote"
-done
-
-echo "==> done. Recover with:  age -d -i <secret-key-file> $OUT | tar -xf - -C <target>"
+if [ ${#DESTS[@]} -gt 0 ]; then
+  for d in "${DESTS[@]}"; do
+    [ -d "$d" ] || { echo "!! dest dir not present (mounted?): $d — skipped"; continue; }
+    cp "$OUT" "$OUT.sha256" "$d"/
+    ( cd "$d" && shasum -a 256 -c "$(basename "$OUT").sha256" ) && echo "==> local OK: $d"
+  done
+fi
+if [ ${#REMOTES[@]} -gt 0 ]; then
+  for remote in "${REMOTES[@]}"; do
+    command -v rclone >/dev/null || { echo "!! rclone not installed (mise use rclone) — $remote skipped"; continue; }
+    rclone copy --checksum "$OUT" "$remote/" && rclone copy --checksum "$OUT.sha256" "$remote/" \
+      && echo "==> rclone OK: $remote"
+  done
+fi
+echo "==> done. Restore with:  age-archive --restore $OUT <target-dir>"
