@@ -35,6 +35,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 ## Pull-on-Touch
 
 - First time touching any repo in a session → `git status` first. Clean tree → `git pull --rebase`; **dirty tree → skip the pull** (avoid "local changes would be overwritten"). Applies to nested repos too.
+- **Sync refs and reap merged branches on first touch too** — `git fetch --all --prune` (alias `gfa`) drops remote-tracking refs deleted upstream, then delete local branches whose upstream is gone: `git branch -vv | grep ': gone]'` → force-delete (alias `gbgD`). Without this, a squash-merged+auto-deleted branch lingers locally and you commit onto a stale base (the follow-up lands off `main`). Caveat: `-D` is a **force** delete, and under squash-merge a local branch's commits are never "contained" in `main`, so a branch carrying commits not yet upstream is reaped with them (reflog-only recovery). Safe under one discipline: **never add commits onto an already-merged branch — always branch fresh from `main`**; reaping the stale branch is what enforces it.
 
 ## Worktrees & parallel sessions
 
