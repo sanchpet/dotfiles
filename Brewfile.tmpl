@@ -17,6 +17,7 @@ brew "skopeo"  # inspect/copy/sign OCI & container images without a daemon — n
 brew "unar"    # universal unarchiver (rar, 7z, …) — not in mise registry
 brew "eza"     # modern ls (git-aware) — eza ships no macOS binary upstream, so mise's asdf backend 404s and cargo needs Rust; brew has a bottle
 brew "mas"     # Mac App Store CLI — declares/installs the App Store apps listed below; not in mise
+brew "ffmpeg"  # video/audio transcoding — mise offers only `conda:` (drags in a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus)
 
 # === GUI apps (casks) — all machines ===
 cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
