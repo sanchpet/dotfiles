@@ -197,24 +197,27 @@ MTProto with a **user session**, because a bot cannot read a conversation betwee
 `mcp-tg login` takes the phone, code and 2FA on a TTY — the credentials never pass through an
 agent's transcript — and stores the session in the login keychain rather than a file on disk.
 
-**The session authorises the entire account**, and the server exposes 78 tools with no read-only
-mode of its own. So the restriction lives in `~/.claude/settings.json`: `permissions.deny` lists
-**46 tools** by name — send, edit, delete, forward, join, leave, block, profile edits, presence.
+**All 78 tools are enabled, deliberately.** The server has no read-only mode, and an earlier
+`permissions.deny` listing every write tool was removed at the owner's decision: the agent is a
+working instrument on a machine the owner controls, and a tool that cannot act is worth less than
+the risk it avoids here.
 
-What remains is the 31 tools the server annotates read-only, plus two it annotates as writes and we
-allow deliberately: `tg_media_download` and `tg_messages_transcribe_audio`. Both read content and
-change nothing anyone else can see — one fetches an attachment to a local file, the other asks
-Telegram to transcribe a voice message. Denying them would leave an agent able to read text and
-nothing else, which defeats the purpose when edits arrive as a screenshot or a voice note.
+What that means concretely, so it is never a surprise: an agent can send, edit and delete messages
+as the account holder, forward, react, join and leave chats, block users, and change the profile.
+Messages it sends are indistinguishable from the owner's to whoever receives them — this is the
+only capability that reaches **other people**, and the one worth thinking about before granting a
+session to any agent.
 
-Two consequences worth stating, because neither is obvious:
+Two properties of the mechanism, unchanged by the above:
 
-- `tg_messages_mark_read` is denied, so an agent reading a chat **leaves no read receipts**.
-- The deny list is by tool, not by chat. **No Telegram MCP server can be scoped to a single
-  conversation** — the restriction is "may read everything, may change nothing", not "sees one
-  dialog". Upstream tracks per-chat allowlists as an open request.
+- **The session authorises the entire account.** It is a bearer credential that has already passed
+  2FA. Keychain storage protects it at rest; nothing protects it from a process that can ask the
+  keychain.
+- **No Telegram MCP server can be scoped to a single conversation.** Access is per-account, never
+  per-chat. Upstream tracks per-chat allowlists as an open request.
 
-Re-derive the list after a version bump — the tool surface grows:
+To reinstate a restriction later, `permissions.deny` in `~/.claude/settings.json` takes tool names
+as `mcp__mcp-tg__<tool>`. The current surface:
 
 ```sh
 gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
