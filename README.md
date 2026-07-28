@@ -199,10 +199,13 @@ agent's transcript — and stores the session in the login keychain rather than 
 
 **The session authorises the entire account**, and the server exposes 78 tools with no read-only
 mode of its own. So the restriction lives in `~/.claude/settings.json`: `permissions.deny` lists
-the **46 write and destructive tools** by name — send, edit, delete, forward, join, leave, block,
-profile edits, presence. What remains is the 31 read tools plus `tg_media_download`, which is
-denied nothing because it changes nothing in Telegram: it fetches an attachment and writes a local
-file.
+**46 tools** by name — send, edit, delete, forward, join, leave, block, profile edits, presence.
+
+What remains is the 31 tools the server annotates read-only, plus two it annotates as writes and we
+allow deliberately: `tg_media_download` and `tg_messages_transcribe_audio`. Both read content and
+change nothing anyone else can see — one fetches an attachment to a local file, the other asks
+Telegram to transcribe a voice message. Denying them would leave an agent able to read text and
+nothing else, which defeats the purpose when edits arrive as a screenshot or a voice note.
 
 Two consequences worth stating, because neither is obvious:
 
