@@ -147,6 +147,27 @@ brewdiff() {
   rm -f "$f"
 }
 
+# --- Comet: a browser an agent can attach to over CDP ---
+# chrome-devtools-mcp connects to a browser that is ALREADY running (--browser-url); this
+# starts one. Comet is Chromium, so it speaks the DevTools protocol unchanged.
+# A DEDICATED profile, not the everyday one: whoever holds the CDP endpoint can read every
+# open tab, its cookies, and act as you on any site you are signed into. The separate
+# --user-data-dir keeps that reach to this one window.
+# Port is fixed at 9222 because the MCP server is configured for that endpoint.
+cometdbg() {
+  local port=9222 dir="$HOME/.cache/comet-debug"
+  local app="/Applications/Comet.app/Contents/MacOS/Comet"
+  [[ -x $app ]] || { print -u2 "cometdbg: Comet not found at $app"; return 1 }
+  if curl -sf --max-time 1 "http://127.0.0.1:$port/json/version" >/dev/null 2>&1; then
+    print "cometdbg: already listening on :$port"
+    return 0
+  fi
+  mkdir -p "$dir"
+  "$app" --remote-debugging-port=$port --user-data-dir="$dir" "${1:-about:blank}" >/dev/null 2>&1 &
+  disown
+  print "cometdbg: started on :$port (profile $dir)"
+}
+
 # --- Aliases: kubectl extras (the omz `kubectl` plugin provides k/kl/kgp/kgaa/...) ---
 # Only what the plugin lacks. Note: plugin's `kga` = `get all`, all-namespaces = `kgaa`.
 alias kg="kubectl get"             # plain get
