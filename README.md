@@ -81,6 +81,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | crane | Inspect/copy/manage remote container images & registries | [github](https://github.com/google/go-containerregistry/tree/main/cmd/crane) |
 | regctl | Registry client — manifests, tags, copy/retag without a daemon | [github](https://github.com/regclient/regclient) |
 | oras | OCI registry client for arbitrary artifacts (push/pull non-image content) | [docs](https://oras.land) · [github](https://github.com/oras-project/oras) |
+| mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. **Version-pinned, not `latest`**: it holds a session that authorises the whole account. See [Agent access](#agent-access-mcp). | [github](https://github.com/lexfrei/mcp-tg) |
 
 ### Quality / dev workflow
 
@@ -172,6 +173,49 @@ upgrades stay manual via `brew upgrade` / `mise upgrade` / `mise self-update`). 
 (the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no
 completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` +
 `complete -C` and shared with the `tg` alias through `compdef`.
+
+## Agent access (MCP)
+
+Two MCP servers give Claude Code a browser and a Telegram reader. Both hand an agent something
+with real reach, so what bounds that reach is written down here rather than left implicit.
+
+### Browser — `chrome-devtools-mcp`
+
+Registered at user scope (`claude mcp add -s user`) pointing at `http://127.0.0.1:9222`, i.e. it
+attaches to a browser that is **already running** rather than launching its own. `cometdbg` in
+`dot_zshrc.tmpl` starts that browser: Comet is Chromium, so it speaks the DevTools protocol
+unchanged (verified — it reports `Chrome/150`, protocol 1.3).
+
+**It runs a dedicated profile (`~/.cache/comet-debug`), not the everyday one.** Whoever holds a
+CDP endpoint can read every open tab and its cookies, and act as you on any site you are signed
+into. The separate profile keeps that to one window. This is the whole reason `cometdbg` exists
+instead of a note saying "pass `--remote-debugging-port`".
+
+### Telegram — `mcp-tg`
+
+MTProto with a **user session**, because a bot cannot read a conversation between two people.
+`mcp-tg login` takes the phone, code and 2FA on a TTY — the credentials never pass through an
+agent's transcript — and stores the session in the login keychain rather than a file on disk.
+
+**The session authorises the entire account**, and the server exposes 78 tools with no read-only
+mode of its own. So the restriction lives in `~/.claude/settings.json`: `permissions.deny` lists
+the **46 write and destructive tools** by name — send, edit, delete, forward, join, leave, block,
+profile edits, presence. What remains is the 31 read tools plus `tg_media_download`, which is
+denied nothing because it changes nothing in Telegram: it fetches an attachment and writes a local
+file.
+
+Two consequences worth stating, because neither is obvious:
+
+- `tg_messages_mark_read` is denied, so an agent reading a chat **leaves no read receipts**.
+- The deny list is by tool, not by chat. **No Telegram MCP server can be scoped to a single
+  conversation** — the restriction is "may read everything, may change nothing", not "sees one
+  dialog". Upstream tracks per-chat allowlists as an open request.
+
+Re-derive the list after a version bump — the tool surface grows:
+
+```sh
+gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
+```
 
 ## Repository layout
 
