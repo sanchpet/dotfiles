@@ -238,6 +238,8 @@ gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
 | `dot_local/bin/executable_cleanup` | `~/.local/bin/cleanup` — disk-reclaim tool (reports by default; `--apply` deletes Tier 1 caches + orphan caches of removed tools, `--deep` adds Go modcache) |
 | `dot_local/bin/executable_updates` | `~/.local/bin/updates` — reports available mise + Homebrew package updates |
 | `dot_local/bin/executable_statusline` | `~/.local/bin/statusline` — Claude Code statusline: prefixes a marker for the active account profile (`🏢` work, `🏠` personal, read from `CLAUDE_CONFIG_DIR`), then execs `claudeline` with every segment intact |
+| `dot_local/bin/executable_git-agent-sign.tmpl` | `~/.local/bin/git-agent-sign` — signing shim: forces this machine's vault agent socket, then execs `ssh-keygen`, so non-login shells sign too |
+| `private_dot_ssh/private_config.tmpl` | `~/.ssh/config` (0600) — `IdentityAgent` pointed at the machine's vault agent, plus OrbStack's include |
 | `dot_local/bin/executable_login-agents` | `~/.local/bin/login-agents` — bootout/bootstrap cycle for the login agents below; run by the `run_onchange` hook and by bootstrap step 10 |
 | `Library/LaunchAgents/*.plist` | `~/Library/LaunchAgents/` — launchd agents started at login, one file per app (`dev.sanchpet.orbstack` starts the OrbStack engine so the Docker socket is up without opening the app). Add an app = add a plist |
 | `run_onchange_after_login-agents.sh.tmpl` | Reloads the login agents on `chezmoi apply` whenever a plist changes (keyed on their hashes) |
@@ -290,19 +292,19 @@ gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
   existing so a machine without it still commits. This keeps a single declarative source of truth,
   keeps the employer identity out of the public repo, and avoids the duplication/drift of per-machine
   dirs.
-- **SSH agent — Bitwarden, opt-in per machine.** Set `bitwarden.agent = true` in the machine-local
-  chezmoi data to route SSH auth and git commit signing through the Bitwarden desktop app's SSH
-  agent: the private keys (`auth@mac`, `signing@personal`) live in the vault — nothing bare on disk —
-  and are served only while the vault is unlocked (Touch ID). `dot_gitconfig.tmpl` then points
-  `user.signingKey` at the `signing@personal` public key (a `key::` literal) so signatures verify
-  everywhere the key is trusted in `allowed_signers`; a machine without the flag keeps signing with
-  its own on-disk per-machine key. `.zshrc` points `SSH_AUTH_SOCK` at the agent socket under the
-  same flag, guarded by a socket-exists check so a closed/locked Bitwarden falls back to the default
-  agent. Because that redirect only reaches login shells, git additionally points `gpg.ssh.program`
-  at a shim (`~/.local/bin/git-bw-sign`) that forces the Bitwarden socket for signing alone — so
-  non-login shells (Claude Code, background agents, scripts) sign too, while ssh/push auth stays on
-  the ambient agent. `~/.ssh/config` stays out of this public repo (host topology) and is set on the machine
-  directly. Under the same flag, Teleport's `tsh` is told not to load its short-lived cert into
+- **SSH keys live in a vault agent — never on disk.** Each machine keeps its own `auth@…` and
+  `signing@…` keys in its password manager and serves them over that app's SSH agent, unlocked by
+  Touch ID: personal machines use Bitwarden, work machines 1Password. The choice is one value in
+  the machine-local chezmoi data (`agent.kind`), alongside that machine's signing **public** key
+  (`agent.signingKey`), which `dot_gitconfig.tmpl` renders as a `key::` literal for
+  `user.signingKey`. Onboarding a machine means creating the keys in the vault, not running
+  `ssh-keygen` — `bootstrap.sh` generates nothing and reads the public halves from the agent when
+  registering them on GitHub. `~/.ssh/config` sets `IdentityAgent` to the machine's socket for all
+  hosts. Because that only covers `ssh`, git additionally points `gpg.ssh.program` at a shim
+  (`~/.local/bin/git-agent-sign`) forcing the same socket for signing, so non-login shells (Claude
+  Code, background agents, scripts) sign too. Verification is declarative: every machine's signing
+  public key is listed in `allowed_signers`, which is how commits made elsewhere verify locally.
+  Corporate repos sign as well — only the identity differs there, not the key. Under the same flag, Teleport's `tsh` is told not to load its short-lived cert into
   this sign-only agent (`TELEPORT_USE_LOCAL_SSH_AGENT=false`) — the add would fail and abort the
   login; `tsh` keeps its certs in `~/.tsh` regardless.
 - **Bitwarden server — self-hosted, per machine.** `bootstrap.sh` points the `bw` CLI at

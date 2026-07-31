@@ -1,26 +1,17 @@
 {{- /* Trusted SSH signing keys for verifying our own git commits (public keys only). */ -}}
-{{- /* bootstrap.sh generates a SEPARATE key per machine, so to verify commits made on */ -}}
-{{- /* another machine, that machine's pubkey must be listed here. Onboard a new machine */ -}}
-{{- /* by appending a line to $keys below:                                              */ -}}
-{{- /*   printf 'ssh-ed25519 %s\n' "$(cut -d' ' -f2 ~/.ssh/id_ed25519.pub)"             */ -}}
+{{- /* Each machine signs with its own key, held in its vault, so verifying commits made */ -}}
+{{- /* on another machine needs that machine's pubkey listed here. Onboard a machine by  */ -}}
+{{- /* appending its agent.signingKey value to $keys below.                              */ -}}
 {{- /* List key type + blob only, never the trailing comment (it can carry a machine   */ -}}
 {{- /* or user name); the principal below is what identifies the signer.               */ -}}
 {{- $p := `petrov@sanch.pet namespaces="git"` -}}
-{{- /* signing@personal — central key served by the Bitwarden SSH agent (data.bitwarden.agent); */ -}}
-{{- /* signs on machines migrated to the agent, so commits it makes verify everywhere.          */ -}}
-{{- /* The work machine's signing key: held in 1Password, served by its SSH agent.        */ -}}
-{{- /* Work machines sign via 1Password, personal ones via Bitwarden.                     */ -}}
+{{- /* Order below: the work machine (1Password), signing@personal (Bitwarden, shared by  */ -}}
+{{- /* machines on that agent), then an older machine key kept for verifying its history. */ -}}
 {{- $keys := list
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINSCsm9B3frrCuWpHdF4U/wzKaUIgGqnv7tIeHJjf1XD"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnwqHSKmXOt1E0jPvBCAmxvpujzZrvPwDRk5Gvg83s+"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClhHPS1tykz5l1eFtbMgHxGzbF0Jn7dqwOVUofWv+Q5"
 -}}
-{{- /* Always trust this machine's own key, even if not yet committed to the list above. */ -}}
-{{- $local := joinPath .chezmoi.homeDir ".ssh/id_ed25519.pub" -}}
-{{- if stat $local -}}
-{{-   $lk := output "cat" $local | trim -}}
-{{-   if not (has $lk $keys) -}}{{- $keys = append $keys $lk -}}{{- end -}}
-{{- end -}}
 {{- $lines := list -}}
 {{- range $keys -}}{{- $lines = append $lines (printf "%s %s" $p .) -}}{{- end -}}
 {{- join "\n" $lines }}
