@@ -65,9 +65,15 @@
 [merge]
 	conflictStyle = zdiff3
 
-{{- if dig "work" "email" "" . }}
+{{- $workEmail := dig "work" "email" "" . }}
+{{- $workGitdir := dig "work" "gitdir" "" . }}
+{{- if $workEmail }}
+{{-   if not $workGitdir }}
+{{-     fail "work.email is set but work.gitdir is empty. Git reads an empty `gitdir:` pattern as a match on EVERY repository, so the corporate identity would become the global default and commit signing would be switched off everywhere — silently. Set work.gitdir (corporate repo dir, trailing slash) in ~/.config/chezmoi/chezmoi.toml, or clear work.email." }}
+{{-   end }}
 # Corporate repos live under work.gitdir; override to the work identity and turn
 # signing off there (see work.inc). Everything else stays personal and signed.
-[includeIf "gitdir:{{ dig "work" "gitdir" "" . }}"]
+# Both values are required: see the guard above for why a blank gitdir is refused.
+[includeIf "gitdir:{{ $workGitdir }}"]
 	path = ~/.config/git/work.inc
 {{- end }}
