@@ -281,9 +281,12 @@ gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
   out of this public repo: `dot_gitconfig.tmpl` defaults to the personal identity (`sanchpet`) with
   SSH commit signing everywhere. A machine that also does corporate work sets its work identity
   (`work.name` / `work.email`) and the dir its repos live under (`work.gitdir`) in the machine-local
-  chezmoi data — never in this repo. When `work.email` is set, an `includeIf "gitdir:…"` pulls in
+  chezmoi data — never in this repo. When **both** are set, an `includeIf "gitdir:…"` pulls in
   `dot_config/git/work.inc` to switch to that identity (signing off) under the work dir; a machine
-  with no corporate identity gets neither the `includeIf` nor `work.inc`. Signing is gated on the key
+  with no corporate identity gets neither the `includeIf` nor `work.inc`. Setting `work.email`
+  while leaving `work.gitdir` blank is refused at render time — git reads an empty `gitdir:`
+  pattern as matching *every* repository, which would make the corporate identity the global
+  default and silently disable signing with it. Signing is gated on the key
   existing so a machine without it still commits. This keeps a single declarative source of truth,
   keeps the employer identity out of the public repo, and avoids the duplication/drift of per-machine
   dirs.
