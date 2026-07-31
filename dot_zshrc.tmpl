@@ -54,6 +54,14 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 # toward the per-process kernel cap (kern.maxfilesperproc=61440); only ever raises.
 (( $(ulimit -Sn) < 49152 )) && ulimit -Sn 49152
 
+# --- OrbStack: completions only, no PATH entry ---
+# The app symlinks its CLI (docker, docker-compose, orb, orbctl) into /usr/local/bin
+# itself, so ~/.orbstack/bin adds nothing except a second kubectl that competes with the
+# mise-managed one. Take the completions and leave the bin dir out. Replaces the
+# `source ~/.orbstack/shell/init.zsh` line the app writes into ~/.zprofile; must stay
+# above oh-my-zsh, which runs compinit.
+[[ -d "$HOME/.orbstack/shell/completions/zsh" ]] && fpath+=("$HOME/.orbstack/shell/completions/zsh")
+
 # --- Oh My Zsh (plugins only; Starship draws the prompt) ---
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME=""                       # theme off — prompt handed to Starship
@@ -167,6 +175,9 @@ cometdbg() {
   disown
   print "cometdbg: started on :$port (profile $dir)"
 }
+
+claude-work() { CLAUDE_CONFIG_DIR=~/.claude-work claude "$@" }
+claude-personal() { CLAUDE_CONFIG_DIR=~/.claude-personal claude "$@" }
 
 # --- Aliases: kubectl extras (the omz `kubectl` plugin provides k/kl/kgp/kgaa/...) ---
 # Only what the plugin lacks. Note: plugin's `kga` = `get all`, all-namespaces = `kgaa`.
