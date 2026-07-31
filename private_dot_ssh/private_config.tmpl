@@ -1,0 +1,14 @@
+# Managed by chezmoi. Keys live in the machine's vault and are served over its SSH
+# agent — IdentityAgent points ssh at that agent for every host, so nothing has to
+# sit in ~/.ssh. Commit signing goes through ~/.local/bin/git-agent-sign, which
+# forces the same socket for non-login shells.
+
+# OrbStack's 'orb' host for its Linux machines. Must stay above any Host block.
+Include ~/.orbstack/ssh/config
+
+Host *
+{{ if eq (dig "agent" "kind" "" .) "1password" -}}
+	IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+{{- else -}}
+	IdentityAgent ~/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock
+{{- end }}

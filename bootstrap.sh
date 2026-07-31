@@ -71,17 +71,11 @@ else
   log "chezmoi source already points at this clone ($chezmoi_src)"
 fi
 
-# Ensure a per-machine SSH key exists *before* chezmoi apply (step 7). dot_gitconfig.tmpl only
-# enables commit signing when ~/.ssh/id_ed25519.pub is present at render time — generate it now
-# or apply would write a gitconfig with signing off. ed25519 (SOTA for user keys), no passphrase
-# (protected by full-disk encryption). Idempotent: never overwrites. GitHub registration is
-# step 8 (it needs gh, installed at step 4).
-ssh_key="$HOME/.ssh/id_ed25519"
-if [ ! -f "$ssh_key" ]; then
-  log "no SSH key — generating ed25519 (machine: $(hostname -s))"
-  mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
-  ssh-keygen -t ed25519 -C "$(whoami)@$(hostname -s)" -f "$ssh_key" -N ""
-fi
+# No SSH key is generated here. Keys live in the machine's vault (1Password on work machines,
+# Bitwarden on personal ones) and are served over its SSH agent — nothing signable is written to
+# disk. dot_gitconfig.tmpl takes the signing PUBLIC key from agent.signingKey in the machine-local
+# chezmoi data, so a machine is onboarded by creating the key in the vault, not by ssh-keygen.
+# Registration on GitHub is step 8 (it needs gh, installed at step 4).
 # The source was cloned over HTTPS above (portable — works in CI / on a bare machine, no key
 # needed). Switching origin to SSH waits until the key is registered on GitHub (end of step 8).
 
@@ -156,33 +150,55 @@ log "chezmoi apply — full dotfiles apply"
 chezmoi apply
 
 # --- 8. GitHub SSH keys — register this machine's key on GitHub (push + Verified) ---
-# The key was generated in step 2 (before apply, so commit signing turned on). git signs commits
-# with it (dot_gitconfig.tmpl) and pushes over SSH; both need it on the GitHub account — as an
-# authentication key (push) and a signing key (Verified badge). Register both (idempotent).
+# Keys come from the vault's SSH agent (see step 2), so they are read with `ssh-add -L` rather
+# than off disk. An agent may hold several: pick by the item name in the key comment (auth… /
+# signing…) and fall back to the only key when it holds just one. Both roles need registering on
+# the GitHub account — authentication for push, signing for the Verified badge (idempotent).
 # Interactive on a TTY: runs `gh auth login` if unauthenticated and refreshes the token scope
 # when needed (both open a browser). On a non-TTY run (CI / headless) it prints the key and
 # skips. Finally, now that the key is on GitHub, switch the dotfiles clone's origin to SSH so
 # it's push-ready — same run, no second bootstrap needed (idempotent; stays HTTPS when SSH auth
 # isn't working: CI, or registration was declined/failed).
-ssh_key="$HOME/.ssh/id_ed25519"
 gh_scopes="admin:public_key,admin:ssh_signing_key"
-if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
+# Find an agent that answers: the ambient one first, then the known vault sockets.
+agent_keys=""
+for s in "${SSH_AUTH_SOCK:-}" \
+         "$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" \
+         "$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"; do
+  if [ -z "$s" ] || [ ! -S "$s" ]; then continue; fi
+  agent_keys="$(SSH_AUTH_SOCK="$s" ssh-add -L 2>/dev/null || true)"
+  [ -n "$agent_keys" ] && break
+done
+# key_for <comment-prefix> — the agent key whose item name starts with it (auth… / signing…),
+# falling back to the only key when the agent holds exactly one.
+key_for() {
+  printf '%s\n' "$agent_keys" | awk -v r="$1" '$3 ~ "^"r {print; f=1} END{exit !f}' && return 0
+  [ "$(printf '%s\n' "$agent_keys" | grep -c .)" = "1" ] && printf '%s\n' "$agent_keys"
+}
+if [ -z "$agent_keys" ]; then
+  warn "no SSH agent keys found — create them in the machine's vault (1Password/Bitwarden),"
+  warn "enable its SSH agent, then re-run; GitHub registration is skipped for now."
+elif command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
   if [ -t 0 ]; then
     log "gh not authenticated — launching interactive login"
     gh auth login --hostname github.com --git-protocol ssh --scopes "$gh_scopes" || true
   else
-    warn "gh not authenticated (non-TTY) — register this key on GitHub manually (auth + signing):"
-    warn "  $(cat "$ssh_key.pub")"
+    warn "gh not authenticated (non-TTY) — register these keys on GitHub manually (auth + signing):"
+    warn "$agent_keys"
   fi
 fi
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  key_blob="$(awk '{print $2}' "$ssh_key.pub")"
+if [ -n "$agent_keys" ] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
   for type in authentication signing; do
+    case "$type" in authentication) prefix=auth ;; *) prefix=signing ;; esac
+    pub="$(key_for "$prefix" || true)"
+    [ -n "$pub" ] || { warn "agent has no '$prefix…' key — skipping GitHub $type registration"; continue; }
+    pub_file="$(mktemp -t sshpub)"; printf '%s\n' "$pub" > "$pub_file"
+    key_blob="$(printf '%s' "$pub" | awk '{print $2}')"
     title="$type-$(hostname -s)"
     if gh ssh-key list 2>/dev/null | awk -F'\t' -v t="$type" '$5 == t { print $2 }' | grep -qF "$key_blob"; then
       log "GitHub $type key already registered"
-    elif out="$(gh ssh-key add "$ssh_key.pub" --type "$type" --title "$title" 2>&1)"; then
-      log "registered this machine's SSH key as a GitHub $type key"
+    elif out="$(gh ssh-key add "$pub_file" --type "$type" --title "$title" 2>&1)"; then
+      log "registered this machine's vault key as a GitHub $type key"
     elif printf '%s' "$out" | grep -qiE 'already|duplicate'; then
       log "GitHub $type key already present"
     elif [ -t 0 ]; then
@@ -191,10 +207,10 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
       # suppressing it turns the wait into a silent hang. One-time; the scope is cached after.
       log "GitHub needs more scope for the $type key — running 'gh auth refresh', follow the prompt…"
       if gh auth refresh --hostname github.com --scopes "$gh_scopes" \
-         && gh ssh-key add "$ssh_key.pub" --type "$type" --title "$title"; then
-        log "registered this machine's SSH key as a GitHub $type key (after scope refresh)"
+         && gh ssh-key add "$pub_file" --type "$type" --title "$title"; then
+        log "registered this machine's vault key as a GitHub $type key (after scope refresh)"
       else
-        warn "couldn't add $type key — add it manually: gh ssh-key add $ssh_key.pub --type $type"
+        warn "couldn't add $type key — add it manually: gh ssh-key add <pubkey> --type $type"
       fi
     else
       warn "couldn't add $type key: $out"

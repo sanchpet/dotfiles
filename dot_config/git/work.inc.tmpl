@@ -1,10 +1,6 @@
 # Work identity for corporate repos (see ~/.gitconfig includeIf).
 # Name/email come from machine-local chezmoi data (work.*), never this public repo.
-# Signing is off here — corporate repos don't use the personal SSH key.
+# Signing stays on: the same vault agent serves the key, only the identity differs.
 [user]
 	name = {{ .work.name }}
 	email = {{ .work.email }}
-[commit]
-	gpgsign = false
-[tag]
-	gpgsign = false

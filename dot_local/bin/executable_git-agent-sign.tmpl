@@ -1,0 +1,20 @@
+#!/bin/sh
+# git commit/tag signing shim — route ssh-keygen to this machine's vault SSH agent,
+# which serves the signing private key. Nothing signable is kept on disk.
+#
+# Interactive login shells get SSH_AUTH_SOCK pointed at the agent, but non-login
+# shells (Claude Code, background agents, plain scripts) don't source ~/.zshrc and
+# inherit the ambient agent, which lacks the vault key — `git commit -S` then fails
+# with "Couldn't find key in agent". Git is pointed here via gpg.ssh.program, so
+# signing works everywhere while ssh/push auth stays on whatever the environment
+# provides (~/.ssh/config sets IdentityAgent for that).
+#
+# If the socket is absent (vault app closed or locked), fall through to the ambient
+# agent rather than forcing a dead socket — the error then names the real cause.
+{{ if eq (dig "agent" "kind" "" .) "1password" -}}
+sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+{{- else -}}
+sock="$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"
+{{- end }}
+[ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
+exec ssh-keygen "$@"
