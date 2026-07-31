@@ -1,0 +1,5 @@
+#!/bin/sh
+# Reload the login agents whenever one of their plists changes. The hash below is what makes
+# chezmoi re-run this script — it changes with the plist content.
+# orbstack: {{ include "Library/LaunchAgents/dev.sanchpet.orbstack.plist" | sha256sum }}
+exec "$HOME/.local/bin/login-agents"

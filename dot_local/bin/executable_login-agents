@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# login-agents — (re)load the launchd login agents this repo owns
+# (~/Library/LaunchAgents/dev.sanchpet.*.plist).
+#
+# chezmoi lays the plists down as files, but launchd only learns about a new or edited one
+# after a bootout/bootstrap cycle, so laying the file down is not enough on its own. This is
+# the single place that cycle lives: the chezmoi run_onchange hook calls it whenever a plist
+# changes, and bootstrap calls it again after `brew bundle`, because on a bare machine the
+# apps an agent starts are installed after the dotfiles are applied.
+#
+# Idempotent — safe to run at any time; a missing plist directory is not an error.
+set -euo pipefail
+
+domain="gui/$(id -u)"
+shopt -s nullglob
+plists=("$HOME"/Library/LaunchAgents/dev.sanchpet.*.plist)
+
+if (( ${#plists[@]} == 0 )); then
+  echo "login-agents: no agents to load"
+  exit 0
+fi
+
+for plist in "${plists[@]}"; do
+  label="$(basename "$plist" .plist)"
+  launchctl bootout "$domain/$label" 2>/dev/null || true
+  launchctl bootstrap "$domain" "$plist"
+  echo "login-agents: loaded $label"
+done
