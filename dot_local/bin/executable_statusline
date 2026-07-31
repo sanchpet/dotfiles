@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# statusline — Claude Code statusline: claudeline, tagged with the active account profile.
+#
+# claudeline renders fixed segments (model, repo, context, quota, credits, …) and has no
+# custom-text segment, so the profile marker is prepended here instead of dropping any of
+# them. Claude Code passes the session JSON on stdin and reads one line from stdout; the
+# marker is written first, then claudeline inherits stdin untouched.
+#
+# CLAUDE_CONFIG_DIR is set by the claude-work / claude-personal shell functions and is
+# inherited by the process Claude Code spawns for the statusline, which is what makes the
+# profile visible here at all. The default profile (~/.claude) stays unmarked.
+case "${CLAUDE_CONFIG_DIR:-}" in
+  *-work)     printf '🏢 ' ;;
+  *-personal) printf '🏠 ' ;;
+esac
+
+exec claudeline "$@"
