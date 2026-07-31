@@ -1,5 +1,6 @@
 #!/bin/sh
-# Reload the login agents whenever one of their plists changes. The hash below is what makes
-# chezmoi re-run this script — it changes with the plist content.
-# orbstack: {{ include "Library/LaunchAgents/dev.sanchpet.orbstack.plist" | sha256sum }}
+# Reload the login agents whenever any of their plists changes. The digests below are what
+# make chezmoi re-run this script: the line is regenerated from every plist in the source
+# dir, so adding an agent is genuinely one file — no second place to register it.
+# plists: {{ range (glob (joinPath .chezmoi.sourceDir "Library/LaunchAgents/*.plist")) }}{{ include . | sha256sum }} {{ end }}
 exec "$HOME/.local/bin/login-agents"
