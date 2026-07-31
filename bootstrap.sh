@@ -21,6 +21,7 @@
 #   8. github ssh keys — register on GitHub (gh login + auth+signing) + switch origin→SSH (interactive on TTY)
 #   9. brew bundle     — render Brewfile.tmpl (per-machine profile) → GUI casks
 #                        (Homebrew installed lazily, only when needed)
+#  10. login agents    — load ~/Library/LaunchAgents/dev.sanchpet.*.plist (after the casks exist)
 #
 # Secrets never land in the repository (see README, secrets Decision Record).
 
@@ -250,6 +251,15 @@ if [ -s "$BREWFILE" ] && grep -qE '^[[:space:]]*(cask|brew)[[:space:]]' "$BREWFI
   fi
 else
   log "Brewfile has no casks/formulae — brew not needed (mise-first)."
+fi
+
+# --- 10. Login agents (launchd) ---
+# The plists were laid down by step 7, but the apps they start arrive in step 9, so the
+# agents are (re)loaded here — after the casks exist. Day to day this runs itself: a changed
+# plist triggers the run_onchange hook on `chezmoi apply`.
+if [ -x "$HOME/.local/bin/login-agents" ]; then
+  log "login agents — (re)loading launchd agents"
+  "$HOME/.local/bin/login-agents"
 fi
 
 log "Done. Machine configured."
