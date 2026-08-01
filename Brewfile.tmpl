@@ -29,6 +29,7 @@ cask "wakatime"           # Menu-bar time tracker — whole-system activity beyo
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
 cask "orbstack"           # Docker-compatible container & Linux VM runtime, replaces Docker Desktop: returns idle RAM to the host, reaches container IPs directly, built-in Rosetta for amd64 images. Free tier is personal use only. Launch once to start the engine
 cask "yandex-music"       # Yandex Music desktop player (self-updating cask)
+cask "actual"             # Actual Budget desktop client — talks to the self-hosted sync server. NOT auto_updates, so brew owns the version: keep it in step with the server tag pinned in homelab (the app warns when client and server drift apart)
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
