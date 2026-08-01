@@ -14,7 +14,12 @@
 {{ if eq (dig "agent" "kind" "" .) "1password" -}}
 sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 {{- else -}}
-sock="$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"
+# Socket path differs by build (direct/cask ~/.bitwarden-ssh-agent.sock vs the older sandboxed
+# Containers path) — take the first that exists.
+for sock in "$HOME/.bitwarden-ssh-agent.sock" \
+            "$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"; do
+  [ -S "$sock" ] && break
+done
 {{- end }}
 [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
 exec ssh-keygen "$@"
