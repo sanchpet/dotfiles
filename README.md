@@ -229,7 +229,7 @@ gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
 |------|------|
 | `dot_*` | Dotfiles rendered into `$HOME` by chezmoi (e.g. `dot_gitconfig` → `~/.gitconfig`) |
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
-| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline), included by every account profile below |
+| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline, `screencapture` sandbox exclusion), included by every account profile below |
 | `private_dot_claude/private_settings.json.tmpl` | `~/.claude/settings.json` (0600) — default profile. Secrets/permissions stay in `settings.local.json` (untracked) |
 | `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile; `CLAUDE.md` is a symlink to the canonical `~/.claude/CLAUDE.md` |
 | `dot_config/starship.toml` | Starship prompt config → `~/.config/starship.toml` (kubernetes/aws/terraform modules) |
