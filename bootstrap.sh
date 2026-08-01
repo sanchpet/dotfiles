@@ -164,6 +164,7 @@ gh_scopes="admin:public_key,admin:ssh_signing_key"
 agent_keys=""
 for s in "${SSH_AUTH_SOCK:-}" \
          "$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" \
+         "$HOME/.bitwarden-ssh-agent.sock" \
          "$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"; do
   if [ -z "$s" ] || [ ! -S "$s" ]; then continue; fi
   agent_keys="$(SSH_AUTH_SOCK="$s" ssh-add -L 2>/dev/null || true)"

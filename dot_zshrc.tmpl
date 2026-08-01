@@ -17,8 +17,12 @@ fi
 # Route SSH auth + git commit signing through the Bitwarden desktop app's SSH agent, whose
 # vault holds the private keys (nothing bare on disk). Only when the socket is live, so a
 # closed or locked Bitwarden leaves the default agent in place rather than a dead socket.
-_bw_ssh_sock="$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"
-[ -S "$_bw_ssh_sock" ] && export SSH_AUTH_SOCK="$_bw_ssh_sock"
+# Socket path differs by build: the direct/cask build uses ~/.bitwarden-ssh-agent.sock, the older
+# sandboxed (App Store) build the Containers path. Take the first that exists.
+for _bw_ssh_sock in "$HOME/.bitwarden-ssh-agent.sock" \
+                    "$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"; do
+  [ -S "$_bw_ssh_sock" ] && { export SSH_AUTH_SOCK="$_bw_ssh_sock"; break; }
+done
 unset _bw_ssh_sock
 
 # --- Teleport: keep tsh out of the Bitwarden agent ---
