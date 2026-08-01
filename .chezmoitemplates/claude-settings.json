@@ -8,5 +8,15 @@
   },
   "tui": "fullscreen",
   "theme": "dark",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "permissions": {
+    "allow": [
+      "Bash(screencapture:*)"
+    ]
+  },
+  "sandbox": {
+    "excludedCommands": [
+      "screencapture"
+    ]
+  }
 }
