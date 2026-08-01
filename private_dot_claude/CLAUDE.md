@@ -81,6 +81,7 @@ Durable grants — they hold across sessions, so don't re-ask for them; asking a
 - **Apply infrastructure yourself** (terraform / terragrunt): run `plan`, show what it says, apply when it only **creates or updates in place**. **A plan that replaces or destroys anything stops there** — report what would be destroyed and wait. Watch for resources that change via delete-then-create (DNS records are the classic): those are replacements wearing an update's clothes.
 - **Read the secret store freely**; write to it when the work needs a value that belongs there, and say which path you wrote. **Deleting a path or a secret version needs confirmation.**
 - **Merge your own PRs on green CI** — the Branches & PRs rule above.
+- **Delete a contributor fork once its upstream PR has merged** — a fork opened only to carry a PR is disposable scaffolding; when upstream merges it, tear the fork down (remote repo + local clone + its registry entry) without asking. Limit: first confirm the PR is actually **merged** upstream and the local clone has **nothing unpushed** — the delete is irreversible, so verify before it, not after.
 
 State the fact afterwards, plainly and once. A standing grant removes the question, not the report.
 
