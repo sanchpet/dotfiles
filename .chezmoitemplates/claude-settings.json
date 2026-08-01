@@ -10,6 +10,7 @@
   "theme": "dark",
   "skipDangerousModePermissionPrompt": true,
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(screencapture:*)"
     ]
