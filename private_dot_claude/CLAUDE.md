@@ -45,7 +45,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 ## Branches & PRs
 
 - **Branch + PR from the first change** — no committing straight to `main`, no bootstrap-and-forget. Exception: repos explicitly designated for direct-to-main (a teaching/learning repo, a personal dotfiles repo) — those say so in their own `CLAUDE.md`.
-- **No self-merge.** Creating and pushing the PR is fine; merging is the owner's call — after CI is green, send the clickable PR link and ask; wait for an explicit go-ahead.
+- **Merge your own PRs once CI is green** — in the owner's repos this is delegated; don't ask per PR, merge (`gh pr merge --squash`) and report it done with the link. Two limits: a repo or PR the owner has flagged as needing another human's review, and anyone else's repo — there, push the branch and stop. Green CI is necessary, not sufficient: it only proves what the pipeline checks, so a change whose real risk sits outside CI's reach still gets raised before merging.
 - **Draft while the work is genuinely in progress** (more commits coming, spans sessions) — `gh pr create --draft`; open it **ready** when it's a complete change the owner will review and merge promptly (in a solo repo they're the sole reviewer, so a needless draft step just adds friction). The PR body says **WHAT/WHY**, not HOW (the diff shows how).
 - **Branch on the upstream repo when you have push access** — create the feature branch on `origin`, not a personal fork. Fork PRs don't receive CI secrets (registry push, etc.), so their pipelines can't go green. Fork only when you lack upstream push access.
 - **Never @-mention the owner in a PR** — it's already from their account and they see it automatically; a self-mention reads oddly from the outside.
@@ -74,11 +74,21 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 - **Handle errors explicitly** — no silent swallow; surface and deal with failures (idiomatic for Go especially).
 - **Self-documenting**: names carry intent; comments explain *why*, not *what*; sparse over verbose.
 
+## Standing authorizations
+
+Durable grants — they hold across sessions, so don't re-ask for them; asking again is its own kind of failure. Each carries its own limit, and that limit is exactly where to stop and ask.
+
+- **Apply infrastructure yourself** (terraform / terragrunt): run `plan`, show what it says, apply when it only **creates or updates in place**. **A plan that replaces or destroys anything stops there** — report what would be destroyed and wait. Watch for resources that change via delete-then-create (DNS records are the classic): those are replacements wearing an update's clothes.
+- **Read the secret store freely**; write to it when the work needs a value that belongs there, and say which path you wrote. **Deleting a path or a secret version needs confirmation.**
+- **Merge your own PRs on green CI** — the Branches & PRs rule above.
+
+State the fact afterwards, plainly and once. A standing grant removes the question, not the report.
+
 ## Secrets & safety
 
 - **Never commit** real credentials / tokens / PII. Gitleaks / pre-commit is a backstop, not a licence. Sensitive values via env vars; test fixtures synthetic only (TEST-NET `203.0.113.0/24`, fake names/ids).
 - **Kubernetes: verify context before any mutating action** — `kubectl config current-context`, pass `--context` explicitly. Prefer read-only unless the change goes declaratively through the repo's GitOps path.
-- **Destructive / outward-facing actions** (force-push, deleting remote state, publishing, filing issues/PRs on others' repos) → confirm first unless durably authorized.
+- **Destructive / outward-facing actions** (force-push, deleting remote state, publishing, filing issues/PRs on others' repos) → confirm first unless durably authorized (Standing authorizations above — and note each grant's stated limit is itself a confirm-first case).
 - **SSH auth failure → stop, don't paper over it.** Surface it and ask the owner (e.g. unlock the agent / password manager). Don't retry-loop, don't fall back to HTTPS, don't generate a new key or hand-edit `authorized_keys` to force it through.
 
 ## Project tracking
