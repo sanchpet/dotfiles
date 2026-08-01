@@ -131,8 +131,10 @@ jobs:
           if ! grep -q 'email = ci-work@example.test' <<<"$wi"; then
             echo "❌ work.inc: work email not rendered from data"; exit 1
           fi
-          if ! grep -q 'gpgsign = false' <<<"$wi"; then
-            echo "❌ work.inc: signing must be disabled for work repos"; exit 1
+          # Work repos sign too — the vault agent serves the same key, only the
+          # identity differs — so work.inc must not switch signing back off.
+          if grep -q 'gpgsign = false' <<<"$wi"; then
+            echo "❌ work.inc: signing must stay on for work repos"; exit 1
           fi
           echo "✅ git identity: personal base + data-driven work identity (out of repo)"
 
