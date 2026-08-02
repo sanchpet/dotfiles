@@ -1,0 +1,50 @@
+#!/bin/sh
+# Register the Telegram MTProto MCP server (mcp-tg, pinned in mise) with the PERSONAL Claude
+# profile. The binary is declared in dot_config/mise/config.toml; this is the other half — the
+# registration itself, which otherwise lives only as hand-typed state in ~/.claude-personal and is
+# lost the moment that profile is rebuilt or the machine is replaced.
+#
+# revision: 1  — bump to force a re-run after editing the intent below.
+#
+# Personal profile ONLY. The contours are separated by CLAUDE_CONFIG_DIR, so a --scope user
+# registration made here is invisible to the work profile; that isolation is the reason the
+# variable is set explicitly rather than inherited from whatever shell runs `chezmoi apply`.
+#
+# The credentials are NOT in this repo. They come from Vault at apply time
+# (homelab/telegram/mcp-tg, kind=credential), which keeps a Telegram account credential out of git
+# while still letting a fresh machine converge. Vault is mesh-only, so a machine off the mesh
+# simply skips this step with a message — bootstrap must not hard-fail on a reachability problem.
+set -eu
+
+CONFIG_DIR="$HOME/.claude-personal"
+VAULT_PATH="homelab/telegram/mcp-tg"
+VAULT_ADDR="${VAULT_ADDR:-http://10.10.0.1:8200}"
+export VAULT_ADDR
+
+command -v claude >/dev/null 2>&1 || { echo "mcp-tg: claude not on PATH — skipping registration"; exit 0; }
+command -v mcp-tg >/dev/null 2>&1 || { echo "mcp-tg: binary not on PATH (mise not applied yet?) — skipping"; exit 0; }
+command -v vault  >/dev/null 2>&1 || { echo "mcp-tg: vault not on PATH — skipping registration"; exit 0; }
+
+# Idempotent: already registered is the steady state, not an error.
+if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^mcp-tg'; then
+  echo "mcp-tg: already registered in the personal profile"
+  exit 0
+fi
+
+app_id=$(vault kv get -field=app_id "$VAULT_PATH" 2>/dev/null || true)
+app_hash=$(vault kv get -field=app_hash "$VAULT_PATH" 2>/dev/null || true)
+
+if [ -z "$app_id" ] || [ -z "$app_hash" ]; then
+  echo "mcp-tg: could not read $VAULT_PATH (Vault unreachable or token expired) — skipping."
+  echo "        Re-run 'chezmoi apply' once on the mesh with a valid token."
+  exit 0
+fi
+
+CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add mcp-tg \
+  --scope user \
+  --env "TELEGRAM_APP_ID=$app_id" \
+  --env "TELEGRAM_APP_HASH=$app_hash" \
+  -- mcp-tg
+
+echo "mcp-tg: registered. The account login is separate and interactive —"
+echo "        run 'mcp-tg login' in a terminal so the 2FA password never passes through the client."
