@@ -181,10 +181,16 @@ with real reach, so what bounds that reach is written down here rather than left
 
 ### Browser — `chrome-devtools-mcp`
 
-Registered at user scope (`claude mcp add -s user`) pointing at `http://127.0.0.1:9222`, i.e. it
+Registered at user scope in the **personal profile** pointing at `http://127.0.0.1:9222`, i.e. it
 attaches to a browser that is **already running** rather than launching its own. `cometdbg` in
 `dot_zshrc.tmpl` starts that browser: Comet is Chromium, so it speaks the DevTools protocol
 unchanged (verified — it reports `Chrome/150`, protocol 1.3).
+
+**The registration is reproducible** (`run_onchange_after_register-chrome-devtools.sh`), for the
+same reason mcp-tg's is: `--scope user` writes into whichever profile `CLAUDE_CONFIG_DIR` names, so
+a hand-typed registration silently belongs to one contour and is missing from the other. That is
+not hypothetical — this server sat in the default profile alone until a session under the personal
+one reported having no browser at all. The script pins the profile and is idempotent.
 
 **It runs a dedicated profile (`~/.cache/comet-debug`), not the everyday one.** Whoever holds a
 CDP endpoint can read every open tab and its cookies, and act as you on any site you are signed
