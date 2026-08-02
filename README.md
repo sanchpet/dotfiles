@@ -198,6 +198,13 @@ MTProto with a **user session**, because a bot cannot read a conversation betwee
 `mcp-tg login` takes the phone, code and 2FA on a TTY — the credentials never pass through an
 agent's transcript — and stores the session in the login keychain rather than a file on disk.
 
+**The registration itself is reproducible** (`run_onchange_after_register-mcp-tg.sh.tmpl`): mise
+pins the binary, and that script registers the server in the personal profile, reading the API
+credentials from Vault (`homelab/telegram/mcp-tg`) at apply time so they stay out of git. It is
+idempotent, personal-profile-only, and skips with a message when Vault is off the mesh — a
+bootstrap must not fail on reachability. The account login stays manual and interactive by design:
+that is the one step that should never be automated.
+
 **All 78 tools are enabled, deliberately.** The server has no read-only mode, and an earlier
 `permissions.deny` listing every write tool was removed at the owner's decision: the agent is a
 working instrument on a machine the owner controls, and a tool that cannot act is worth less than
