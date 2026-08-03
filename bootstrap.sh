@@ -172,13 +172,20 @@ for s in "${SSH_AUTH_SOCK:-}" \
          "$HOME/.bitwarden-ssh-agent.sock" \
          "$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"; do
   if [ -z "$s" ] || [ ! -S "$s" ]; then continue; fi
-  agent_keys="$(SSH_AUTH_SOCK="$s" ssh-add -L 2>/dev/null || true)"
+  # Keep key lines only: an empty agent answers "The agent has no identities." on STDOUT, which
+  # would otherwise count as a hit — the probe stops at the first (empty) socket and that sentence
+  # travels on as the public key, which GitHub rejects (HTTP 422, "not in OpenSSH format").
+  # macOS makes this the default path: SSH_AUTH_SOCK points at Apple's launchd agent, while the
+  # keys live in the vault's own agent further down the list.
+  agent_keys="$(SSH_AUTH_SOCK="$s" ssh-add -L 2>/dev/null | grep -E '^(ssh-|ecdsa-|sk-)' || true)"
   [ -n "$agent_keys" ] && break
 done
 # key_for <comment-prefix> — the agent key whose item name starts with it (auth… / signing…),
 # falling back to the only key when the agent holds exactly one.
 key_for() {
-  printf '%s\n' "$agent_keys" | awk -v r="$1" '$3 ~ "^"r {print; f=1} END{exit !f}' && return 0
+  # First match only — an agent may hold the same role for several machines, and two lines in the
+  # file handed to `gh ssh-key add` is not a public key either.
+  printf '%s\n' "$agent_keys" | awk -v r="$1" '$3 ~ "^"r {print; f=1; exit} END{exit !f}' && return 0
   [ "$(printf '%s\n' "$agent_keys" | grep -c .)" = "1" ] && printf '%s\n' "$agent_keys"
 }
 if [ -z "$agent_keys" ]; then
