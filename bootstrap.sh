@@ -98,7 +98,12 @@ fi
 if grep -rqls "bitwarden" "$chezmoi_src" --include='*.tmpl' 2>/dev/null; then
   if command -v bw >/dev/null 2>&1; then
     bw_server="${DOTFILES_BW_SERVER:-$(chezmoi execute-template '{{ dig "bitwarden" "server" "" . }}' 2>/dev/null)}"
-    if [ -n "$bw_server" ] && [ "$(bw config server 2>/dev/null)" != "$bw_server" ]; then
+    # bw reports the server as it normalised it (scheme added, trailing slash dropped), so the
+    # configured value must be normalised the same way before comparing. A raw compare of
+    # "vw.example.net" against "https://vw.example.net" never matches — and every bootstrap then
+    # takes the logout branch below, throwing away a working session and forcing a fresh login.
+    bw_url() { u="${1%/}"; case "$u" in ""|*://*) ;; *) u="https://$u" ;; esac; printf '%s' "$u"; }
+    if [ -n "$bw_server" ] && [ "$(bw_url "$(bw config server 2>/dev/null)")" != "$(bw_url "$bw_server")" ]; then
       log "Bitwarden — pointing CLI at $bw_server"
       bw logout >/dev/null 2>&1 || true          # switching servers requires a logged-out CLI
       bw config server "$bw_server"
