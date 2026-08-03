@@ -311,6 +311,7 @@ machine meant to be reachable stays open.
 | `dot_local/bin/executable_login-agents` | `~/.local/bin/login-agents` — bootout/bootstrap cycle for the login agents below; run by the `run_onchange` hook and by bootstrap step 10 |
 | `Library/LaunchAgents/*.plist` | `~/Library/LaunchAgents/` — launchd agents started at login, one file per app (`dev.sanchpet.orbstack` starts the OrbStack engine so the Docker socket is up without opening the app). Add an app = add a plist |
 | `run_onchange_after_login-agents.sh.tmpl` | Reloads the login agents on `chezmoi apply` whenever a plist changes (keyed on their hashes) |
+| `run_onchange_after_sudo-touch-id.sh` | Installs `/etc/pam.d/sudo_local` (Touch ID for `sudo`) + `/etc/sudoers.d/timestamp` (no credential cache). Idempotent, macOS-only, skips rather than prompts without a terminal |
 | `dot_config/teleport/teleport.yaml.tmpl` | `~/.config/teleport/teleport.yaml` — SSH node config: reverse tunnel to the personal cluster's proxy, SSH service only. **Personal profile only** (`.chezmoiignore`) |
 | `Library/LaunchAgents/dev.sanchpet.teleport-node.plist` | Runs the node as a login agent, so it serves sessions only as the logged-in user. **Personal profile only** |
 | `dot_local/bin/executable_home-desktop` | `~/.local/bin/home-desktop` — forwards a local port to a node's Screen Sharing over Teleport and opens the viewer; the shell it drops you in is the tunnel's lifetime |
@@ -338,9 +339,13 @@ machine meant to be reachable stays open.
   costs one live fingerprint — an agent can *ask* for root and never *hold* it.
   Consequences worth remembering: inside `tmux` this needs `pam_reattach`; over a remote session
   (Teleport, SSH) it cannot work at all, since there is no finger at that end — remote `sudo`
-  falls back to a password, which a non-TTY caller cannot supply. Both files are system paths
-  installed once by hand, deliberately not automated: a `run_onchange` hook would block the
-  headless bootstrap on a prompt nobody can answer.
+  falls back to a password, which a non-TTY caller cannot supply.
+  Both files live outside `$HOME` and need root, so chezmoi cannot own them as targets;
+  `run_onchange_after_sudo-touch-id.sh` installs them instead. It costs one password on a fresh
+  machine and nothing ever after — it exits early when both files are already right, and refuses
+  to prompt when there is no terminal, so a headless bootstrap prints what is left to do rather
+  than hanging on a prompt nobody can answer. The sudoers drop-in is validated with `visudo -c`
+  before it is installed, because a malformed one locks the account out of root entirely.
 - **chezmoi over GNU Stow / bare-git.** Needed templating (per-machine values), first-class
   secret handling, and a source tree where dotfiles stay *visible* (`dot_` prefix) instead of
   hidden. Stow only symlinks; bare-git has no templating or secrets.
