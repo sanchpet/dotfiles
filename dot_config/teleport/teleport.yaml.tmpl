@@ -1,0 +1,44 @@
+# Teleport SSH node — makes this Mac reachable from anywhere without an inbound port.
+#
+# The agent dials OUT to the proxy on :443 and holds a reverse tunnel, so CGNAT, a router with
+# no port forwarding and a changing network are all irrelevant: the machine is equally reachable
+# from home, an office or a cafe. Access control, session recording and the certificate lifetime
+# are the cluster's, not a second scheme invented here.
+#
+# Runs as the login user, not root, which is deliberate: a non-root Teleport node can only serve
+# logins for the user it runs as. That is exactly the wanted blast radius on a personal laptop —
+# there is no path to another account even if the cluster's RBAC were misconfigured.
+#
+# Joining is a one-time, out-of-band step, like every other bootstrap credential: mint a
+# short-lived token on the cluster and drop it at the path below.
+#
+#   tctl tokens add --type=node --ttl=15m --format=text > ~/.config/teleport/join-token
+#
+# The node stores its own certificates in data_dir on first start and never reads the token
+# again; leaving an expired file there is harmless. A cluster rebuild, or a wiped data_dir, means
+# minting a fresh one.
+version: v3
+teleport:
+  nodename: macbook-air
+  data_dir: {{ .chezmoi.homeDir }}/.local/share/teleport
+  proxy_server: teleport.infra.sanch.pet:443
+  join_params:
+    method: token
+    token_name: {{ .chezmoi.homeDir }}/.config/teleport/join-token
+  log:
+    severity: INFO
+    # A file rather than stderr: the launchd agent's stdio goes to /dev/null, and a laptop that
+    # is only ever reached remotely needs its own log to explain a failed join.
+    output: {{ .chezmoi.homeDir }}/Library/Logs/teleport-node.log
+
+# This machine is only an SSH target. Everything else the binary can be stays off.
+auth_service:
+  enabled: "no"
+proxy_service:
+  enabled: "no"
+
+ssh_service:
+  enabled: "yes"
+  labels:
+    role: workstation
+    platform: macos

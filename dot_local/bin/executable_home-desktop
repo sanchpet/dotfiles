@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# home-desktop — open the personal Mac's screen from another machine, over Teleport.
+#
+# Screen Sharing is never exposed to a network. The node holds a reverse tunnel to the proxy, and
+# this forwards a local port down that tunnel, so the VNC service only ever listens on the remote
+# machine's loopback and the traffic rides the cluster's mTLS. The forward and the shell come in
+# one session: close it and the desktop connection dies with it.
+#
+# Mac-to-Mac deliberately: Apple's own Screen Sharing client negotiates its high-performance
+# path, which a generic VNC client cannot.
+#
+#   home-desktop              # default node
+#   home-desktop other-node   # another registered node
+#
+# Env: TELEPORT_LOGIN (default sanchpet), HOME_DESKTOP_PORT (local port, default 5900).
+set -euo pipefail
+
+node="${1:-macbook-air}"
+login="${TELEPORT_LOGIN:-sanchpet}"
+port="${HOME_DESKTOP_PORT:-5900}"
+
+if ! command -v tsh >/dev/null 2>&1; then
+  echo "home-desktop: tsh not found — install it (mise use -g teleport-community)" >&2
+  exit 1
+fi
+
+if ! tsh status >/dev/null 2>&1; then
+  echo "home-desktop: not logged in — run 'tsh login --proxy=teleport.infra.sanch.pet:443' first" >&2
+  exit 1
+fi
+
+# A port already in use would silently hand the viewer someone else's service.
+if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "home-desktop: local port $port is busy — set HOME_DESKTOP_PORT to a free one" >&2
+  exit 1
+fi
+
+# Hand the viewer over once the forward is actually up; the session below stays in the
+# foreground as the tunnel's lifetime.
+( sleep 3; open "vnc://localhost:${port}" ) &
+
+echo "home-desktop: tunnelling ${port} -> ${node}:5900; closing this shell closes the desktop"
+exec tsh ssh -L "${port}:localhost:5900" "${login}@${node}"
