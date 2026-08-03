@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # home-desktop — open the personal Mac's screen from another machine, over Teleport.
 #
-# Screen Sharing is never exposed to a network. The node holds a reverse tunnel to the proxy, and
-# this forwards a local port down that tunnel, so the VNC service only ever listens on the remote
-# machine's loopback and the traffic rides the cluster's mTLS. The forward and the shell come in
-# one session: close it and the desktop connection dies with it.
+# The node holds a reverse tunnel to the proxy, and this forwards a local port down it, so the
+# desktop traffic rides the cluster's mTLS and is authorised by the same certificates as a shell
+# session. The forward and the shell come in one session: close it and the desktop dies with it.
+#
+# What this does NOT do is hide the service: macOS binds Screen Sharing on 0.0.0.0:5900, not on
+# loopback, so on any network the machine joins the port answers to whoever can reach it (behind
+# macOS authentication, but answering). If that matters where the machine sits, turn on the
+# application firewall or narrow the allowed users — the tunnel is the access path, not a shield.
 #
 # Mac-to-Mac deliberately: Apple's own Screen Sharing client negotiates its high-performance
 # path, which a generic VNC client cannot.
