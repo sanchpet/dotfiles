@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.teleport-node</string>
+
+  <!-- A login agent, not a system daemon, and that is the whole design: the node then runs as
+       the login user and can only ever hand out a session as that same user. It also means the
+       machine is reachable only while someone is logged in — after a cold boot FileVault holds
+       the disk and nothing starts, which no remote-access scheme can work around.
+
+       launchd agents get the bare /usr/bin:/bin:/usr/sbin:/sbin PATH, so the mise-installed
+       binary is called by absolute path via $HOME (set for gui-domain agents). The guard keeps
+       this a no-op on a machine where mise has not installed teleport yet — bootstrap applies
+       dotfiles before the tools exist. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>tp="$HOME/.local/share/mise/installs/teleport-community/latest/bin/teleport"; [ -x "$tp" ] || exit 0; exec "$tp" start --config "$HOME/.config/teleport/teleport.yaml"</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- Restart on a crash, but not after the guard's clean exit (which would spin) nor after a
+       deliberate SIGTERM at logout. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <!-- Diagnostics go to the log file named in teleport.yaml, not launchd's stdio. -->
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>

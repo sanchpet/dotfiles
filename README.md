@@ -73,6 +73,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | terraform | Infrastructure as code | [docs](https://developer.hashicorp.com/terraform) |
 | vault | Secrets management CLI | [docs](https://developer.hashicorp.com/vault) |
 | flux2 (`flux`) | GitOps continuous delivery for Kubernetes | [docs](https://fluxcd.io) |
+| teleport-community (`tsh`, `tctl`, `teleport`) | Access plane for infrastructure — client, admin CLI, and the node agent this Mac runs (see [Remote access](#remote-access-teleport)) | [docs](https://goteleport.com/docs/) |
 | cfssl | Cloudflare PKI/TLS toolkit | [github](https://github.com/cloudflare/cfssl) |
 | typst | Markup-based typesetting (LaTeX alternative) | [github](https://github.com/typst/typst) |
 | ansible (`ansible-core`) | IT automation engine — installed via uv (`pipx:` backend) | [docs](https://docs.ansible.com) |
@@ -236,6 +237,54 @@ as `mcp__mcp-tg__<tool>`. The current surface:
 gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
 ```
 
+## Remote access (Teleport)
+
+This Mac is a **Teleport SSH node**: the agent dials out to the cluster proxy on `:443` and holds
+a reverse tunnel, so there is no inbound port, no port forwarding on the router, and no
+dependence on the network it sits behind — home, office or a cafe are the same to it.
+
+Two properties are worth stating because they are choices, not accidents:
+
+- **It runs as a login agent, not a system daemon.** A non-root Teleport node can only serve
+  sessions as the user it runs as, so the blast radius is that one account even if cluster RBAC
+  were wrong. The cost is that the machine is reachable only while that user is logged in: after
+  a cold boot FileVault holds the disk and nothing starts. No remote-access scheme fixes that —
+  plan around it rather than expect it to be solved.
+- **Only a personal machine becomes a node.** `.chezmoiignore` withholds the config and the agent
+  on any other profile: reaching a node and being one are different things, and a corporate
+  machine should only ever do the former.
+
+**Joining** is a one-time out-of-band step, like every other bootstrap credential — the token
+never lives in this repo:
+
+```sh
+tctl tokens add --type=node --ttl=15m --format=text > ~/.config/teleport/join-token
+chezmoi apply ~/.config/teleport/teleport.yaml   # then the agent picks it up
+```
+
+The node writes its own certificates into `~/.local/share/teleport` on first start and never
+reads the token again. Diagnostics: `~/Library/Logs/teleport-node.log`.
+
+**Reaching the desktop** from another Mac — `home-desktop` forwards the port and opens Apple's
+own Screen Sharing client (Mac-to-Mac negotiates a far better path than a generic VNC viewer):
+
+```sh
+home-desktop            # tunnel + viewer; closing the shell closes both
+tsh ssh sanchpet@macbook-air   # terminal only
+```
+
+Screen Sharing itself is a macOS service, enabled once per machine outside chezmoi (it needs
+root): System Settings → General → Sharing → Screen Sharing, or
+
+```sh
+sudo launchctl enable system/com.apple.screensharing
+sudo launchctl kickstart -k system/com.apple.screensharing
+sudo pmset -c sleep 0    # a sleeping laptop answers nothing
+```
+
+Note that a closed lid still sleeps an Apple Silicon laptop without an external display, so a
+machine meant to be reachable stays open.
+
 ## Repository layout
 
 | Path | Role |
@@ -256,6 +305,9 @@ gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
 | `dot_local/bin/executable_login-agents` | `~/.local/bin/login-agents` — bootout/bootstrap cycle for the login agents below; run by the `run_onchange` hook and by bootstrap step 10 |
 | `Library/LaunchAgents/*.plist` | `~/Library/LaunchAgents/` — launchd agents started at login, one file per app (`dev.sanchpet.orbstack` starts the OrbStack engine so the Docker socket is up without opening the app). Add an app = add a plist |
 | `run_onchange_after_login-agents.sh.tmpl` | Reloads the login agents on `chezmoi apply` whenever a plist changes (keyed on their hashes) |
+| `dot_config/teleport/teleport.yaml.tmpl` | `~/.config/teleport/teleport.yaml` — SSH node config: reverse tunnel to the personal cluster's proxy, SSH service only. **Personal profile only** (`.chezmoiignore`) |
+| `Library/LaunchAgents/dev.sanchpet.teleport-node.plist` | Runs the node as a login agent, so it serves sessions only as the logged-in user. **Personal profile only** |
+| `dot_local/bin/executable_home-desktop` | `~/.local/bin/home-desktop` — forwards a local port to a node's Screen Sharing over Teleport and opens the viewer; the shell it drops you in is the tunnel's lifetime |
 | `dot_local/bin/add-podkop-subnet` | `~/.local/bin/add-podkop-subnet` — route a domain through Podkop (VLESS) on Cudy router, then `podkop reload`. Default: resolve domain → subnet → `user_subnets` (for FortiClient VPN, where FakeIP routing fails). `--domain`: add the name verbatim → `user_domains` (FakeIP), e.g. for a domain whose anycast IPs are partially blackholed on the RU path |
 | `dot_local/bin/executable_age-archive` | `~/.local/bin/age-archive` — encrypt a directory to your `age` key with a verify gate (`-s DIR [-o FILE] [-d DEST]… [--rclone REMOTE]… [-R age1…]…`), or restore one (`--restore ARCHIVE TARGET`). The secret key comes from `--identity-cmd` (default `$AGE_IDENTITY_CMD`, e.g. `bw get item <item>`) or stdin; the self-recipient is derived from it, so no `age1…` on the CLI. Plaintext and the secret key never hit disk; distribution is gated behind a passing round-trip decrypt; pass `-R` recipients to widen access (e.g. add a YubiKey key). `--help` for the full interface |
 | `.chezmoi.toml.tmpl` | Generates per-machine chezmoi config at `init` (prompts `profile`); never deployed |

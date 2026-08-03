@@ -12,3 +12,12 @@ mise.toml
 # Work git identity — deployed only on a machine that has a corporate identity
 # (work.email set). Omitted entirely elsewhere so no empty stub lands in $HOME.
 {{ if not (dig "work" "email" "" .) }}.config/git/work.inc{{ end }}
+
+# Teleport SSH node — the reverse-tunnel agent that publishes a machine as an SSH target of the
+# personal cluster. Personal profile only: a corporate machine must never register itself into
+# personal infrastructure, whatever its owner can install on it. The client side (home-desktop,
+# tsh) is unconditional — reaching a node is not the same as becoming one.
+{{ if ne .profile "personal" }}
+.config/teleport/teleport.yaml
+Library/LaunchAgents/dev.sanchpet.teleport-node.plist
+{{ end }}
