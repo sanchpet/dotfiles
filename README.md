@@ -325,6 +325,22 @@ machine meant to be reachable stays open.
 
 ## Design decisions (Decision Record)
 
+- **Touch ID for `sudo`, never a `NOPASSWD` rule.** An agent working in this shell cannot type a
+  password — its commands run without a controlling terminal. The tempting fix, a `NOPASSWD` line
+  in `sudoers.d`, hands those rights not to one agent but to *every* process running as this user
+  (a package `postinstall`, any script that gets executed), and no honestly narrow allowlist
+  exists: `launchctl` as root is a loaded arbitrary daemon, i.e. full root anyway.
+  `auth sufficient pam_tid.so` in `/etc/pam.d/sudo_local` inverts that — the module short-circuits
+  before the password prompt, so the missing terminal never matters, and the prompt is a system
+  dialog raised inside `sudo` itself. Verified: a `sudo` issued from a non-TTY agent process does
+  raise it, because the process inherits the GUI session's bootstrap namespace. Paired with
+  `Defaults timestamp_timeout=0` (`/etc/sudoers.d/timestamp`) it means every single root action
+  costs one live fingerprint — an agent can *ask* for root and never *hold* it.
+  Consequences worth remembering: inside `tmux` this needs `pam_reattach`; over a remote session
+  (Teleport, SSH) it cannot work at all, since there is no finger at that end — remote `sudo`
+  falls back to a password, which a non-TTY caller cannot supply. Both files are system paths
+  installed once by hand, deliberately not automated: a `run_onchange` hook would block the
+  headless bootstrap on a prompt nobody can answer.
 - **chezmoi over GNU Stow / bare-git.** Needed templating (per-machine values), first-class
   secret handling, and a source tree where dotfiles stay *visible* (`dot_` prefix) instead of
   hidden. Stow only symlinks; bare-git has no templating or secrets.
