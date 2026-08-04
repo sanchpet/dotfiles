@@ -14,4 +14,14 @@
 -}}
 {{- $lines := list -}}
 {{- range $keys -}}{{- $lines = append $lines (printf "%s %s" $p .) -}}{{- end -}}
+{{- /* The corporate signing key, under the work email as its own principal: a commit    */ -}}
+{{- /* authored by the work identity is verified against the key declared for work, not  */ -}}
+{{- /* against the personal ones above. Both values are machine-local (work.*), so this  */ -}}
+{{- /* public template carries no employer value — a machine without work data renders   */ -}}
+{{- /* the personal principals alone.                                                    */ -}}
+{{- $workSignKey := dig "work" "signingKey" "" . -}}
+{{- $workEmail := dig "work" "email" "" . -}}
+{{- if and $workSignKey $workEmail -}}
+{{-   $lines = append $lines (printf `%s namespaces="git" %s` $workEmail $workSignKey) -}}
+{{- end -}}
 {{- join "\n" $lines }}

@@ -6,11 +6,11 @@
 # profile — the machine's role. Drives per-machine variations in templates
 # (e.g. work-only casks in Brewfile.tmpl: if eq .profile "work").
 #
-# work.* — corporate git identity (name/email) and the dir its repos live under.
-# Kept out of this PUBLIC repo entirely: the values exist only in the generated
-# machine-local config. Blank work.email means the machine has no corporate
-# identity, and the work includeIf / work.inc are omitted. NEVER put a real
-# employer value in a default below — it would land in the public source.
+# work.* — corporate git identity (name/email), the dir its repos live under, and the
+# public key their commits are signed with. Kept out of this PUBLIC repo entirely: the
+# values exist only in the generated machine-local config. Blank work.email means the
+# machine has no corporate identity, and the work includeIf / work.inc are omitted.
+# NEVER put a real employer value in a default below — it would land in the public source.
 #
 # Value source, by priority (per key):
 #   1. env DOTFILES_* — deterministic for CI/headless (non-TTY).
@@ -33,6 +33,12 @@
 {{- $workGitdir := "" -}}
 {{- if env "DOTFILES_WORK_GITDIR" -}}{{- $workGitdir = env "DOTFILES_WORK_GITDIR" -}}
 {{- else if stdinIsATTY -}}{{- $workGitdir = promptStringOnce . "work.gitdir" "Dir holding corporate repos, trailing slash (blank if none)" "" -}}{{- end -}}
+{{- /* work.signingKey — PUBLIC signing key (type + blob) for corporate commits, served by  */ -}}
+{{- /* the same vault agent as the personal one. Blank turns signing off under work.gitdir  */ -}}
+{{- /* rather than signing the employer's commits with the personal key (see work.inc).     */ -}}
+{{- $workSignKey := "" -}}
+{{- if env "DOTFILES_WORK_SIGNING_KEY" -}}{{- $workSignKey = env "DOTFILES_WORK_SIGNING_KEY" -}}
+{{- else if stdinIsATTY -}}{{- $workSignKey = promptStringOnce . "work.signingKey" "Corporate git signing PUBLIC key, type+blob (blank = no signing for work repos)" "" -}}{{- end -}}
 {{- /* bitwarden.agent — route SSH auth + commit signing through the Bitwarden SSH agent, */ -}}
 {{- /* whose vault holds the private keys (nothing bare on disk). Opt-in per machine so an */ -}}
 {{- /* un-migrated machine keeps signing with its own on-disk key. Default off (CI too).   */ -}}
@@ -56,6 +62,7 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     name = {{ $workName | quote }}
     email = {{ $workEmail | quote }}
     gitdir = {{ $workGitdir | quote }}
+    signingKey = {{ $workSignKey | quote }}
 [data.bitwarden]
     agent = {{ $bwAgent }}
     server = {{ $bwServer | quote }}

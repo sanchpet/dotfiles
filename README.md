@@ -377,12 +377,18 @@ machine meant to be reachable stays open.
   SSH commit signing everywhere. A machine that also does corporate work sets its work identity
   (`work.name` / `work.email`) and the dir its repos live under (`work.gitdir`) in the machine-local
   chezmoi data — never in this repo. When **both** are set, an `includeIf "gitdir:…"` pulls in
-  `dot_config/git/work.inc` to switch to that identity (signing off) under the work dir; a machine
+  `dot_config/git/work.inc` to switch to that identity under the work dir; a machine
   with no corporate identity gets neither the `includeIf` nor `work.inc`. Setting `work.email`
   while leaving `work.gitdir` blank is refused at render time — git reads an empty `gitdir:`
   pattern as matching *every* repository, which would make the corporate identity the global
-  default and silently disable signing with it. Signing is gated on the key
-  existing so a machine without it still commits. This keeps a single declarative source of truth,
+  default. Corporate commits are signed by a key declared for work
+  (`work.signingKey`, machine-local like the rest), trusted in `allowed_signers` under the work
+  email as its own principal; registering that key with the corporate host is what makes them
+  verify there. Declare no work key and signing is switched **off** under the work dir rather than
+  inheriting the personal key — a host that has never seen that key cannot verify it, so such a
+  signature only discloses which personal key made the commit, and unlike an unsigned commit it
+  does not look like one. Personal signing is separately gated on its key existing, so a machine
+  without it still commits. This keeps a single declarative source of truth,
   keeps the employer identity out of the public repo, and avoids the duplication/drift of per-machine
   dirs.
 - **SSH keys live in a vault agent — never on disk.** Each machine keeps its own `auth@…` and

@@ -1,6 +1,24 @@
 # Work identity for corporate repos (see ~/.gitconfig includeIf).
 # Name/email come from machine-local chezmoi data (work.*), never this public repo.
-# Signing stays on: the same vault agent serves the key, only the identity differs.
+#
+# Signing uses a key declared for work (work.signingKey, machine-local like the rest of
+# work.*). Registering that key with the corporate host is what makes its commits verify
+# there; the personal key never can, since that host has never seen it.
+#
+# With no work key declared, signing is turned OFF here rather than left to inherit the
+# personal signingkey from the global config. A commit on the employer's host signed by
+# the personal key is an identity that host cannot verify and the operator did not
+# choose — it only discloses which personal key made it. An unsigned commit is visibly
+# unsigned; a wrongly-signed one looks fine and is not.
 [user]
 	name = {{ .work.name }}
 	email = {{ .work.email }}
+{{- $workSignKey := dig "work" "signingKey" "" . }}
+{{- if $workSignKey }}
+	signingkey = key::{{ $workSignKey }}
+{{- else }}
+[commit]
+	gpgsign = false
+[tag]
+	gpgsign = false
+{{- end }}
