@@ -10,11 +10,19 @@ Registered as a PreToolUse hook for every account profile. It is a no-op under t
 and blocks under any other, including the unnamed default — fail closed, because a wrong allow
 breaks a company policy while a wrong block only costs a restart in the right profile.
 
+Every denial is appended to ~/.local/state/corporate-domain-guard.log. Prevention alone proves the
+control exists; it cannot answer whether the line was ever crossed, which is the question anyone
+auditing this would actually ask. The log records paths and tool names only — never file content,
+prompts, or anything else that would make the record itself a leak of the material it guards.
+
 Protocol: the tool call arrives as JSON on stdin; exit 2 with a reason on stderr denies it.
 """
+import datetime
 import json
 import os
 import sys
+
+LOG_PATH = "~/.local/state/corporate-domain-guard.log"
 
 # Territory that belongs to the employer. Paths, not keywords: matching the word "employer"
 # anywhere would block reading this repo's own README.
@@ -115,6 +123,20 @@ def first_hit(tool, tool_input):
     return None
 
 
+def record(profile, tool, hit, session):
+    """Append one denial. Never raises: a log that cannot be written is a lost record, but a guard
+    that crashes on it stops denying, and losing the block is far worse than losing the line."""
+    try:
+        path = os.path.expanduser(LOG_PATH)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        stamp = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+        with open(path, "a", encoding="utf-8") as log:
+            log.write(f"{stamp}\tprofile={profile or 'default'}\ttool={tool}\ttouched={hit}"
+                      f"\tsession={session or '-'}\n")
+    except OSError:
+        pass
+
+
 def main():
     profile = os.path.basename(os.environ.get("CLAUDE_CONFIG_DIR", "").rstrip("/"))
     if profile == ".claude-work":
@@ -131,10 +153,12 @@ def main():
         return 0
 
     hit = first_hit(tool, tool_input)
-    if hit:
-        print(REASON.format(hit=hit), file=sys.stderr)
-        return 2
-    return 0
+    if not hit:
+        return 0
+
+    record(profile, tool, hit, event.get("session_id"))
+    print(REASON.format(hit=hit), file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":
