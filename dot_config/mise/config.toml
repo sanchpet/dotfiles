@@ -73,6 +73,7 @@ age = "latest"
 teleport-community = "latest"
 kubelogin = "latest"
 1password-cli = "latest"
+kubeconform = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
