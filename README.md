@@ -64,8 +64,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
 | hyperfine | Command-line benchmarking tool | [github](https://github.com/sharkdp/hyperfine) |
 | opencode | Terminal-based AI coding agent | [docs](https://opencode.ai) · [github](https://github.com/sst/opencode) |
-| Gemini CLI (`gemini`) | Google's agentic CLI | [github](https://github.com/google-gemini/gemini-cli) |
-| Antigravity CLI (`agy`) | Google's Antigravity agentic CLI — headless sibling of the Antigravity IDE | [docs](https://antigravity.google) |
+| Antigravity CLI (`agy`) | Google's Antigravity agentic CLI — the successor Google moved the Gemini CLI terminal experience to | [docs](https://antigravity.google) |
 | python | Python runtime | [docs](https://www.python.org) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
 | terragrunt | Terraform/OpenTofu wrapper | [docs](https://terragrunt.gruntwork.io) |
