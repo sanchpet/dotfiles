@@ -22,7 +22,21 @@ fi
 
 for plist in "${plists[@]}"; do
   label="$(basename "$plist" .plist)"
-  launchctl bootout "$domain/$label" 2>/dev/null || true
+
+  # bootout does not always finish before it returns: a job with a live process is torn down
+  # asynchronously, so the label can still be in the domain a few milliseconds later. Bootstrapping
+  # onto a label that is still there fails with a bare "Input/output error" that names neither the
+  # label nor the cause, so wait for it to actually leave, and report the bootout error if it never does.
+  bootout_error="$(launchctl bootout "$domain/$label" 2>&1 || true)"
+  for _ in {1..50}; do
+    launchctl print "$domain/$label" >/dev/null 2>&1 || break
+    sleep 0.2
+  done
+  if launchctl print "$domain/$label" >/dev/null 2>&1; then
+    echo "login-agents: $label would not boot out${bootout_error:+ — $bootout_error}" >&2
+    exit 1
+  fi
+
   launchctl bootstrap "$domain" "$plist"
   echo "login-agents: loaded $label"
 done
