@@ -19,5 +19,17 @@
     "excludedCommands": [
       "screencapture"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ .chezmoi.homeDir }}/.local/bin/guard-corporate-domain"
+          }
+        ]
+      }
+    ]
   }
 }
