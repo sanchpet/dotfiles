@@ -14,6 +14,14 @@
     "allow": [
       "Bash(screencapture:*)"
     ]
+{{- /* Corporate territory is fenced by the guard-corporate-domain hook below, deliberately not
+       by permissions.deny rules. Measured, not assumed: a deny-rule refusal is decided before
+       the hook chain and reaches no hook at all — not PreToolUse, not PermissionDenied, not
+       PostToolUseFailure. Adding the rules therefore silences the redirect to the work profile
+       and, worse, leaves those refusals out of the guard's log. A ledger with a hole where the
+       commonest case should be is more misleading than no ledger. The rules also add no
+       independent trust root, since they would live in this very file alongside the hook they
+       were meant to back up. */}}
   },
   "sandbox": {
     "excludedCommands": [
