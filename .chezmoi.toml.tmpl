@@ -15,41 +15,54 @@
 # Value source, by priority (per key):
 #   1. env DOTFILES_* — deterministic for CI/headless (non-TTY).
 #   2. interactive prompt — for a real machine (asked once).
-#   3. default — personal, no corporate identity.
+#   3. the value this machine already has — so re-init never destroys it.
+#   4. blank — personal, no corporate identity (a bare machine).
 {{- $profile := "" -}}
 {{- if env "DOTFILES_PROFILE" -}}
 {{-   $profile = env "DOTFILES_PROFILE" -}}
 {{- else -}}
 {{-   $profile = promptStringOnce . "profile" "Machine profile (work/personal)" "personal" -}}
 {{- end -}}
-{{- /* Work prompts default to blank in a non-TTY (CI/headless) run — only DOTFILES_* */ -}}
-{{- /* env or an interactive TTY sets them, so bare-machine bootstrap never blocks.   */ -}}
-{{- $workName := "" -}}
+{{- /* Every value below SEEDS FROM THE EXISTING CONFIG, so re-running init on a machine   */ -}}
+{{- /* that already has data keeps it. Without the seed, a non-TTY re-init (a script, an   */ -}}
+{{- /* agent shell, anything without a terminal) takes neither the env nor the prompt      */ -}}
+{{- /* branch and writes a blank — silently dropping the corporate identity and the        */ -}}
+{{- /* signing key from a machine that had both. Re-init is not hypothetical: chezmoi asks */ -}}
+{{- /* for it by name every time this template changes.                                   */ -}}
+{{- /* Priority stays env → prompt → existing → blank; a bare machine still bootstraps     */ -}}
+{{- /* unattended, since there is no existing value to keep.                              */ -}}
+{{- $workName := dig "work" "name" "" . -}}
 {{- if env "DOTFILES_WORK_NAME" -}}{{- $workName = env "DOTFILES_WORK_NAME" -}}
-{{- else if stdinIsATTY -}}{{- $workName = promptStringOnce . "work.name" "Corporate git user name (blank if none)" "" -}}{{- end -}}
-{{- $workEmail := "" -}}
+{{- else if stdinIsATTY -}}{{- $workName = promptStringOnce . "work.name" "Corporate git user name (blank if none)" $workName -}}{{- end -}}
+{{- $workEmail := dig "work" "email" "" . -}}
 {{- if env "DOTFILES_WORK_EMAIL" -}}{{- $workEmail = env "DOTFILES_WORK_EMAIL" -}}
-{{- else if stdinIsATTY -}}{{- $workEmail = promptStringOnce . "work.email" "Corporate git email (blank if none)" "" -}}{{- end -}}
-{{- $workGitdir := "" -}}
+{{- else if stdinIsATTY -}}{{- $workEmail = promptStringOnce . "work.email" "Corporate git email (blank if none)" $workEmail -}}{{- end -}}
+{{- $workGitdir := dig "work" "gitdir" "" . -}}
 {{- if env "DOTFILES_WORK_GITDIR" -}}{{- $workGitdir = env "DOTFILES_WORK_GITDIR" -}}
-{{- else if stdinIsATTY -}}{{- $workGitdir = promptStringOnce . "work.gitdir" "Dir holding corporate repos, trailing slash (blank if none)" "" -}}{{- end -}}
+{{- else if stdinIsATTY -}}{{- $workGitdir = promptStringOnce . "work.gitdir" "Dir holding corporate repos, trailing slash (blank if none)" $workGitdir -}}{{- end -}}
 {{- /* work.signingKey — PUBLIC signing key (type + blob) for corporate commits, served by  */ -}}
 {{- /* the same vault agent as the personal one. Blank turns signing off under work.gitdir  */ -}}
 {{- /* rather than signing the employer's commits with the personal key (see work.inc).     */ -}}
-{{- $workSignKey := "" -}}
+{{- $workSignKey := dig "work" "signingKey" "" . -}}
 {{- if env "DOTFILES_WORK_SIGNING_KEY" -}}{{- $workSignKey = env "DOTFILES_WORK_SIGNING_KEY" -}}
-{{- else if stdinIsATTY -}}{{- $workSignKey = promptStringOnce . "work.signingKey" "Corporate git signing PUBLIC key, type+blob (blank = no signing for work repos)" "" -}}{{- end -}}
+{{- else if stdinIsATTY -}}{{- $workSignKey = promptStringOnce . "work.signingKey" "Corporate git signing PUBLIC key, type+blob (blank = no signing for work repos)" $workSignKey -}}{{- end -}}
+{{- /* agent.* — which vault agent serves this machine's keys, and that machine's signing */ -}}
+{{- /* PUBLIC key. Carried through rather than prompted: it is set out of band, and this   */ -}}
+{{- /* template must not be the reason it disappears. dot_gitconfig.tmpl reads it to pick  */ -}}
+{{- /* the personal signing identity, so dropping it silently turns personal signing off. */ -}}
+{{- $agentKind := dig "agent" "kind" "" . -}}
+{{- $agentSignKey := dig "agent" "signingKey" "" . -}}
 {{- /* bitwarden.agent — route SSH auth + commit signing through the Bitwarden SSH agent, */ -}}
 {{- /* whose vault holds the private keys (nothing bare on disk). Opt-in per machine so an */ -}}
 {{- /* un-migrated machine keeps signing with its own on-disk key. Default off (CI too).   */ -}}
-{{- $bwAgent := false -}}
+{{- $bwAgent := dig "bitwarden" "agent" false . -}}
 {{- if env "DOTFILES_BW_AGENT" -}}{{- $bwAgent = eq (env "DOTFILES_BW_AGENT") "1" -}}
-{{- else if stdinIsATTY -}}{{- $bwAgent = promptBoolOnce . "bitwarden.agent" "Route SSH auth + git signing through the Bitwarden SSH agent" false -}}{{- end -}}
+{{- else if stdinIsATTY -}}{{- $bwAgent = promptBoolOnce . "bitwarden.agent" "Route SSH auth + git signing through the Bitwarden SSH agent" $bwAgent -}}{{- end -}}
 {{- /* bitwarden.server — point the bw CLI at a self-hosted Vaultwarden (blank = bitwarden.com).  */ -}}
 {{- /* NEVER default a real URL here: it is live infra and this repo is PUBLIC (see work.* above). */ -}}
-{{- $bwServer := "" -}}
+{{- $bwServer := dig "bitwarden" "server" "" . -}}
 {{- if env "DOTFILES_BW_SERVER" -}}{{- $bwServer = env "DOTFILES_BW_SERVER" -}}
-{{- else if stdinIsATTY -}}{{- $bwServer = promptStringOnce . "bitwarden.server" "Bitwarden/Vaultwarden server URL (blank = bitwarden.com)" "" -}}{{- end }}
+{{- else if stdinIsATTY -}}{{- $bwServer = promptStringOnce . "bitwarden.server" "Bitwarden/Vaultwarden server URL (blank = bitwarden.com)" $bwServer -}}{{- end }}
 
 # Pin the source to the directory init ran from (.chezmoi.sourceDir), so `chezmoi`
 # without --source always looks here. No hardcoded path in the repo: on a bare
@@ -63,6 +76,9 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     email = {{ $workEmail | quote }}
     gitdir = {{ $workGitdir | quote }}
     signingKey = {{ $workSignKey | quote }}
+[data.agent]
+    kind = {{ $agentKind | quote }}
+    signingKey = {{ $agentSignKey | quote }}
 [data.bitwarden]
     agent = {{ $bwAgent }}
     server = {{ $bwServer | quote }}
