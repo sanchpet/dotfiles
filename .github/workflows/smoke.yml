@@ -131,10 +131,33 @@ jobs:
           if ! grep -q 'email = ci-work@example.test' <<<"$wi"; then
             echo "❌ work.inc: work email not rendered from data"; exit 1
           fi
-          # Work repos sign too — the vault agent serves the same key, only the
-          # identity differs — so work.inc must not switch signing back off.
-          if grep -q 'gpgsign = false' <<<"$wi"; then
-            echo "❌ work.inc: signing must stay on for work repos"; exit 1
+          # No work signing key declared → signing is off under the work dir. The
+          # personal key must never sign the employer's commits: that host cannot
+          # verify it, so the signature only discloses the personal key.
+          if ! grep -q 'gpgsign = false' <<<"$wi"; then
+            echo "❌ work.inc: signing must be off when no work signing key is set"; exit 1
+          fi
+          if grep -q 'signingkey' <<<"$wi"; then
+            echo "❌ work.inc: no signingkey may be emitted without work.signingKey"; exit 1
+          fi
+          # With a work signing key → sign with THAT key, and signing stays on.
+          printf '[data]\n  profile = "work"\n[data.work]\n  name = "ci-work"\n  email = "ci-work@example.test"\n  gitdir = "~/work-repos/"\n  signingKey = "ssh-ed25519 AAAACItIsNotARealKey"\n' > /tmp/work-signed.toml
+          ws=$(chezmoi --config /tmp/work-signed.toml execute-template < dot_config/git/work.inc.tmpl)
+          if ! grep -q 'signingkey = key::ssh-ed25519 AAAACItIsNotARealKey' <<<"$ws"; then
+            echo "❌ work.inc: work.signingKey not rendered as the work signing key"; exit 1
+          fi
+          if grep -q 'gpgsign = false' <<<"$ws"; then
+            echo "❌ work.inc: signing must stay on when a work signing key is set"; exit 1
+          fi
+          # The work key is trusted under the work email, so its commits verify locally.
+          as=$(chezmoi --config /tmp/work-signed.toml execute-template < dot_config/git/allowed_signers.tmpl)
+          if ! grep -q 'ci-work@example.test namespaces="git" ssh-ed25519 AAAACItIsNotARealKey' <<<"$as"; then
+            echo "❌ allowed_signers: work key missing under the work principal"; exit 1
+          fi
+          # A machine with no work data must carry no work principal at all.
+          asp=$(chezmoi execute-template < dot_config/git/allowed_signers.tmpl)
+          if grep -q 'ci-work@example.test' <<<"$asp"; then
+            echo "❌ allowed_signers: work principal leaked into a personal render"; exit 1
           fi
           echo "✅ git identity: personal base + data-driven work identity (out of repo)"
 
