@@ -298,7 +298,7 @@ machine meant to be reachable stays open.
 |------|------|
 | `dot_*` | Dotfiles rendered into `$HOME` by chezmoi (e.g. `dot_gitconfig` → `~/.gitconfig`) |
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
-| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline, `screencapture` sandbox exclusion), included by every account profile below |
+| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline, `screencapture` sandbox exclusion, the corporate-domain guard below), included by every account profile below |
 | `private_dot_claude/private_settings.json.tmpl` | `~/.claude/settings.json` (0600) — default profile. Secrets/permissions stay in `settings.local.json` (untracked) |
 | `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile; `CLAUDE.md` is a symlink to the canonical `~/.claude/CLAUDE.md` |
 | `dot_config/starship.toml` | Starship prompt config → `~/.config/starship.toml` (kubernetes/aws/terraform modules) |
@@ -307,6 +307,7 @@ machine meant to be reachable stays open.
 | `dot_local/bin/executable_cleanup` | `~/.local/bin/cleanup` — disk-reclaim tool (reports by default; `--apply` deletes Tier 1 caches + orphan caches of removed tools, `--deep` adds Go modcache) |
 | `dot_local/bin/executable_updates` | `~/.local/bin/updates` — reports available mise + Homebrew package updates |
 | `dot_local/bin/executable_statusline` | `~/.local/bin/statusline` — Claude Code statusline: prefixes a marker for the active account profile (`🏢` work, `🏠` personal, read from `CLAUDE_CONFIG_DIR`), then execs `claudeline` with every segment intact |
+| `dot_local/bin/executable_guard-corporate-domain` | `~/.local/bin/guard-corporate-domain` — PreToolUse hook denying the personal Claude profile any access to the employer's territory (work repos, work governance and knowledge, corporate hosts, the corporate Atlassian workspace) and pointing at `claude-work` instead. A no-op under the work profile, blocking under every other one including the default — a wrong allow breaks company policy, a wrong block costs a restart |
 | `dot_local/bin/executable_git-agent-sign.tmpl` | `~/.local/bin/git-agent-sign` — signing shim: forces this machine's vault agent socket, then execs `ssh-keygen`, so non-login shells sign too |
 | `private_dot_ssh/private_config.tmpl` | `~/.ssh/config` (0600) — `IdentityAgent` pointed at the machine's vault agent, plus OrbStack's include |
 | `dot_local/bin/executable_login-agents` | `~/.local/bin/login-agents` — bootout/bootstrap cycle for the login agents below; run by the `run_onchange` hook and by bootstrap step 10 |
