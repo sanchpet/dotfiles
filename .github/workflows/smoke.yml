@@ -163,12 +163,39 @@ jobs:
           fi
           echo "✅ git identity: personal base + data-driven work identity (out of repo)"
 
+      - name: chezmoi re-init preserves a machine's existing data
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          # chezmoi asks for `chezmoi init` every time .chezmoi.toml.tmpl changes. Run
+          # without a TTY it takes neither the env nor the prompt branch, so each value
+          # must fall back to what the machine already has — otherwise a routine re-init
+          # wipes the corporate identity and both signing keys from a working machine.
+          cfg=$(chezmoi --config /tmp/work-signed.toml execute-template --init < .chezmoi.toml.tmpl)
+          for kv in 'name = "ci-work"' 'email = "ci-work@example.test"' \
+                    'gitdir = "~/work-repos/"' 'signingKey = "ssh-ed25519 AAAACItIsNotARealKey"'; do
+            if ! grep -qF "$kv" <<<"$cfg"; then
+              echo "❌ re-init dropped an existing value: $kv"; exit 1
+            fi
+          done
+          # A bare machine has nothing to keep and must still bootstrap unattended.
+          : > /tmp/empty.toml
+          bare=$(chezmoi --config /tmp/empty.toml execute-template --init < .chezmoi.toml.tmpl)
+          if ! grep -qF 'profile = "personal"' <<<"$bare"; then
+            echo "❌ bare machine: profile must default to personal"; exit 1
+          fi
+          if grep -qF 'ci-work' <<<"$bare"; then
+            echo "❌ bare machine: work data must be blank"; exit 1
+          fi
+          echo "✅ chezmoi re-init: existing data preserved, bare machine still blank"
+
       - name: opsec — no employer identity in the source tree
         run: |
           # The public repo must never carry the employer name, corporate user/email,
           # or an internal hostname. Values live only in machine-local chezmoi data.
           # Tokens are split with '' so this guard never matches its own pattern.
-          pat='employer-past|employer-past-legal|corp-user|corp-host'
+          # Current employer first, then former ones — the guard is only worth as much as
+          # its coverage of whoever the machine works for now.
+          pat='employer|employer-domain|employer-past|employer-past-legal|corp-user|corp-host'
           if grep -rInE "$pat" --exclude-dir=.git .; then
             echo "❌ opsec: employer identity leaked into the public source"; exit 1
           fi
