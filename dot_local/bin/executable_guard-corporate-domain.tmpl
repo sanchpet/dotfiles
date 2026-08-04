@@ -16,14 +16,22 @@ import json
 import os
 import sys
 
-# Territory that belongs to the employer, relative to the home directory. Paths, not keywords:
-# matching the word "employer" anywhere would block reading this repo's own README.
+# Territory that belongs to the employer. Paths, not keywords: matching the word "employer"
+# anywhere would block reading this repo's own README.
+#
+# The first entry is the same work.gitdir that ~/.gitconfig keys its corporate identity off, so
+# one declared root drives both the identity switch and this guard. Hardcoding it here instead
+# would leave two sources of truth for one boundary, free to drift apart in silence. The rest are
+# vault locations that hold work material without holding a git repo, and cannot be derived.
 CORPORATE_PATHS = (
-    "hypomnemata/.repos/employer",
-    "hypomnemata/11-governance-work/employer",
-    "hypomnemata/30-knowledge/engineering/employer",
-    "hypomnemata/00-inbox/employer-onboarding.md",
-    "hypomnemata/70-memory/work-employer.md",
+{{- $workGitdir := dig "work" "gitdir" "" . }}
+{{- if $workGitdir }}
+    "{{ $workGitdir }}",
+{{- end }}
+    "~/hypomnemata/11-governance-work/employer",
+    "~/hypomnemata/30-knowledge/engineering/employer",
+    "~/hypomnemata/00-inbox/employer-onboarding.md",
+    "~/hypomnemata/70-memory/work-employer.md",
 )
 
 # Distinctive path tails to look for inside a shell command, where paths arrive unresolved
@@ -51,8 +59,24 @@ Touched: {hit}"""
 
 
 def corporate_roots():
+    """Absolute roots, with degenerate ones dropped. A blank or home-wide root would make every
+    path in the home directory corporate — the same silent failure git refuses a blank gitdir
+    pattern to avoid. A relative one is read as home-relative rather than dropped, so a malformed
+    entry loses no coverage."""
     home = os.path.expanduser("~")
-    return tuple(os.path.join(home, p) for p in CORPORATE_PATHS)
+    roots = []
+    for entry in CORPORATE_PATHS:
+        entry = entry.strip()
+        if not entry:
+            continue
+        root = os.path.expanduser(entry)
+        if not os.path.isabs(root):
+            root = os.path.join(home, root)
+        root = os.path.normpath(root)
+        if root in (home, os.sep):
+            continue
+        roots.append(root)
+    return tuple(roots)
 
 
 def path_is_corporate(value):
