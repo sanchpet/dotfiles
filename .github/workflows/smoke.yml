@@ -137,7 +137,9 @@ jobs:
           if ! grep -q 'gpgsign = false' <<<"$wi"; then
             echo "❌ work.inc: signing must be off when no work signing key is set"; exit 1
           fi
-          if grep -q 'signingkey' <<<"$wi"; then
+          # Anchored: the word also occurs in the file's comment block, so match the
+          # config line itself and not any mention of it.
+          if grep -qE '^[[:space:]]*signingkey' <<<"$wi"; then
             echo "❌ work.inc: no signingkey may be emitted without work.signingKey"; exit 1
           fi
           # With a work signing key → sign with THAT key, and signing stays on.
