@@ -76,6 +76,7 @@ kubelogin = "latest"
 1password-cli = "latest"
 kubeconform = "latest"
 pre-commit = "latest"  # git-hook runner; repos carry .pre-commit-config.yaml, this is the engine
+argocd = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
