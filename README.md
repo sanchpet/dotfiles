@@ -51,6 +51,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | GitLab CLI (`glab`) | GitLab from the terminal | [docs](https://gitlab.com/gitlab-org/cli) |
 | kubectl | Kubernetes cluster CLI | [docs](https://kubernetes.io/docs/reference/kubectl/) |
 | kubectx | Switch kubectl context / namespace | [github](https://github.com/ahmetb/kubectx) |
+| kubectl-view-secret | `kubectl view-secret <secret> [key]` — decode a Secret in place, no `base64 -d` pipeline. Installed via the aqua backend, which renames the binary to `kubectl-view_secret` so kubectl picks it up as a plugin | [github](https://github.com/elsesiy/kubectl-view-secret) |
 | node | Node.js runtime | [docs](https://nodejs.org) |
 | Starship | Cross-shell prompt (zsh prompt; `starship init` in `.zshrc`) | [docs](https://starship.rs) |
 | zoxide | Frecency `cd` — replaces `cd` (`--cmd cd`); `cdi` = interactive | [github](https://github.com/ajeetdsouza/zoxide) |
