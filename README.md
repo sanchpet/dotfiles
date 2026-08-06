@@ -369,6 +369,14 @@ machine meant to be reachable stays open.
   `mise.toml` can self-activate its git hooks with `[hooks] enter = "git config core.hooksPath
   .githooks"`, instead of a manual `git config` on every clone/machine. Kept at the machine level
   (not duplicated per repo) so individual projects only declare the `[hooks]` they need.
+- **The `ubi:` backend is banned (`settings.disable_backends`).** mise deprecated it in favour of
+  `github:`, which resolves the same GitHub releases and additionally verifies artifact
+  attestations and SLSA provenance; it disappears in mise 2027.1.0. Rather than let a `ubi:` tool
+  be added and quietly rot until that release, mise is told to refuse the backend outright. The
+  mise registry itself no longer routes any tool through ubi, so the ban costs nothing — only a
+  hand-written `ubi:` line can hit it. Because a setting binds one machine at install time, CI
+  carries the matching repo-level guard, which rejects both a `ubi:` declaration and the removal
+  of the ban itself.
 - **Per-machine via `profile`, not per-machine directories.** One source tree; machine-specific
   variation is driven by a single `profile` value (`work`/`personal`), prompted once at
   `chezmoi init` (override in CI/headless with `DOTFILES_PROFILE`) and stored in the machine-local

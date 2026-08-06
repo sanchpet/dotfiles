@@ -188,6 +188,22 @@ jobs:
           fi
           echo "✅ chezmoi re-init: existing data preserved, bare machine still blank"
 
+      - name: mise — no tool on the deprecated ubi backend
+        run: |
+          # `disable_backends` in the mise config stops this machine from installing a
+          # ubi tool, but only this machine and only at install time. This guard is the
+          # repo-level one: it fails the commit that introduces the declaration at all,
+          # including from a machine whose mise predates the setting.
+          # Anchored to a TOML key (start of line, optional quote) so that prose in the
+          # README/CLAUDE.md explaining the rule does not match itself.
+          if grep -rInE '^[[:space:]]*"?ubi:' --include='*.toml' --exclude-dir=.git .; then
+            echo "❌ mise: ubi backend is deprecated (gone in 2027.1.0) — use github: instead"; exit 1
+          fi
+          if ! grep -qF 'disable_backends = ["ubi"]' dot_config/mise/config.toml; then
+            echo "❌ mise: disable_backends must keep ubi banned in the mise config"; exit 1
+          fi
+          echo "✅ mise: no ubi backend, and the ban is declared"
+
       - name: opsec — no employer identity in the source tree
         run: |
           # The public repo must never carry the employer name, corporate user/email,

@@ -26,6 +26,13 @@ Personal dotfiles repository.
 If a CLI tool can be installed via [mise](https://mise.jdx.dev), use mise (mise-first).
 Anything mise can't manage (e.g. GUI casks) is installed via [Homebrew](https://brew.sh).
 
+**Never declare a tool on the `ubi:` backend** — it is deprecated and goes away in mise
+2027.1.0. Use `github:owner/repo` instead (same releases, plus attestation/SLSA
+verification), or `aqua:owner/repo` when the aqua-registry entry does something the raw
+release does not — renaming the binary, or checksum verification. mise is configured to
+refuse `ubi:` (`settings.disable_backends`) and CI rejects both a `ubi:` declaration and
+the removal of that ban.
+
 When adding a tool that keeps a cache or writes outside its own install dir (a package
 manager, language toolchain, etc.), check whether `~/.local/bin/cleanup` should learn it —
 a Tier 1 cache-clean or a Tier 2 orphan entry. External backend caches like rustup's
