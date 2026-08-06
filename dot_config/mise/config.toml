@@ -79,6 +79,10 @@ kubelogin = "latest"
 kubeconform = "latest"
 pre-commit = "latest"  # git-hook runner; repos carry .pre-commit-config.yaml, this is the engine
 argocd = "latest"
+# kubectl view-secret — decode a Secret without the base64 pipeline. aqua backend, not github:
+# the aqua entry renames the binary to kubectl-view_secret, which is what kubectl needs to
+# expose it as the `view-secret` subcommand, and it verifies the release checksums.
+"aqua:elsesiy/kubectl-view-secret" = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
