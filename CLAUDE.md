@@ -26,12 +26,29 @@ Personal dotfiles repository.
 If a CLI tool can be installed via [mise](https://mise.jdx.dev), use mise (mise-first).
 Anything mise can't manage (e.g. GUI casks) is installed via [Homebrew](https://brew.sh).
 
-**Never declare a tool on the `ubi:` backend** — it is deprecated and goes away in mise
-2027.1.0. Use `github:owner/repo` instead (same releases, plus attestation/SLSA
-verification), or `aqua:owner/repo` when the aqua-registry entry does something the raw
-release does not — renaming the binary, or checksum verification. mise is configured to
-refuse `ubi:` (`settings.disable_backends`) and CI rejects both a `ubi:` declaration and
-the removal of that ban.
+**Backend preference, in order** — this mirrors mise's own registry acceptance tiers, so a
+bare tool name usually lands on the right one already. State a backend explicitly only when
+the tool is absent from the mise registry, or when the registry's first choice is wrong for
+us (and then say why, in a comment):
+
+1. `aqua:owner/repo` — default. Most features and security, no plugin to execute. Also the
+   right pick over `github:` when the aqua-registry entry does something the raw release
+   does not: renaming the binary (`kubectl-view-secret`), or verifying checksums.
+2. `github:owner/repo` (or `gitlab:`) — when there is no aqua package. Verifies GitHub
+   artifact attestations and SLSA provenance.
+3. `http:` — vendor-distributed binaries with no Git host at all. Pin the version and the
+   sha256 (`http:yc`), since nothing else vouches for the artifact.
+4. `pipx:` / `npm:` / `gem:` / `cargo:` — only for tools native to that ecosystem, where the
+   language's package manager is the honest home.
+
+**Never `ubi:`** — deprecated, gone in mise 2027.1.0; `github:` is its successor. mise is
+configured to refuse it (`settings.disable_backends`) and CI rejects both a `ubi:`
+declaration and the removal of that ban.
+
+**Never introduce a new `vfox:` or `asdf:` tool** — mise stopped accepting them for
+supply-chain reasons, because a plugin is arbitrary code executed at install time. Three
+pre-existing tools still resolve to vfox because nothing else can install them; the README
+records why. Don't add a fourth, and don't "fix" those three without reading that section.
 
 When adding a tool that keeps a cache or writes outside its own install dir (a package
 manager, language toolchain, etc.), check whether `~/.local/bin/cleanup` should learn it —
