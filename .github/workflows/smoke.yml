@@ -188,7 +188,7 @@ jobs:
           fi
           echo "✅ chezmoi re-init: existing data preserved, bare machine still blank"
 
-      - name: mise — no tool on the deprecated ubi backend
+      - name: mise — no tool on a refused backend (ubi / vfox / asdf)
         run: |
           # `disable_backends` in the mise config stops this machine from installing a
           # ubi tool, but only this machine and only at install time. This guard is the
@@ -198,6 +198,12 @@ jobs:
           # README/CLAUDE.md explaining the rule does not match itself.
           if grep -rInE '^[[:space:]]*"?ubi:' --include='*.toml' --exclude-dir=.git .; then
             echo "❌ mise: ubi backend is deprecated (gone in 2027.1.0) — use github: instead"; exit 1
+          fi
+          # vfox/asdf run plugin code at install time and mise stopped accepting them.
+          # The two grandfathered tools (redis, 1password-cli) resolve there via bare
+          # registry names, so they do not trip this — only a NEW explicit declaration does.
+          if grep -rInE '^[[:space:]]*"?(vfox|asdf):' --include='*.toml' --exclude-dir=.git .; then
+            echo "❌ mise: vfox/asdf execute plugin code — use aqua: or github: (see README)"; exit 1
           fi
           if ! grep -qF 'disable_backends = ["ubi"]' dot_config/mise/config.toml; then
             echo "❌ mise: disable_backends must keep ubi banned in the mise config"; exit 1

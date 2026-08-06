@@ -369,6 +369,35 @@ machine meant to be reachable stays open.
   `mise.toml` can self-activate its git hooks with `[hooks] enter = "git config core.hooksPath
   .githooks"`, instead of a manual `git config` on every clone/machine. Kept at the machine level
   (not duplicated per repo) so individual projects only declare the `[hooks]` they need.
+- **Backend preference: aqua first, then github, then http, and a language manager last.**
+  mise's registry has acceptance tiers, and the ladder here mirrors them: `aqua` (most features
+  and security, and no plugin code runs at install), then `github`/`gitlab` for what aqua lacks
+  (attestation + SLSA verification), then `http` for vendor binaries with no Git host — pinned by
+  version and sha256, because nothing else vouches for them — and `pipx`/`npm`/`gem`/`cargo` only
+  where the tool is native to that ecosystem. A bare tool name is left alone unless the registry's
+  own first choice is wrong here; an explicit backend always carries a comment saying why.
+  `aqua` also wins over `github` when the aqua-registry entry does something the raw release does
+  not: `kubectl-view-secret` ships its binary dash-named, and only aqua's `files:` rename to
+  `kubectl-view_secret` makes kubectl discover it as a plugin.
+- **Three tools stay on `vfox`, deliberately.** mise no longer accepts vfox/asdf tools, since a
+  plugin is arbitrary code run at install time. `redis`, `1password-cli` and `teleport-community`
+  are grandfathered because none of them can move, and the reasons are worth recording so nobody
+  re-litigates them:
+  Redis publishes **no prebuilt binaries at all** (the newest release carries a single
+  `redis-full.tar.gz` source archive, older ones no assets), and aqua only places prebuilt
+  artifacts — it has no build step, so this is a model mismatch rather than a missing package,
+  and no aqua-registry PR can fix it. The `op` CLI is closed-source with **no public GitHub
+  repository**, so although an aqua package exists it is a bare `type: http` against the AgileBits
+  CDN with no `repo_owner`/`repo_name`; aqua resolves version lists only from GitHub releases or
+  tags, so `latest` cannot work and the tool would have to be hand-pinned and hand-bumped. For a
+  credential CLI, falling behind on updates is the worse trade. `teleport-community` looks like the
+  easiest of the three to move — an aqua package exists, resolves `latest`, and halves the install —
+  but on macOS it ships only the client tools (`tsh`, `tctl`). The personal profile also runs the
+  `teleport` **node daemon** out of that same install dir (see [Remote access](#remote-access-teleport)),
+  and the launch agent execs it by absolute path with an `[ -x ] || exit 0` guard — so dropping the
+  server binary would not fail loudly, it would leave the node silently serving nothing. All three
+  plugins come from mise's own orgs (`mise-plugins`, `jdx`), so they share a trust root with mise
+  itself — which is what makes the exception tolerable. New vfox/asdf tools are still refused.
 - **The `ubi:` backend is banned (`settings.disable_backends`).** mise deprecated it in favour of
   `github:`, which resolves the same GitHub releases and additionally verifies artifact
   attestations and SLSA provenance; it disappears in mise 2027.1.0. Rather than let a `ubi:` tool

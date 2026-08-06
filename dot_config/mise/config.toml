@@ -76,12 +76,17 @@ oras = "latest"
 # attestations and SLSA provenance, which is exactly what a credential-bearing tool wants.
 "github:lexfrei/mcp-tg" = "1.3.1"
 terraform-docs = "latest"
-redis = "latest"
+# The three tools below resolve to vfox, which the registry no longer accepts for new tools.
+# All three are kept there deliberately — see "Backend preference" in the README for why none
+# of them can move and what would have to change upstream for that to be revisited.
+redis = "latest"              # vfox — redis publishes no prebuilt binaries at all
 cilium-cli = "latest"
 age = "latest"
+# vfox — the aqua package is macOS client-only (tsh + tctl), and the personal profile runs
+# the `teleport` node daemon out of this very install dir, so the full distribution is needed.
 teleport-community = "latest"
 kubelogin = "latest"
-1password-cli = "latest"
+1password-cli = "latest"      # vfox — the aqua entry cannot resolve versions, see the README
 kubeconform = "latest"
 pre-commit = "latest"  # git-hook runner; repos carry .pre-commit-config.yaml, this is the engine
 argocd = "latest"
