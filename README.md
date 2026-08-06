@@ -2,10 +2,7 @@
 
 [![smoke](https://github.com/sanchpet/dotfiles/actions/workflows/smoke.yml/badge.svg)](https://github.com/sanchpet/dotfiles/actions/workflows/smoke.yml)
 
-Personal macOS development environment, managed declaratively with
-[chezmoi](https://www.chezmoi.io) (dotfiles), [mise](https://mise.jdx.dev) (CLI tools),
-and [Homebrew](https://brew.sh) (GUI apps).
-One command on a bare machine → a fully configured setup. **Secrets never touch the repo.**
+Personal macOS development environment, managed declaratively with [chezmoi](https://www.chezmoi.io) (dotfiles), [mise](https://mise.jdx.dev) (CLI tools), and [Homebrew](https://brew.sh) (GUI apps). One command on a bare machine → a fully configured setup. **Secrets never touch the repo.**
 
 ## Quick start (bare machine)
 
@@ -135,10 +132,7 @@ Installed via the `mas` CLI. A one-time App Store sign-in is the only step that 
 
 ## Zsh shell (Oh My Zsh)
 
-The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — the `kubernetes`, `aws`
-and `terraform` modules are on, so the active cluster / profile / workspace is always visible). Oh
-My Zsh loads **plugins only** (theme off — Starship draws the prompt). Built-in plugins ship with
-Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`.
+The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — the `kubernetes`, `aws` and `terraform` modules are on, so the active cluster / profile / workspace is always visible). Oh My Zsh loads **plugins only** (theme off — Starship draws the prompt). Built-in plugins ship with Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`.
 
 | Plugin | Source | Purpose |
 |--------|--------|---------|
@@ -161,79 +155,36 @@ Oh My Zsh; external ones are cloned into `$ZSH_CUSTOM/plugins` by `bootstrap.sh`
 | zsh-syntax-highlighting | external | Command-line syntax highlighting |
 | zsh-autocomplete | external | Live menu completion (loaded **last** so its keybindings win) |
 
-> **Load order matters.** `zsh-autocomplete` owns the completion/history UI, so it loads last, and
-> plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are
-> deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`,
-> `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`/`miseup`
-helpers (add / remove a global mise tool and re-import the config; `miseup` upgrades with a fresh
-version list — clears mise's cached release list first so a just-published release is picked up).
-`brewdiff` reports drift between
-installed Homebrew packages and the rendered `Brewfile.tmpl` (brew has no `miseg`-style auto-sync —
-the manifest is a curated template, so new packages are ported in by hand). `updates` reports
-available mise + Homebrew package updates (cached; the first interactive shell of the day refreshes
-it in the background and prints the summary — never blocks the prompt; `updates -r` rechecks now,
-upgrades stay manual via `brew upgrade` / `mise upgrade` / `mise self-update`). `tg` aliases `terragrunt`
-(the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no
-completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` +
-`complete -C` and shared with the `tg` alias through `compdef`.
+> **Load order matters.** `zsh-autocomplete` owns the completion/history UI, so it loads last, and plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`, `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`/`miseup` helpers (add / remove a global mise tool and re-import the config; `miseup` upgrades with a fresh version list — clears mise's cached release list first so a just-published release is picked up). `brewdiff` reports drift between installed Homebrew packages and the rendered `Brewfile.tmpl` (brew has no `miseg`-style auto-sync — the manifest is a curated template, so new packages are ported in by hand). `updates` reports available mise + Homebrew package updates (cached; the first interactive shell of the day refreshes it in the background and prints the summary — never blocks the prompt; `updates -r` rechecks now, upgrades stay manual via `brew upgrade` / `mise upgrade` / `mise self-update`). `tg` aliases `terragrunt` (the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` + `complete -C` and shared with the `tg` alias through `compdef`.
 
 ## Agent access (MCP)
 
-Two MCP servers give Claude Code a browser and a Telegram reader. Both hand an agent something
-with real reach, so what bounds that reach is written down here rather than left implicit.
+Two MCP servers give Claude Code a browser and a Telegram reader. Both hand an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
 
 ### Browser — `chrome-devtools-mcp`
 
-Registered at user scope in the **personal profile** pointing at `http://127.0.0.1:9222`, i.e. it
-attaches to a browser that is **already running** rather than launching its own. `cometdbg` in
-`dot_zshrc.tmpl` starts that browser: Comet is Chromium, so it speaks the DevTools protocol
-unchanged (verified — it reports `Chrome/150`, protocol 1.3).
+Registered at user scope in the **personal profile** pointing at `http://127.0.0.1:9222`, i.e. it attaches to a browser that is **already running** rather than launching its own. `cometdbg` in `dot_zshrc.tmpl` starts that browser: Comet is Chromium, so it speaks the DevTools protocol unchanged (verified — it reports `Chrome/150`, protocol 1.3).
 
-**The registration is reproducible** (`run_onchange_after_register-chrome-devtools.sh`), for the
-same reason mcp-tg's is: `--scope user` writes into whichever profile `CLAUDE_CONFIG_DIR` names, so
-a hand-typed registration silently belongs to one contour and is missing from the other. That is
-not hypothetical — this server sat in the default profile alone until a session under the personal
-one reported having no browser at all. The script pins the profile and is idempotent.
+**The registration is reproducible** (`run_onchange_after_register-chrome-devtools.sh`), for the same reason mcp-tg's is: `--scope user` writes into whichever profile `CLAUDE_CONFIG_DIR` names, so a hand-typed registration silently belongs to one contour and is missing from the other. That is not hypothetical — this server sat in the default profile alone until a session under the personal one reported having no browser at all. The script pins the profile and is idempotent.
 
-**It runs a dedicated profile (`~/.cache/comet-debug`), not the everyday one.** Whoever holds a
-CDP endpoint can read every open tab and its cookies, and act as you on any site you are signed
-into. The separate profile keeps that to one window. This is the whole reason `cometdbg` exists
-instead of a note saying "pass `--remote-debugging-port`".
+**It runs a dedicated profile (`~/.cache/comet-debug`), not the everyday one.** Whoever holds a CDP endpoint can read every open tab and its cookies, and act as you on any site you are signed into. The separate profile keeps that to one window. This is the whole reason `cometdbg` exists instead of a note saying "pass `--remote-debugging-port`".
 
 ### Telegram — `mcp-tg`
 
-MTProto with a **user session**, because a bot cannot read a conversation between two people.
-`mcp-tg login` takes the phone, code and 2FA on a TTY — the credentials never pass through an
-agent's transcript — and stores the session in the login keychain rather than a file on disk.
+MTProto with a **user session**, because a bot cannot read a conversation between two people. `mcp-tg login` takes the phone, code and 2FA on a TTY — the credentials never pass through an agent's transcript — and stores the session in the login keychain rather than a file on disk.
 
-**The registration itself is reproducible** (`run_onchange_after_register-mcp-tg.sh.tmpl`): mise
-pins the binary, and that script registers the server in the personal profile, reading the API
-credentials from Vault (`homelab/telegram/mcp-tg`) at apply time so they stay out of git. It is
-idempotent, personal-profile-only, and skips with a message when Vault is off the mesh — a
-bootstrap must not fail on reachability. The account login stays manual and interactive by design:
-that is the one step that should never be automated.
+**The registration itself is reproducible** (`run_onchange_after_register-mcp-tg.sh.tmpl`): mise pins the binary, and that script registers the server in the personal profile, reading the API credentials from Vault (`homelab/telegram/mcp-tg`) at apply time so they stay out of git. It is idempotent, personal-profile-only, and skips with a message when Vault is off the mesh — a bootstrap must not fail on reachability. The account login stays manual and interactive by design: that is the one step that should never be automated.
 
-**All 78 tools are enabled, deliberately.** The server has no read-only mode, and an earlier
-`permissions.deny` listing every write tool was removed at the owner's decision: the agent is a
-working instrument on a machine the owner controls, and a tool that cannot act is worth less than
-the risk it avoids here.
+**All 78 tools are enabled, deliberately.** The server has no read-only mode, and an earlier `permissions.deny` listing every write tool was removed at the owner's decision: the agent is a working instrument on a machine the owner controls, and a tool that cannot act is worth less than the risk it avoids here.
 
-What that means concretely, so it is never a surprise: an agent can send, edit and delete messages
-as the account holder, forward, react, join and leave chats, block users, and change the profile.
-Messages it sends are indistinguishable from the owner's to whoever receives them — this is the
-only capability that reaches **other people**, and the one worth thinking about before granting a
-session to any agent.
+What that means concretely, so it is never a surprise: an agent can send, edit and delete messages as the account holder, forward, react, join and leave chats, block users, and change the profile. Messages it sends are indistinguishable from the owner's to whoever receives them — this is the only capability that reaches **other people**, and the one worth thinking about before granting a session to any agent.
 
 Two properties of the mechanism, unchanged by the above:
 
-- **The session authorises the entire account.** It is a bearer credential that has already passed
-  2FA. Keychain storage protects it at rest; nothing protects it from a process that can ask the
-  keychain.
-- **No Telegram MCP server can be scoped to a single conversation.** Access is per-account, never
-  per-chat. Upstream tracks per-chat allowlists as an open request.
+- **The session authorises the entire account.** It is a bearer credential that has already passed 2FA. Keychain storage protects it at rest; nothing protects it from a process that can ask the keychain.
+- **No Telegram MCP server can be scoped to a single conversation.** Access is per-account, never per-chat. Upstream tracks per-chat allowlists as an open request.
 
-To reinstate a restriction later, `permissions.deny` in `~/.claude/settings.json` takes tool names
-as `mcp__mcp-tg__<tool>`. The current surface:
+To reinstate a restriction later, `permissions.deny` in `~/.claude/settings.json` takes tool names as `mcp__mcp-tg__<tool>`. The current surface:
 
 ```sh
 gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
@@ -241,57 +192,38 @@ gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
 
 ## Remote access (Teleport)
 
-This Mac is a **Teleport SSH node**: the agent dials out to the cluster proxy on `:443` and holds
-a reverse tunnel, so there is no inbound port, no port forwarding on the router, and no
-dependence on the network it sits behind — home, office or a cafe are the same to it.
+This Mac is a **Teleport SSH node**: the agent dials out to the cluster proxy on `:443` and holds a reverse tunnel, so there is no inbound port, no port forwarding on the router, and no dependence on the network it sits behind — home, office or a cafe are the same to it.
 
 Two properties are worth stating because they are choices, not accidents:
 
-- **It runs as a login agent, not a system daemon.** A non-root Teleport node can only serve
-  sessions as the user it runs as, so the blast radius is that one account even if cluster RBAC
-  were wrong. The cost is that the machine is reachable only while that user is logged in: after
-  a cold boot FileVault holds the disk and nothing starts. No remote-access scheme fixes that —
-  plan around it rather than expect it to be solved.
-- **Only a personal machine becomes a node.** `.chezmoiignore` withholds the config and the agent
-  on any other profile: reaching a node and being one are different things, and a corporate
-  machine should only ever do the former.
+- **It runs as a login agent, not a system daemon.** A non-root Teleport node can only serve sessions as the user it runs as, so the blast radius is that one account even if cluster RBAC were wrong. The cost is that the machine is reachable only while that user is logged in: after a cold boot FileVault holds the disk and nothing starts. No remote-access scheme fixes that — plan around it rather than expect it to be solved.
+- **Only a personal machine becomes a node.** `.chezmoiignore` withholds the config and the agent on any other profile: reaching a node and being one are different things, and a corporate machine should only ever do the former.
 
-**Joining** is a one-time out-of-band step, like every other bootstrap credential — the token
-never lives in this repo:
+**Joining** is a one-time out-of-band step, like every other bootstrap credential — the token never lives in this repo:
 
 ```sh
 tctl tokens add --type=node --ttl=15m --format=text > ~/.config/teleport/join-token
 chezmoi apply ~/.config/teleport/teleport.yaml   # then the agent picks it up
 ```
 
-The node writes its own certificates into `~/.local/share/teleport` on first start and never
-reads the token again. Diagnostics: `~/Library/Logs/teleport-node.log`.
+The node writes its own certificates into `~/.local/share/teleport` on first start and never reads the token again. Diagnostics: `~/Library/Logs/teleport-node.log`.
 
-**Reaching the desktop** from another Mac — `home-desktop` forwards the port and opens Apple's
-own Screen Sharing client (Mac-to-Mac negotiates a far better path than a generic VNC viewer):
+**Reaching the desktop** from another Mac — `home-desktop` forwards the port and opens Apple's own Screen Sharing client (Mac-to-Mac negotiates a far better path than a generic VNC viewer):
 
 ```sh
 home-desktop            # tunnel + viewer; closing the shell closes both
 tsh ssh sanchpet@macbook-air   # terminal only
 ```
 
-Screen Sharing itself is a macOS service, enabled once per machine outside chezmoi (it needs
-root). The reliable path is System Settings → General → Sharing → Screen Sharing; the `launchctl`
-equivalent (`enable` then `kickstart -k system/com.apple.screensharing`) is fussy about ordering
-and silently unhelpful when the service is still disabled. Sleep is separate and matters as much:
+Screen Sharing itself is a macOS service, enabled once per machine outside chezmoi (it needs root). The reliable path is System Settings → General → Sharing → Screen Sharing; the `launchctl` equivalent (`enable` then `kickstart -k system/com.apple.screensharing`) is fussy about ordering and silently unhelpful when the service is still disabled. Sleep is separate and matters as much:
 
 ```sh
 sudo pmset -c sleep 0    # a sleeping laptop answers nothing
 ```
 
-**The tunnel is the access path, not a shield.** macOS binds Screen Sharing on `0.0.0.0:5900`,
-so the port answers on every network the machine joins — authenticated, but answering. Reaching
-it *through* Teleport is what gives the audited, certificate-gated path; if the machine sits on
-networks you do not trust, turn on the application firewall (currently off on this Mac) or narrow
-the allowed users in the same Sharing pane.
+**The tunnel is the access path, not a shield.** macOS binds Screen Sharing on `0.0.0.0:5900`, so the port answers on every network the machine joins — authenticated, but answering. Reaching it *through* Teleport is what gives the audited, certificate-gated path; if the machine sits on networks you do not trust, turn on the application firewall (currently off on this Mac) or narrow the allowed users in the same Sharing pane.
 
-Note that a closed lid still sleeps an Apple Silicon laptop without an external display, so a
-machine meant to be reachable stays open.
+Note that a closed lid still sleeps an Apple Silicon laptop without an external display, so a machine meant to be reachable stays open.
 
 ## Repository layout
 
@@ -328,98 +260,23 @@ machine meant to be reachable stays open.
 
 ## Design decisions (Decision Record)
 
-- **Touch ID for `sudo`, never a `NOPASSWD` rule.** An agent working in this shell cannot type a
-  password — its commands run without a controlling terminal. The tempting fix, a `NOPASSWD` line
-  in `sudoers.d`, hands those rights not to one agent but to *every* process running as this user
-  (a package `postinstall`, any script that gets executed), and no honestly narrow allowlist
-  exists: `launchctl` as root is a loaded arbitrary daemon, i.e. full root anyway.
-  `auth sufficient pam_tid.so` in `/etc/pam.d/sudo_local` inverts that — the module short-circuits
-  before the password prompt, so the missing terminal never matters, and the prompt is a system
-  dialog raised inside `sudo` itself. Verified: a `sudo` issued from a non-TTY agent process does
-  raise it, because the process inherits the GUI session's bootstrap namespace. Paired with
-  `Defaults timestamp_timeout=0` (`/etc/sudoers.d/timestamp`) it means every single root action
-  costs one live fingerprint — an agent can *ask* for root and never *hold* it.
-  Consequences worth remembering: inside `tmux` this needs `pam_reattach`; over a remote session
-  (Teleport, SSH) it cannot work at all, since there is no finger at that end — remote `sudo`
-  falls back to a password, which a non-TTY caller cannot supply.
-  Both files live outside `$HOME` and need root, so chezmoi cannot own them as targets;
-  `run_onchange_after_sudo-touch-id.sh` installs them instead. It costs one password on a fresh
-  machine and nothing ever after — it exits early when both files are already right, and refuses
-  to prompt when there is no terminal, so a headless bootstrap prints what is left to do rather
-  than hanging on a prompt nobody can answer. The sudoers drop-in is validated with `visudo -c`
-  before it is installed, because a malformed one locks the account out of root entirely.
-- **chezmoi over GNU Stow / bare-git.** Needed templating (per-machine values), first-class
-  secret handling, and a source tree where dotfiles stay *visible* (`dot_` prefix) instead of
-  hidden. Stow only symlinks; bare-git has no templating or secrets.
-- **mise-first for CLI tools.** All CLI tooling is declared in mise (`config.toml`), versioned and
-  cross-machine. Homebrew is reserved for what mise can't provide — GUI casks, plus the rare CLI
-  with heavy native deps or no upstream release (e.g. `sshpass`). This keeps the toolchain
-  reproducible and the Brewfile minimal.
-- **Bitwarden for secrets.** Secrets are pulled from Bitwarden at `chezmoi apply` via
-  `{{ bitwarden ... }}` templates — nothing secret (encrypted or otherwise) lives in this public
-  repo. Trade-off: bootstrap needs an interactive `bw unlock` before applying secret-bearing files
-  (vs. `age`/`secrets.env`, which keep apply offline but place material in/near the repo).
-- **pre-commit + shellcheck.** Every commit lints shell scripts and runs hygiene checks, so
-  `bootstrap.sh` and friends stay correct. pre-commit itself is installed via mise (`postinstall`
-  wires the git hooks automatically).
-- **Bootstrap ordering.** The mise config is itself a managed dotfile, so it is applied *before*
-  `mise install` to break the chicken-and-egg; Homebrew is installed lazily, only when GUI casks
-  are present.
-- **mise hooks enabled (`settings.experimental`).** Turned on globally so a project's
-  `mise.toml` can self-activate its git hooks with `[hooks] enter = "git config core.hooksPath
-  .githooks"`, instead of a manual `git config` on every clone/machine. Kept at the machine level
-  (not duplicated per repo) so individual projects only declare the `[hooks]` they need.
+- **Touch ID for `sudo`, never a `NOPASSWD` rule.** An agent working in this shell cannot type a password — its commands run without a controlling terminal. The tempting fix, a `NOPASSWD` line in `sudoers.d`, hands those rights not to one agent but to *every* process running as this user (a package `postinstall`, any script that gets executed), and no honestly narrow allowlist exists: `launchctl` as root is a loaded arbitrary daemon, i.e. full root anyway. `auth sufficient pam_tid.so` in `/etc/pam.d/sudo_local` inverts that — the module short-circuits before the password prompt, so the missing terminal never matters, and the prompt is a system dialog raised inside `sudo` itself. Verified: a `sudo` issued from a non-TTY agent process does raise it, because the process inherits the GUI session's bootstrap namespace. Paired with `Defaults timestamp_timeout=0` (`/etc/sudoers.d/timestamp`) it means every single root action costs one live fingerprint — an agent can *ask* for root and never *hold* it. Consequences worth remembering: inside `tmux` this needs `pam_reattach`; over a remote session (Teleport, SSH) it cannot work at all, since there is no finger at that end — remote `sudo` falls back to a password, which a non-TTY caller cannot supply. Both files live outside `$HOME` and need root, so chezmoi cannot own them as targets; `run_onchange_after_sudo-touch-id.sh` installs them instead. It costs one password on a fresh machine and nothing ever after — it exits early when both files are already right, and refuses to prompt when there is no terminal, so a headless bootstrap prints what is left to do rather than hanging on a prompt nobody can answer. The sudoers drop-in is validated with `visudo -c` before it is installed, because a malformed one locks the account out of root entirely.
+- **chezmoi over GNU Stow / bare-git.** Needed templating (per-machine values), first-class secret handling, and a source tree where dotfiles stay *visible* (`dot_` prefix) instead of hidden. Stow only symlinks; bare-git has no templating or secrets.
+- **mise-first for CLI tools.** All CLI tooling is declared in mise (`config.toml`), versioned and cross-machine. Homebrew is reserved for what mise can't provide — GUI casks, plus the rare CLI with heavy native deps or no upstream release (e.g. `sshpass`). This keeps the toolchain reproducible and the Brewfile minimal.
+- **Bitwarden for secrets.** Secrets are pulled from Bitwarden at `chezmoi apply` via `{{ bitwarden ... }}` templates — nothing secret (encrypted or otherwise) lives in this public repo. Trade-off: bootstrap needs an interactive `bw unlock` before applying secret-bearing files (vs. `age`/`secrets.env`, which keep apply offline but place material in/near the repo).
+- **pre-commit + shellcheck.** Every commit lints shell scripts and runs hygiene checks, so `bootstrap.sh` and friends stay correct. pre-commit itself is installed via mise (`postinstall` wires the git hooks automatically).
+- **Bootstrap ordering.** The mise config is itself a managed dotfile, so it is applied *before* `mise install` to break the chicken-and-egg; Homebrew is installed lazily, only when GUI casks are present.
+- **mise hooks enabled (`settings.experimental`).** Turned on globally so a project's `mise.toml` can self-activate its git hooks with `[hooks] enter = "git config core.hooksPath .githooks"`, instead of a manual `git config` on every clone/machine. Kept at the machine level (not duplicated per repo) so individual projects only declare the `[hooks]` they need.
 - **Backend preference: aqua first, then github, then http, and a language manager last.** mise's registry has acceptance tiers, and the ladder here mirrors them: `aqua` (most features and security, and no plugin code runs at install), then `github`/`gitlab` for what aqua lacks (attestation + SLSA verification), then `http` for vendor binaries with no Git host — pinned by version and sha256, because nothing else vouches for them — and `pipx`/`npm`/`gem`/`cargo` only where the tool is native to that ecosystem. A bare tool name is left alone unless the registry's own first choice is wrong here; an explicit backend always carries a comment saying why. `aqua` also wins over `github` when the aqua-registry entry does something the raw release does not: `kubectl-view-secret` ships its binary dash-named, and only aqua's `files:` rename to `kubectl-view_secret` makes kubectl discover it as a plugin.
 - **Three tools stay on `vfox`, deliberately.** mise no longer accepts vfox/asdf tools, since a plugin is arbitrary code run at install time. `redis`, `1password-cli` and `teleport-community` are grandfathered because none of them can move, and the reasons are worth recording so nobody re-litigates them: Redis publishes **no prebuilt binaries at all** (the newest release carries a single `redis-full.tar.gz` source archive, older ones no assets), and aqua only places prebuilt artifacts — it has no build step, so this is a model mismatch rather than a missing package, and no aqua-registry PR can fix it. The `op` CLI is closed-source with **no public GitHub repository**, so although an aqua package exists it is a bare `type: http` against the AgileBits CDN with no `repo_owner`/`repo_name`; aqua resolves version lists only from GitHub releases or tags, so `latest` cannot work and the tool would have to be hand-pinned and hand-bumped. For a credential CLI, falling behind on updates is the worse trade. `teleport-community` looks like the easiest of the three to move — an aqua package exists, resolves `latest`, and halves the install — but on macOS it ships only the client tools (`tsh`, `tctl`). The personal profile also runs the `teleport` **node daemon** out of that same install dir (see [Remote access](#remote-access-teleport)), and the launch agent execs it by absolute path with an `[ -x ] || exit 0` guard — so dropping the server binary would not fail loudly, it would leave the node silently serving nothing. All three plugins come from mise's own orgs (`mise-plugins`, `jdx`), so they share a trust root with mise itself — which is what makes the exception tolerable. New vfox/asdf tools are still refused.
 - **The `ubi:` backend is banned (`settings.disable_backends`).** mise deprecated it in favour of `github:`, which resolves the same GitHub releases and additionally verifies artifact attestations and SLSA provenance; it disappears in mise 2027.1.0. Rather than let a `ubi:` tool be added and quietly rot until that release, mise is told to refuse the backend outright. The mise registry itself no longer routes any tool through ubi, so the ban costs nothing — only a hand-written `ubi:` line can hit it. Because a setting binds one machine at install time, CI carries the matching repo-level guard, which rejects both a `ubi:` declaration and the removal of the ban itself.
-- **Per-machine via `profile`, not per-machine directories.** One source tree; machine-specific
-  variation is driven by a single `profile` value (`work`/`personal`), prompted once at
-  `chezmoi init` (override in CI/headless with `DOTFILES_PROFILE`) and stored in the machine-local
-  chezmoi config (never in this repo). Templates branch on it — `Brewfile.tmpl` installs the .NET
-  SDK only when `profile == "work"`. Git identity, by contrast, is **directory**-based and kept
-  out of this public repo: `dot_gitconfig.tmpl` defaults to the personal identity (`sanchpet`) with
-  SSH commit signing everywhere. A machine that also does corporate work sets its work identity
-  (`work.name` / `work.email`) and the dir its repos live under (`work.gitdir`) in the machine-local
-  chezmoi data — never in this repo. When **both** are set, an `includeIf "gitdir:…"` pulls in
-  `dot_config/git/work.inc` to switch to that identity under the work dir; a machine
-  with no corporate identity gets neither the `includeIf` nor `work.inc`. Setting `work.email`
-  while leaving `work.gitdir` blank is refused at render time — git reads an empty `gitdir:`
-  pattern as matching *every* repository, which would make the corporate identity the global
-  default. Corporate commits are signed by a key declared for work
-  (`work.signingKey`, machine-local like the rest), trusted in `allowed_signers` under the work
-  email as its own principal; registering that key with the corporate host is what makes them
-  verify there. Declare no work key and signing is switched **off** under the work dir rather than
-  inheriting the personal key — a host that has never seen that key cannot verify it, so such a
-  signature only discloses which personal key made the commit, and unlike an unsigned commit it
-  does not look like one. Personal signing is separately gated on its key existing, so a machine
-  without it still commits. This keeps a single declarative source of truth,
-  keeps the employer identity out of the public repo, and avoids the duplication/drift of per-machine
-  dirs.
-- **SSH keys live in a vault agent — never on disk.** Each machine keeps its own `auth@…` and
-  `signing@…` keys in its password manager and serves them over that app's SSH agent, unlocked by
-  Touch ID: personal machines use Bitwarden, work machines 1Password. The choice is one value in
-  the machine-local chezmoi data (`agent.kind`), alongside that machine's signing **public** key
-  (`agent.signingKey`), which `dot_gitconfig.tmpl` renders as a `key::` literal for
-  `user.signingKey`. Onboarding a machine means creating the keys in the vault, not running
-  `ssh-keygen` — `bootstrap.sh` generates nothing and reads the public halves from the agent when
-  registering them on GitHub. `~/.ssh/config` sets `IdentityAgent` to the machine's socket for all
-  hosts. Because that only covers `ssh`, git additionally points `gpg.ssh.program` at a shim
-  (`~/.local/bin/git-agent-sign`) forcing the same socket for signing, so non-login shells (Claude
-  Code, background agents, scripts) sign too. Verification is declarative: every machine's signing
-  public key is listed in `allowed_signers`, which is how commits made elsewhere verify locally.
-  Corporate repos sign as well — only the identity differs there, not the key. Under the same flag, Teleport's `tsh` is told not to load its short-lived cert into
-  this sign-only agent (`TELEPORT_USE_LOCAL_SSH_AGENT=false`) — the add would fail and abort the
-  login; `tsh` keeps its certs in `~/.tsh` regardless.
-- **Bitwarden server — self-hosted, per machine.** `bootstrap.sh` points the `bw` CLI at
-  `.bitwarden.server` (asked once at `chezmoi init`, override `DOTFILES_BW_SERVER`) before login, so
-  a self-hosted Vaultwarden works out of the box; blank keeps the `bitwarden.com` default. The URL is
-  live infra, so it is never defaulted in this public repo — it lives only in the machine-local
-  chezmoi config. Login is TTY-gated: a non-TTY run (CI/headless) skips it instead of hanging.
+- **Per-machine via `profile`, not per-machine directories.** One source tree; machine-specific variation is driven by a single `profile` value (`work`/`personal`), prompted once at `chezmoi init` (override in CI/headless with `DOTFILES_PROFILE`) and stored in the machine-local chezmoi config (never in this repo). Templates branch on it — `Brewfile.tmpl` installs the .NET SDK only when `profile == "work"`. Git identity, by contrast, is **directory**-based and kept out of this public repo: `dot_gitconfig.tmpl` defaults to the personal identity (`sanchpet`) with SSH commit signing everywhere. A machine that also does corporate work sets its work identity (`work.name` / `work.email`) and the dir its repos live under (`work.gitdir`) in the machine-local chezmoi data — never in this repo. When **both** are set, an `includeIf "gitdir:…"` pulls in `dot_config/git/work.inc` to switch to that identity under the work dir; a machine with no corporate identity gets neither the `includeIf` nor `work.inc`. Setting `work.email` while leaving `work.gitdir` blank is refused at render time — git reads an empty `gitdir:` pattern as matching *every* repository, which would make the corporate identity the global default. Corporate commits are signed by a key declared for work (`work.signingKey`, machine-local like the rest), trusted in `allowed_signers` under the work email as its own principal; registering that key with the corporate host is what makes them verify there. Declare no work key and signing is switched **off** under the work dir rather than inheriting the personal key — a host that has never seen that key cannot verify it, so such a signature only discloses which personal key made the commit, and unlike an unsigned commit it does not look like one. Personal signing is separately gated on its key existing, so a machine without it still commits. This keeps a single declarative source of truth, keeps the employer identity out of the public repo, and avoids the duplication/drift of per-machine dirs.
+- **SSH keys live in a vault agent — never on disk.** Each machine keeps its own `auth@…` and `signing@…` keys in its password manager and serves them over that app's SSH agent, unlocked by Touch ID: personal machines use Bitwarden, work machines 1Password. The choice is one value in the machine-local chezmoi data (`agent.kind`), alongside that machine's signing **public** key (`agent.signingKey`), which `dot_gitconfig.tmpl` renders as a `key::` literal for `user.signingKey`. Onboarding a machine means creating the keys in the vault, not running `ssh-keygen` — `bootstrap.sh` generates nothing and reads the public halves from the agent when registering them on GitHub. `~/.ssh/config` sets `IdentityAgent` to the machine's socket for all hosts. Because that only covers `ssh`, git additionally points `gpg.ssh.program` at a shim (`~/.local/bin/git-agent-sign`) forcing the same socket for signing, so non-login shells (Claude Code, background agents, scripts) sign too. Verification is declarative: every machine's signing public key is listed in `allowed_signers`, which is how commits made elsewhere verify locally. Corporate repos sign as well — only the identity differs there, not the key. Under the same flag, Teleport's `tsh` is told not to load its short-lived cert into this sign-only agent (`TELEPORT_USE_LOCAL_SSH_AGENT=false`) — the add would fail and abort the login; `tsh` keeps its certs in `~/.tsh` regardless.
+- **Bitwarden server — self-hosted, per machine.** `bootstrap.sh` points the `bw` CLI at `.bitwarden.server` (asked once at `chezmoi init`, override `DOTFILES_BW_SERVER`) before login, so a self-hosted Vaultwarden works out of the box; blank keeps the `bitwarden.com` default. The URL is live infra, so it is never defaulted in this public repo — it lives only in the machine-local chezmoi config. Login is TTY-gated: a non-TTY run (CI/headless) skips it instead of hanging.
 
 ## Syncing changes (chezmoi)
 
-chezmoi has two locations: the **source** (this repo, `chezmoi source-path`) and the **live** files
-in `$HOME`. Always edit the source, then push it to live — never edit the live file directly.
+chezmoi has two locations: the **source** (this repo, `chezmoi source-path`) and the **live** files in `$HOME`. Always edit the source, then push it to live — never edit the live file directly.
 
 | Scenario | Command |
 |----------|---------|
@@ -428,24 +285,14 @@ in `$HOME`. Always edit the source, then push it to live — never edit the live
 | Check source ↔ live drift | `chezmoi diff` (alias `czd`) |
 | A tool wrote to a **non-templated** target (e.g. `mise use -g` → `~/.config/mise/config.toml`) | re-import: `chezmoi add <target>` (see the `miseg` helper) |
 
-> **Never run `chezmoi add ~/.zshrc`.** It is a **template** (`dot_zshrc.tmpl`) — `add` would
-> overwrite it with the rendered content and destroy the `{{ ... }}` directives (incl. future
-> secrets). Templated files are source-edited only; `chezmoi add` is for non-templated targets.
+> **Never run `chezmoi add ~/.zshrc`.** It is a **template** (`dot_zshrc.tmpl`) — `add` would overwrite it with the rendered content and destroy the `{{ ... }}` directives (incl. future secrets). Templated files are source-edited only; `chezmoi add` is for non-templated targets.
 
 ## Secrets
 
-Secrets are **never committed**. They are resolved at apply time from
-[Bitwarden](https://bitwarden.com) via chezmoi templates. On a fresh machine, `bootstrap.sh`
-prompts for `bw unlock` only when the source actually contains secret templates.
+Secrets are **never committed**. They are resolved at apply time from [Bitwarden](https://bitwarden.com) via chezmoi templates. On a fresh machine, `bootstrap.sh` prompts for `bw unlock` only when the source actually contains secret templates.
 
-For interactive use, `bwu` (defined in `.zshrc`) logs in once per machine and unlocks per session,
-exporting `BW_SESSION`. `~/.local/bin/age-archive` then reads its key via `AGE_IDENTITY_CMD`
-(a `bw get item …`), so the age secret is fetched from the vault at run time — never pasted,
-never on disk.
+For interactive use, `bwu` (defined in `.zshrc`) logs in once per machine and unlocks per session, exporting `BW_SESSION`. `~/.local/bin/age-archive` then reads its key via `AGE_IDENTITY_CMD` (a `bw get item …`), so the age secret is fetched from the vault at run time — never pasted, never on disk.
 
-The zsh config (`dot_zshrc.tmpl`) is kept as a `.tmpl` so a `{{ bitwarden ... }}` secret line can
-be added later without a rename — see [Zsh shell](#zsh-shell-oh-my-zsh) for the plugin set and
-prompt.
+The zsh config (`dot_zshrc.tmpl`) is kept as a `.tmpl` so a `{{ bitwarden ... }}` secret line can be added later without a rename — see [Zsh shell](#zsh-shell-oh-my-zsh) for the plugin set and prompt.
 
-> **Pending:** the `OBSIDIAN_API_KEY` secret reference (via Bitwarden) is not wired yet — `.zshrc`
-> is kept as a `.tmpl` so the `{{ bitwarden ... }}` line can be added without a rename.
+> **Pending:** the `OBSIDIAN_API_KEY` secret reference (via Bitwarden) is not wired yet — `.zshrc` is kept as a `.tmpl` so the `{{ bitwarden ... }}` line can be added without a rename.
