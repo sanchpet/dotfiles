@@ -65,8 +65,10 @@ oras = "latest"
 # Telegram MCP server (MTProto, user session). Version-pinned rather than "latest": it holds a
 # credential that authorises the whole account, so a new release is something to read before
 # running. Session lives in the login keychain, not on disk. Write tools are denied in
-# ~/.claude/settings.json — the server itself has no read-only mode.
-"ubi:lexfrei/mcp-tg" = "1.3.1"
+# ~/.claude/settings.json — the server itself has no read-only mode. The github backend
+# (ubi's successor, ubi: is deprecated) additionally verifies the release's GitHub
+# attestations and SLSA provenance, which is exactly what a credential-bearing tool wants.
+"github:lexfrei/mcp-tg" = "1.3.1"
 terraform-docs = "latest"
 redis = "latest"
 cilium-cli = "latest"
