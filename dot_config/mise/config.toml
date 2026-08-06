@@ -15,6 +15,12 @@ experimental = true
 # delay so my freshly-tagged releases install immediately. The delay stays on for every
 # other (third-party) tool.
 minimum_release_age_excludes = ["github:sanchpet/sweb"]
+# The ubi backend is deprecated (removed in mise 2027.1.0) and its successor `github:`
+# additionally verifies attestations/SLSA provenance, so there is no reason to reach for
+# it. Disabling it makes mise refuse a `ubi:` tool outright instead of installing one that
+# quietly rots until the removal. Costs nothing: the mise registry no longer resolves any
+# tool through ubi, so only a hand-written `ubi:` line can trip this.
+disable_backends = ["ubi"]
 
 [tools]
 bitwarden = "latest"
