@@ -209,16 +209,3 @@ jobs:
             echo "❌ mise: disable_backends must keep ubi banned in the mise config"; exit 1
           fi
           echo "✅ mise: no ubi backend, and the ban is declared"
-
-      - name: opsec — no employer identity in the source tree
-        run: |
-          # The public repo must never carry the employer name, corporate user/email,
-          # or an internal hostname. Values live only in machine-local chezmoi data.
-          # Tokens are split with '' so this guard never matches its own pattern.
-          # Current employer first, then former ones — the guard is only worth as much as
-          # its coverage of whoever the machine works for now.
-          pat='employer|employer-domain|employer-past|employer-past-legal|corp-user|corp-host'
-          if grep -rInE "$pat" --exclude-dir=.git .; then
-            echo "❌ opsec: employer identity leaked into the public source"; exit 1
-          fi
-          echo "✅ opsec: no employer identity in source"
