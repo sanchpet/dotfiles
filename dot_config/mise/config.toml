@@ -15,12 +15,6 @@ experimental = true
 # delay so my freshly-tagged releases install immediately. The delay stays on for every
 # other (third-party) tool.
 minimum_release_age_excludes = ["github:sanchpet/sweb"]
-# The ubi backend is deprecated (removed in mise 2027.1.0) and its successor `github:`
-# additionally verifies attestations/SLSA provenance, so there is no reason to reach for
-# it. Disabling it makes mise refuse a `ubi:` tool outright instead of installing one that
-# quietly rots until the removal. Costs nothing: the mise registry no longer resolves any
-# tool through ubi, so only a hand-written `ubi:` line can trip this.
-disable_backends = ["ubi"]
 
 [tools]
 bitwarden = "latest"
@@ -58,7 +52,6 @@ yamllint = "latest"            # pipx backend → uv tool install
 "pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
 hyperfine = "latest"
 opencode = "latest"
-antigravity-cli = "latest" # Antigravity CLI (`agy`) — aqua backend, checksum-verified
 aqua = "latest"
 # claudeline — Claude Code statusline. aqua backend: checksum-verified, per-version installs
 # (vs the github backend's best-effort asset guess). Switched once the aqua-registry entry
@@ -71,29 +64,16 @@ oras = "latest"
 # Telegram MCP server (MTProto, user session). Version-pinned rather than "latest": it holds a
 # credential that authorises the whole account, so a new release is something to read before
 # running. Session lives in the login keychain, not on disk. Write tools are denied in
-# ~/.claude/settings.json — the server itself has no read-only mode. The github backend
-# (ubi's successor, ubi: is deprecated) additionally verifies the release's GitHub
-# attestations and SLSA provenance, which is exactly what a credential-bearing tool wants.
-"github:lexfrei/mcp-tg" = "1.3.1"
+# ~/.claude/settings.json — the server itself has no read-only mode.
+"ubi:lexfrei/mcp-tg" = "1.3.1"
 terraform-docs = "latest"
-# The three tools below resolve to vfox, which the registry no longer accepts for new tools.
-# All three are kept there deliberately — see "Backend preference" in the README for why none
-# of them can move and what would have to change upstream for that to be revisited.
-redis = "latest"              # vfox — redis publishes no prebuilt binaries at all
+redis = "latest"
 cilium-cli = "latest"
 age = "latest"
-# vfox — the aqua package is macOS client-only (tsh + tctl), and the personal profile runs
-# the `teleport` node daemon out of this very install dir, so the full distribution is needed.
 teleport-community = "latest"
 kubelogin = "latest"
-1password-cli = "latest"      # vfox — the aqua entry cannot resolve versions, see the README
-kubeconform = "latest"
-pre-commit = "latest"  # git-hook runner; repos carry .pre-commit-config.yaml, this is the engine
-argocd = "latest"
-# kubectl view-secret — decode a Secret without the base64 pipeline. aqua backend, not github:
-# the aqua entry renames the binary to kubectl-view_secret, which is what kubectl needs to
-# expose it as the `view-secret` subcommand, and it verifies the release checksums.
-"aqua:elsesiy/kubectl-view-secret" = "latest"
+1password-cli = "latest"
+shellcheck = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
