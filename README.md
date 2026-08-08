@@ -82,6 +82,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | regctl | Registry client — manifests, tags, copy/retag without a daemon | [github](https://github.com/regclient/regclient) |
 | oras | OCI registry client for arbitrary artifacts (push/pull non-image content) | [docs](https://oras.land) · [github](https://github.com/oras-project/oras) |
 | mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. **Version-pinned, not `latest`**: it holds a session that authorises the whole account. See [Agent access](#agent-access-mcp). | [github](https://github.com/lexfrei/mcp-tg) |
+| wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned** for the same reason as mcp-tg: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement. | [github](https://github.com/mekedron/wolt-cli) |
 
 ### Quality / dev workflow
 
