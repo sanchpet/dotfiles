@@ -78,6 +78,14 @@ teleport-community = "latest"
 kubelogin = "latest"
 1password-cli = "latest"
 shellcheck = "latest"
+# Unofficial Wolt CLI — one archive ships both binaries (wolt, wolt-mcp), so a single
+# declaration exposes both. github backend because no aqua package exists yet; an entry is
+# proposed upstream, and this becomes "aqua:mekedron/wolt-cli" once it lands. Unlike most
+# github: tools here, this release publishes no attestations, so that verification step is
+# a no-op — the only integrity anchor is the release's own SHA256SUMS. Pinned rather than
+# "latest" for the same reason as mcp-tg: it holds a session tied to payment methods, so a
+# new release is something to read before running.
+"github:mekedron/wolt-cli" = "2.3.1"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
