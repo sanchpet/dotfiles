@@ -19,9 +19,21 @@
 # Two steps cannot live in code, and the script says so at the end rather than pretending otherwise:
 # the plugin has to be uploaded through Super Productivity's own Settings UI, and SP >= 18.13.0
 # then raises a one-time Node execution consent dialog that only a human can accept.
+#
+# Personal MACHINE only, which is a stronger condition than the personal profile the other two
+# registrations settle for. The app itself is declared for every machine — work time is tracked on
+# the work machine too — but that instance stays agentless on purpose: its task titles belong to an
+# employer, and the cheapest way to keep them from reaching an agent is to never register a reader
+# for them. Only the weekly per-bucket totals cross that boundary, and a human carries them.
 set -eu
 
+PROFILE="{{ dig "profile" "personal" . }}"
 CONFIG_DIR="$HOME/.claude-personal"
+
+if [ "$PROFILE" != "personal" ]; then
+  echo "super-productivity: profile=$PROFILE — the app is installed, the MCP reader deliberately is not"
+  exit 0
+fi
 
 command -v claude >/dev/null 2>&1 || { echo "super-productivity: claude not on PATH — skipping registration"; exit 0; }
 command -v npx    >/dev/null 2>&1 || { echo "super-productivity: npx not on PATH (node not applied yet?) — skipping"; exit 0; }

@@ -175,7 +175,7 @@ Registered at user scope in the **personal profile** pointing at `http://127.0.0
 
 Super Productivity is the instrument for tracking physical time by task, replacing Focus To-Do. The choice was driven by reachability rather than features: Focus To-Do publishes no API at all, so every adapter for it is built on reverse-engineered endpoints and authenticates with the account password in plain environment variables. Super Productivity keeps its data in a local directory and publishes a plugin API first-party, so an adapter over it is an ordinary client — when it breaks, that is a bug report rather than a second round of reverse engineering.
 
-**The registration is reproducible** (`run_onchange_after_register-super-productivity-mcp.sh`), personal-profile-only and idempotent, for the same reason the other two are.
+**The registration is reproducible** (`run_onchange_after_register-super-productivity-mcp.sh.tmpl`), idempotent, and gated to the **personal machine** — a stronger condition than the personal profile the other two settle for. The app is declared for every machine, because work time is tracked on the work machine too, but that instance stays agentless on purpose: its task titles belong to an employer, and the cheapest way to keep them away from an agent is to never register a reader for them. Only weekly per-bucket totals cross that boundary, carried by hand.
 
 **Unpinned `@latest`, unlike mcp-tg and wolt-cli.** Those hold live sessions — one authorises a whole Telegram account, the other is tied to payment methods — so a surprise release there reaches further than this machine. This server holds no session: there are no credentials in its design and the data is a local folder. The looser rule is a deliberate exception, accepted knowingly.
 
