@@ -180,6 +180,31 @@ cometdbg() {
   print "cometdbg: started on :$port (profile $dir)"
 }
 
+# Super Productivity with a CDP endpoint, so an agent can drive its UI.
+# Electron IS Chromium, so the same chrome-devtools-mcp attaches to the app — no separate
+# tool needed, just a second endpoint. Port 9223, because 9222 belongs to cometdbg and two
+# processes cannot share it.
+# The reach is narrower than the browser's — one app, not every logged-in site — but not
+# nothing: it is read/write over the time-accounting instrument. There is no dedicated
+# profile to isolate here (the app has one data store), so the isolation is that this
+# launcher exists at all: the app runs without a debugging port until you ask for one.
+spdbg() {
+  local port=9223
+  local app="/Applications/Super Productivity.app/Contents/MacOS/Super Productivity"
+  [[ -x $app ]] || { print -u2 "spdbg: Super Productivity not found at $app"; return 1 }
+  if curl -sf --max-time 1 "http://127.0.0.1:$port/json/version" >/dev/null 2>&1; then
+    print "spdbg: already listening on :$port"
+    return 0
+  fi
+  if pgrep -qf "Super Productivity.app/Contents/MacOS"; then
+    print -u2 "spdbg: the app is already running WITHOUT a debugging port — quit it first"
+    return 1
+  fi
+  "$app" --remote-debugging-port=$port >/dev/null 2>&1 &
+  disown
+  print "spdbg: started on :$port"
+}
+
 # --- Claude Code: account profiles ---
 # CLAUDE_CONFIG_DIR relocates the entire config dir — settings, credentials, MCP server
 # registrations (.claude.json) and session history — so each account authenticates on its

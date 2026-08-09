@@ -1,0 +1,45 @@
+#!/bin/sh
+# Register a SECOND chrome-devtools-mcp instance, pointed at Super Productivity's CDP endpoint,
+# so an agent can drive the app's UI without the owner clicking through it.
+#
+# revision: 1  — bump to force a re-run after editing the intent below.
+#
+# Electron is Chromium, so the browser MCP server attaches to the app unchanged; what a second
+# registration buys is a second endpoint, since `chrome-devtools` is fixed to :9222 (cometdbg)
+# and two processes cannot share a port. `spdbg` in dot_zshrc.tmpl opens :9223 on demand — the
+# app runs without a debugging port until someone asks for one, and that is the whole isolation
+# story here (unlike the browser, there is no separate profile to sandbox: one app, one store).
+#
+# Personal MACHINE only, matching the SuperSync MCP next to it: the work machine runs the same
+# app against the same account, and nothing there should be reachable by an agent.
+#
+# What this deliberately does NOT enable: the app's Node-execution consent dialog. It is a
+# security prompt whose entire purpose is a human answer, and consent an agent gives on the
+# owner's behalf is not consent. Same for anything else the app raises as a native dialog —
+# those live outside the renderer and CDP cannot reach them anyway.
+set -eu
+
+PROFILE="{{ dig "profile" "personal" . }}"
+CONFIG_DIR="$HOME/.claude-personal"
+BROWSER_URL="http://127.0.0.1:9223"
+
+if [ "$PROFILE" != "personal" ]; then
+  echo "sp-devtools: profile=$PROFILE — UI driving is personal-machine only, skipping"
+  exit 0
+fi
+
+command -v claude >/dev/null 2>&1 || { echo "sp-devtools: claude not on PATH — skipping registration"; exit 0; }
+command -v npx    >/dev/null 2>&1 || { echo "sp-devtools: npx not on PATH (node not applied yet?) — skipping"; exit 0; }
+
+# Idempotent: already registered is the steady state, not an error.
+if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^sp-devtools'; then
+  echo "sp-devtools: already registered in the personal profile"
+  exit 0
+fi
+
+CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add sp-devtools \
+  --scope user \
+  -- npx -y chrome-devtools-mcp@latest --browser-url "$BROWSER_URL"
+
+echo "sp-devtools: registered. It attaches to an app that is already running —"
+echo "             start it with 'spdbg' before asking an agent to use it."

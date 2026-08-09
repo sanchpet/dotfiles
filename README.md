@@ -161,7 +161,7 @@ The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — th
 
 ## Agent access (MCP)
 
-Three MCP servers give Claude Code a browser, a Telegram reader and the time-accounting instrument. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
+Four MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, and that instrument's UI. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
 
 ### Browser — `chrome-devtools-mcp`
 
@@ -184,6 +184,14 @@ Super Productivity is the instrument for tracking physical time by task, replaci
 **Point the app's sync at a folder inside the vault.** The accounting history is the evidence base for a practice measured in months; keeping it in a vendor's cloud makes it unrecoverable from a clean clone, which is exactly the defect this move was meant to fix.
 
 **Task text is data, not instructions.** The agent may edit the tasks it reads, so anything that arrives through a task title or note is treated as content — the same rule that governs venue and menu text in the Wolt contour.
+
+### Time accounting, the UI — `sp-devtools`
+
+A second `chrome-devtools-mcp` instance on `http://127.0.0.1:9223`, so an agent can click through the app's own interface instead of asking the owner to. Electron is Chromium, so the browser server attaches unchanged; what the second registration buys is a second endpoint, since `chrome-devtools` is fixed to `:9222`. `spdbg` (`dot_zshrc.tmpl`) opens the port on demand — the app runs without a debugging port until someone asks for one, and **that is the isolation**: unlike the browser there is no separate profile to sandbox into, because there is one app and one data store.
+
+The reach is narrower than the browser endpoint's — one application rather than every signed-in site — but it is read/write over the instrument that holds the time accounting.
+
+**The Node-execution consent dialog stays with the owner.** It is a security prompt whose entire purpose is a human answer, and consent an agent gives on the owner's behalf is not consent. Native dialogs generally are out of reach anyway: they live outside the renderer, where CDP cannot follow.
 
 ### Telegram — `mcp-tg`
 
