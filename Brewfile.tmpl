@@ -30,6 +30,7 @@ cask "wakatime"           # Menu-bar time tracker — whole-system activity beyo
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
 cask "orbstack"           # Docker-compatible container & Linux VM runtime, replaces Docker Desktop: returns idle RAM to the host, reaches container IPs directly, built-in Rosetta for amd64 images. Free tier is personal use only. Launch once to start the engine
 cask "yandex-music"       # Yandex Music desktop player (self-updating cask)
+cask "super-productivity" # To-do list + Pomodoro + time tracking (MIT, local-first). Replaces Focus To-Do as the time-accounting instrument: its data is a local directory that can live inside the vault, and it publishes a plugin API, so an agent reads the accounting without reverse-engineering a vendor's private endpoints
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}

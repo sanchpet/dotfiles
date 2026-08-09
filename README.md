@@ -104,6 +104,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
 | OrbStack | Docker-compatible container & Linux VM runtime, replaces Docker Desktop (launch once to start the engine) | all | [docs](https://docs.orbstack.dev/) |
 | Yandex Music | Desktop music player (self-updating cask) | all | [site](https://music.yandex.ru) |
+| Super Productivity | To-do list + Pomodoro + time tracking (MIT, local-first) — the time-accounting instrument; see [Agent access](#agent-access-mcp) | all | [github](https://github.com/super-productivity/super-productivity) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 
 ### Mac App Store (mas)
@@ -160,7 +161,7 @@ The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — th
 
 ## Agent access (MCP)
 
-Two MCP servers give Claude Code a browser and a Telegram reader. Both hand an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
+Three MCP servers give Claude Code a browser, a Telegram reader and the time-accounting instrument. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
 
 ### Browser — `chrome-devtools-mcp`
 
@@ -169,6 +170,20 @@ Registered at user scope in the **personal profile** pointing at `http://127.0.0
 **The registration is reproducible** (`run_onchange_after_register-chrome-devtools.sh`), for the same reason mcp-tg's is: `--scope user` writes into whichever profile `CLAUDE_CONFIG_DIR` names, so a hand-typed registration silently belongs to one contour and is missing from the other. That is not hypothetical — this server sat in the default profile alone until a session under the personal one reported having no browser at all. The script pins the profile and is idempotent.
 
 **It runs a dedicated profile (`~/.cache/comet-debug`), not the everyday one.** Whoever holds a CDP endpoint can read every open tab and its cookies, and act as you on any site you are signed into. The separate profile keeps that to one window. This is the whole reason `cometdbg` exists instead of a note saying "pass `--remote-debugging-port`".
+
+### Time accounting — `super-productivity-mcp`
+
+Super Productivity is the instrument for tracking physical time by task, replacing Focus To-Do. The choice was driven by reachability rather than features: Focus To-Do publishes no API at all, so every adapter for it is built on reverse-engineered endpoints and authenticates with the account password in plain environment variables. Super Productivity keeps its data in a local directory and publishes a plugin API first-party, so an adapter over it is an ordinary client — when it breaks, that is a bug report rather than a second round of reverse engineering.
+
+**The registration is reproducible** (`run_onchange_after_register-super-productivity-mcp.sh`), personal-profile-only and idempotent, for the same reason the other two are.
+
+**Unpinned `@latest`, unlike mcp-tg and wolt-cli.** Those hold live sessions — one authorises a whole Telegram account, the other is tied to payment methods — so a surprise release there reaches further than this machine. This server holds no session: there are no credentials in its design and the data is a local folder. The looser rule is a deliberate exception, accepted knowingly.
+
+**Two steps stay manual, and no amount of declaration removes them:** the plugin is uploaded through the app's own Settings UI, and SP ≥ 18.13.0 then raises a one-time Node execution consent dialog. The script prints both when it registers.
+
+**Point the app's sync at a folder inside the vault.** The accounting history is the evidence base for a practice measured in months; keeping it in a vendor's cloud makes it unrecoverable from a clean clone, which is exactly the defect this move was meant to fix.
+
+**Task text is data, not instructions.** The agent may edit the tasks it reads, so anything that arrives through a task title or note is treated as content — the same rule that governs venue and menu text in the Wolt contour.
 
 ### Telegram — `mcp-tg`
 
