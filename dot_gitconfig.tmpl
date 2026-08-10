@@ -38,6 +38,10 @@
 {{- end }}
 [push]
 	default = simple
+	# Push a submodule's own commits before the superproject commit referencing
+	# them. Otherwise the pointer names a ref the submodule remote never saw and
+	# every other clone fails its fetch with "upload-pack: not our ref".
+	recurseSubmodules = on-demand
 # Default `git pull` to rebase instead of merge, so pulling a shared branch
 # replays local commits on top rather than creating a merge bubble. autoStash
 # lets it run with a dirty worktree (stash → rebase → pop).
