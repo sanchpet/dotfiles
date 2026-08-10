@@ -67,6 +67,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 
 - **mise-first:** if a CLI tool can be installed via mise, use mise. What mise can't manage (GUI casks, etc.) → Homebrew.
 - **`gh`** for all GitHub operations (PRs, issues, runs, API).
+- **macOS has no coreutils `timeout`** — use `gtimeout`, or run in background and kill. A bare `timeout` fails as "command not found", which reads as the wrapped command failing rather than the wrapper being absent.
 
 ## Code quality
 
