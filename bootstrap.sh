@@ -204,7 +204,9 @@ if [ -n "$agent_keys" ] && command -v gh >/dev/null 2>&1 && gh auth status >/dev
   for type in authentication signing; do
     case "$type" in authentication) prefix=auth ;; *) prefix=signing ;; esac
     pub="$(key_for "$prefix" || true)"
-    [ -n "$pub" ] || { warn "agent has no '$prefix…' key — skipping GitHub $type registration"; continue; }
+    # Braces are load-bearing: bash 3.2 (macOS) folds the following multibyte char into the name,
+    # so a bare $prefix… expands as an unset variable and set -u kills the run.
+    [ -n "$pub" ] || { warn "agent has no '${prefix}…' key — skipping GitHub $type registration"; continue; }
     pub_file="$(mktemp -t sshpub)"; printf '%s\n' "$pub" > "$pub_file"
     key_blob="$(printf '%s' "$pub" | awk '{print $2}')"
     title="$type-$(hostname -s)"
