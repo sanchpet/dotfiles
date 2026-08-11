@@ -87,6 +87,7 @@ shellcheck = "latest"
 # new release is something to read before running.
 "github:mekedron/wolt-cli" = "2.3.1"
 actionlint = "latest" # GitHub Actions workflow linter
+hadolint = "latest"   # Dockerfile linter — the same one work CI runs, so findings match locally
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
