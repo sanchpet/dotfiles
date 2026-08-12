@@ -92,6 +92,10 @@ hadolint = "latest"   # Dockerfile linter — the same one work CI runs, so find
 # resolves to aqua:rtk-ai/rtk; the unrelated `rtk` crate on crates.io is a different project,
 # so never install this one through the cargo backend.
 rtk = "latest"
+# Serena — MCP server giving the agent LSP-backed symbolic navigation and editing. PyPI package
+# `serena-agent`, binary `serena`; pipx backend (via uv) because Python is its honest home. The
+# MCP registration is the other half — run_onchange_after_register-serena.sh.
+"pipx:serena-agent" = "latest"
 
 # Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
 # so the http backend: version pin + sha256 = reproducibility and supply-chain.
