@@ -184,7 +184,7 @@ An MCP server that puts a language server between the agent and the code: find a
 
 **Its global memories are a symlink into the vault** (`~/.serena/memories/global` → `~/tv/adversaria/70-memory`). Serena's own path for these is hardcoded (`serena_config.py`, no setting for it), and leaving them in `~/.serena` would put durable knowledge outside version control. The symlink survives Serena's `mkdir(exist_ok=True)` on startup. Note the ordering trap: any `serena` invocation, `--version` included, creates that directory, so the symlink has to be in place before the first run or it lands *inside* the directory instead of replacing it.
 
-**Project memories are a different matter and are not adopted.** Serena writes those to `.serena/memories/` in the project root, which under a one-worktree-per-branch workflow means they are destroyed when the worktree is torn down — or else committed into someone else's repository. Global memories only, until that is solved.
+**Project memories are a different matter and are not adopted yet.** Not because of where they land — `project_serena_folder_location` relocates the whole `.serena` folder anywhere, `$projectDir` and `$projectFolderName` included — but because of what Serena calls a project. It identifies one by directory path, with no git awareness, so under a one-worktree-per-branch workflow every branch is a separate project and neither placeholder can express "the repository". The one arrangement where the memories follow the code is committing them, which is what upstream expects (their own `.serena/.gitignore` excludes only `cache` and `project.local.yml`) — and that is a team decision, not a personal one. Global memories only until it is asked.
 
 ### Browser — `chrome-devtools-mcp`
 
