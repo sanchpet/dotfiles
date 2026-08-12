@@ -39,7 +39,13 @@ die()  { printf '\033[1;31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 # --- 1. mise (base tool manager) ---
 if ! command -v mise >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/mise" ]; then
   log "mise not found — installing (https://mise.run)"
-  curl -fsSL https://mise.run | sh
+  # Version-pinned, temporarily. mise 2026.8.4 resolves aqua:anthropics/claude-code to an
+  # empty asset name and dies with "relative URL without a base"; step 4 runs under set -e,
+  # so one bad tool aborts the whole bootstrap and leaves the machine half-provisioned.
+  # Upstream confirmed the regression and fixed it on main (jdx/mise#11901, discussion
+  # #11909); 2026.8.3 installs and runs the tool. Drop MISE_VERSION once a release newer
+  # than 2026.8.4 is out — nothing else here wants an old mise.
+  curl -fsSL https://mise.run | MISE_VERSION=v2026.8.3 sh
 fi
 # mise + its shims on PATH for the current (non-interactive) session
 export PATH="$HOME/.local/bin:${MISE_DATA_DIR:-$HOME/.local/share/mise}/shims:$PATH"
