@@ -42,6 +42,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | claudeline | Real-time Claude Code statusline (quota / context / model) — wired via `~/.claude/settings.json` `statusLine` | [github](https://github.com/lexfrei/claudeline) |
+| rtk | CLI proxy that compresses command output before an agent reads it — wired as a `PreToolUse` hook, see below | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
 | sweb | CLI for the SpaceWeb (sweb.ru) hosting API — my own tool (github backend) | [github](https://github.com/sanchpet/sweb) |
 | aqua | Declarative CLI version manager — used to author/test aqua-registry packages | [docs](https://aquaproj.github.io) · [github](https://github.com/aquaproj/aqua) |
 | GitHub CLI (`gh`) | GitHub from the terminal | [docs](https://cli.github.com) |
@@ -160,6 +161,16 @@ The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — th
 
 > **Load order matters.** `zsh-autocomplete` owns the completion/history UI, so it loads last, and plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`, `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`/`miseup` helpers (add / remove a global mise tool and re-import the config; `miseup` upgrades with a fresh version list — clears mise's cached release list first so a just-published release is picked up). `brewdiff` reports drift between installed Homebrew packages and the rendered `Brewfile.tmpl` (brew has no `miseg`-style auto-sync — the manifest is a curated template, so new packages are ported in by hand). `updates` reports available mise + Homebrew package updates (cached; the first interactive shell of the day refreshes it in the background and prints the summary — never blocks the prompt; `updates -r` rechecks now, upgrades stay manual via `brew upgrade` / `mise upgrade` / `mise self-update`). `tg` aliases `terragrunt` (the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` + `complete -C` and shared with the `tg` alias through `compdef`.
 
+## Agent bash output (rtk)
+
+`rtk` is a `PreToolUse` hook on the `Bash` tool: it rewrites a command to its `rtk` equivalent (`git status` → `rtk git status`) so the agent reads a compressed rendering instead of raw output. It applies to `Bash` calls only — Claude Code's built-in `Read`, `Grep` and `Glob` bypass hooks entirely.
+
+Three things about this deployment are choices rather than defaults:
+
+- **The hook command is the mise shim's absolute path, not a bare `rtk`.** mise puts tools on `PATH` at shell activation, so a bare name resolves only under an already-activated interactive shell. The shim resolves without one, the same reason the `statusLine` entry is absolute. Note this only hardens the hook itself: the command it *emits* is a bare `rtk …`, which still needs `rtk` on the agent's `PATH`. An agent started before rtk was installed keeps the old `PATH` and fails every rewritten command with `command not found` — restart it after installing.
+- **Never run `rtk init -g` on this machine.** It patches `~/.claude*/settings.json`, writes `RTK.md`, and appends the `@RTK.md` import — all in `$HOME`, i.e. chezmoi targets. Those edits survive until the next `chezmoi apply` silently reverts them. The hook, `RTK.md` and the import live in the source here; run `init` only against a throwaway `CLAUDE_CONFIG_DIR` to see what a new version would write, then port it.
+- **Output is lossy by design.** Where a command's exact output is the evidence (a checksum, a full log, a diff being quoted verbatim), reach for `rtk proxy <cmd>` to bypass the filter, or add the command to `exclude_commands` in `~/Library/Application Support/rtk/config.toml` if it should never be rewritten.
+
 ## Agent access (MCP)
 
 Four MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, and that instrument's UI. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
@@ -256,9 +267,10 @@ Note that a closed lid still sleeps an Apple Silicon laptop without an external 
 |------|------|
 | `dot_*` | Dotfiles rendered into `$HOME` by chezmoi (e.g. `dot_gitconfig` → `~/.gitconfig`) |
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
-| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline, `screencapture` sandbox exclusion), included by every account profile below |
+| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline, `screencapture` sandbox exclusion, rtk `PreToolUse` hook), included by every account profile below |
 | `private_dot_claude/private_settings.json.tmpl` | `~/.claude/settings.json` (0600) — default profile. Secrets/permissions stay in `settings.local.json` (untracked) |
-| `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile; `CLAUDE.md` is a symlink to the canonical `~/.claude/CLAUDE.md` |
+| `private_dot_claude/RTK.md` | `~/.claude/RTK.md` — rtk's agent-facing reference, pulled into `CLAUDE.md` by an `@RTK.md` import. Vendored from `rtk init`; refresh it from a new `rtk init` rather than editing by hand |
+| `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile; `CLAUDE.md` and `RTK.md` are symlinks to the canonical copies under `~/.claude/` |
 | `dot_config/starship.toml` | Starship prompt config → `~/.config/starship.toml` (kubernetes/aws/terraform modules) |
 | `dot_zshrc.tmpl` | `~/.zshrc` — Oh My Zsh (plugins only) + Starship prompt + zoxide + mise + aliases (kubectl, modern CLI); secrets pending |
 | `dot_local/bin/` | Executable scripts symlinked to `~/.local/bin/` by chezmoi |

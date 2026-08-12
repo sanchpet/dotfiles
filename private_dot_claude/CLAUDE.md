@@ -109,3 +109,5 @@ State the fact afterwards, plainly and once. A standing grant removes the questi
 ## Maintaining this file
 
 - Update it when a genuinely cross-repo convention emerges; brief the owner on the addition. Keep it concise, public-safe, and duplication-free. Project-specific rules go in the project's own `CLAUDE.md`, never here.
+
+@RTK.md
