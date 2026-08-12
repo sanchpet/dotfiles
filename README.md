@@ -40,7 +40,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
 | uv | Fast Python package & project manager — also backs mise's `pipx:` tools (`settings.pipx.uvx`) | [docs](https://docs.astral.sh/uv/) · [github](https://github.com/astral-sh/uv) |
 | Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
-| Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
+| Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up npm:@anthropic-ai/claude-code`. On the `npm:` backend rather than the registry's aqua default: see the comment in `dot_config/mise/config.toml` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | claudeline | Real-time Claude Code statusline (quota / context / model) — wired via `~/.claude/settings.json` `statusLine` | [github](https://github.com/lexfrei/claudeline) |
 | sweb | CLI for the SpaceWeb (sweb.ru) hosting API — my own tool (github backend) | [github](https://github.com/sanchpet/sweb) |
 | aqua | Declarative CLI version manager — used to author/test aqua-registry packages | [docs](https://aquaproj.github.io) · [github](https://github.com/aquaproj/aqua) |
