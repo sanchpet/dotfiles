@@ -178,7 +178,7 @@ Five MCP servers give Claude Code a browser, a Telegram reader, the time-account
 
 ### Code intelligence — `serena`
 
-An MCP server that puts a language server between the agent and the code: find a symbol, find what references it, replace a symbol's body — instead of reading whole files and editing by text match. Employer-recommended, and on trial in the **work profile only**; whether it belongs in the personal contour is a later decision.
+An MCP server that puts a language server between the agent and the code: find a symbol, find what references it, replace a symbol's body — instead of reading whole files and editing by text match. On trial in the **work profile only**, against declared criteria and a review date; whether it belongs in the personal contour is a later decision.
 
 **The registration is reproducible** (`run_onchange_after_register-serena.sh`), idempotent, and pins the profile for the same reason the others do. `--project-from-cwd` means one registration serves every repository — Serena activates whichever project the agent is working in.
 
