@@ -43,6 +43,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | claudeline | Real-time Claude Code statusline (quota / context / model) — wired via `~/.claude/settings.json` `statusLine` | [github](https://github.com/lexfrei/claudeline) |
 | rtk | CLI proxy that compresses command output before an agent reads it — wired as a `PreToolUse` hook, see below | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
+| Serena | MCP server giving the agent LSP-backed symbolic navigation and editing (`serena-agent` on PyPI, binary `serena`) — registered in the work profile, see below | [docs](https://oraios.github.io/serena/) · [github](https://github.com/oraios/serena) |
 | sweb | CLI for the SpaceWeb (sweb.ru) hosting API — my own tool (github backend) | [github](https://github.com/sanchpet/sweb) |
 | aqua | Declarative CLI version manager — used to author/test aqua-registry packages | [docs](https://aquaproj.github.io) · [github](https://github.com/aquaproj/aqua) |
 | GitHub CLI (`gh`) | GitHub from the terminal | [docs](https://cli.github.com) |
@@ -173,7 +174,17 @@ Three things about this deployment are choices rather than defaults:
 
 ## Agent access (MCP)
 
-Four MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, and that instrument's UI. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
+Five MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, and symbolic navigation over source. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
+
+### Code intelligence — `serena`
+
+An MCP server that puts a language server between the agent and the code: find a symbol, find what references it, replace a symbol's body — instead of reading whole files and editing by text match. Employer-recommended, and on trial in the **work profile only**; whether it belongs in the personal contour is a later decision.
+
+**The registration is reproducible** (`run_onchange_after_register-serena.sh`), idempotent, and pins the profile for the same reason the others do. `--project-from-cwd` means one registration serves every repository — Serena activates whichever project the agent is working in.
+
+**Its global memories are a symlink into the vault** (`~/.serena/memories/global` → `~/tv/adversaria/70-memory`). Serena's own path for these is hardcoded (`serena_config.py`, no setting for it), and leaving them in `~/.serena` would put durable knowledge outside version control. The symlink survives Serena's `mkdir(exist_ok=True)` on startup. Note the ordering trap: any `serena` invocation, `--version` included, creates that directory, so the symlink has to be in place before the first run or it lands *inside* the directory instead of replacing it.
+
+**Project memories are a different matter and are not adopted.** Serena writes those to `.serena/memories/` in the project root, which under a one-worktree-per-branch workflow means they are destroyed when the worktree is torn down — or else committed into someone else's repository. Global memories only, until that is solved.
 
 ### Browser — `chrome-devtools-mcp`
 
