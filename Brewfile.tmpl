@@ -19,6 +19,7 @@ brew "eza"     # modern ls (git-aware) — eza ships no macOS binary upstream, s
 brew "mas"     # Mac App Store CLI — declares/installs the App Store apps listed below; not in mise
 brew "ffmpeg"  # video/audio transcoding — mise offers only `conda:` (drags in a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus)
 brew "gnu-sed" # GNU sed as `gsed` — build scripts that detect Darwin call gsed for in-place edits BSD sed can't do (external-secrets' `make reviewable` dies without it); not in mise registry
+brew "gnupg"   # gpg — verifies the signed helm plugin tarballs installed by run_onchange_after_install-helm-plugins.sh; not in mise registry. Declared because it was present only as a transitive dependency of skopeo → gpgme, so removing skopeo would have silently taken plugin verification with it
 
 # === GUI apps (casks) — all machines ===
 cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
