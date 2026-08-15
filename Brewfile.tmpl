@@ -24,6 +24,7 @@ brew "gnupg"    # gpg — verifies the signed helm plugin tarballs installed by 
 cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
 cask "bitwarden"          # password manager — also serves the SSH agent that signs commits and authenticates git (see ~/.ssh/config IdentityAgent). Cask rather than the App Store build: the sandboxed one is slower to reach and cannot be reinstalled without a signed-in Store
 cask "amneziavpn"         # AmneziaVPN client — the desktop side of the VPN fleet
+cask "glkvm"              # GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes. Cask, not mas: the App Store entry and the vendor download are different channels for the same app, and updating from the vendor site (which the app prompts for) leaves a mas declaration unsatisfiable
 cask "obsidian"           # Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask, auto_updates)
 cask "freelens"           # Kubernetes IDE (open-source Lens fork)
 cask "cmux"               # Ghostty-based terminal with vertical tabs + notifications for AI coding agents
@@ -51,5 +52,4 @@ mas "Focus To-Do", id: 1258530160 # superseded by Super Productivity as the time
 mas "WireGuard", id: 1451685025   # WireGuard VPN client
 mas "v2RayTun", id: 6476628951    # V2Ray / proxy client
 mas "MKPlayer", id: 1335612105    # media player
-mas "GLKVM", id: 6740846845       # GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes
 {{- end }}
