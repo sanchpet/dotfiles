@@ -102,6 +102,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Visual Studio Code | Primary code editor (self-updating; adopted into brew) | all | [docs](https://code.visualstudio.com) |
 | Bitwarden | Password manager — also serves the SSH agent that signs commits and authenticates git. Cask rather than the App Store build, which cannot be reinstalled without a signed-in Store | all | [site](https://bitwarden.com) |
 | AmneziaVPN | VPN client — the desktop side of the VPN fleet | all | [github](https://github.com/amnezia-vpn/amnezia-client) |
+| GLKVM | GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes. Cask rather than App Store: the two are separate channels for the same app, and a vendor-site update leaves a `mas` declaration unsatisfiable | all | [site](https://www.gl-inet.com/products/glkvm/) |
 | Obsidian | Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask) | all | [site](https://obsidian.md) |
 | Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
 | cmux | Ghostty-based terminal with vertical tabs + notifications for AI coding agents | all | [site](https://www.cmux.dev/) |
@@ -125,7 +126,6 @@ Installed via the `mas` CLI. A one-time App Store sign-in is the only step that 
 | WireGuard | WireGuard VPN client | all | [site](https://www.wireguard.com) |
 | v2RayTun | V2Ray / proxy client | all | [site](https://v2raytun.com) |
 | MKPlayer | Media player | all | — |
-| GLKVM | GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes | all | [site](https://www.gl-inet.com/products/glkvm/) |
 
 ### Homebrew formulae (CLI mise can't provide)
 
