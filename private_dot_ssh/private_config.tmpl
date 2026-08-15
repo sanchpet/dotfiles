@@ -10,7 +10,7 @@ Host *
 {{ if eq (dig "agent" "kind" "" .) "1password" -}}
 	IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 {{- else -}}
-	# Inside the container because the App Store build is sandboxed, so its "~" is that
-	# directory. An unsandboxed cask build serves ~/.bitwarden-ssh-agent.sock instead.
-	IdentityAgent "~/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"
+	# The cask build is unsandboxed and serves the socket from the real home. A sandboxed
+	# App Store build would put it under ~/Library/Containers/com.bitwarden.desktop/Data.
+	IdentityAgent ~/.bitwarden-ssh-agent.sock
 {{- end }}
