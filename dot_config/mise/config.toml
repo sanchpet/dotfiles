@@ -1,3 +1,7 @@
+# Tools for every machine. Deliberately NOT a chezmoi template: `miseg`/`miserm` call
+# `chezmoi add` on this file, which on a template would overwrite the source with rendered
+# content. Work-only tools therefore live in conf.d/work.toml, gated by .chezmoiignore.
+
 # Claude Code is managed by mise (backend aqua:anthropics/claude-code), updated via
 # `mise up claude`. Disable the built-in self-updater: otherwise it recreates the
 # native copy in ~/.local/share/claude, resurrecting a duplicate next to the mise one.
@@ -26,7 +30,6 @@ chezmoi = "latest"
 uv = "latest"
 claude = "latest"     # CLI; update via `mise up claude` (self-update off in [env])
 gh = "latest"
-glab = "latest"
 kubectl = "latest"
 node = "latest"
 kubectx = "latest"
@@ -35,7 +38,6 @@ zoxide = "latest"    # smarter cd — initialized in dot_zshrc.tmpl
 python = "latest"
 helm = "latest"
 terragrunt = "latest"
-yq = "latest"
 awscli = { version = "latest", symlink_bins = "true" }
 fzf = "latest"
 ripgrep = "latest"
@@ -49,21 +51,25 @@ fd = "latest"
 typst = "latest"
 terraform = "latest"
 vault = "latest"
-cfssl = "latest"
 flux2 = "latest"
 "pipx:ansible-core" = "latest" # engine + CLIs via uv (bundle `ansible` needs --include-deps/pipx)
 yamllint = "latest"            # pipx backend → uv tool install
 "pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
 hyperfine = "latest"
-opencode = "latest"
+# The aqua CLI, not the aqua backend — mise resolves aqua packages on its own. Kept for
+# contributing to aqua-registry, where `aqua gr <owner>/<repo>` generates a package entry.
 aqua = "latest"
 # claudeline — Claude Code statusline. aqua backend: checksum-verified, per-version installs
 # (vs the github backend's best-effort asset guess). Switched once the aqua-registry entry
 # landed (aquaproj/aqua-registry#55083). Fallback if aqua ever lags: "github:lexfrei/claudeline".
 "aqua:lexfrei/claudeline" = "latest"
-crane = "latest"
+# The single OCI registry client. crane, oras and skopeo were dropped in favour of it: their
+# unique parts (podman transports, standalone artifact push) serve ecosystems not used here,
+# while manifest indexes and OCI artifacts — the GHCR chart publishing case — are its strength.
 regctl = "latest"
-oras = "latest"
+# Tunnel over websocket/HTTP2. Ansible installs its own pinned Linux build on the hub
+# (homelab wstunnel_hub role); this is the client side. No mise registry entry, hence github:.
+"github:erebe/wstunnel" = "latest"
 "github:sanchpet/sweb" = "latest" # my SpaceWeb hosting CLI (excluded from minimum_release_age above)
 # Telegram MCP server (MTProto, user session). Version-pinned rather than "latest": it holds a
 # credential that authorises the whole account, so a new release is something to read before
@@ -71,12 +77,12 @@ oras = "latest"
 # ~/.claude/settings.json — the server itself has no read-only mode.
 "github:lexfrei/mcp-tg" = "1.3.1"
 terraform-docs = "latest"
-redis = "latest"
 cilium-cli = "latest"
 age = "latest"
 teleport-community = "latest"
+# kubectl credential plugin for OIDC clusters. No context uses it here yet — it is kept for
+# the LDAP-login lab stands, and because the work clusters authenticate this way.
 kubelogin = "latest"
-1password-cli = "latest"
 shellcheck = "latest"
 # Unofficial Wolt CLI — one archive ships both binaries (wolt, wolt-mcp), so a single
 # declaration exposes both. github backend because no aqua package exists yet; an entry is

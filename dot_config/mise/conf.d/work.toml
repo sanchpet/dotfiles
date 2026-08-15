@@ -1,0 +1,8 @@
+# Work-machine-only tools; the profile gate is in .chezmoiignore. A separate file rather than a
+# block inside config.toml because `miseg`/`miserm` run `chezmoi add` on config.toml, and chezmoi
+# add on a template overwrites the source with rendered content. mise merges every conf.d/*.toml.
+# Consequence: `miseg` on a work machine writes into the shared config.toml — move the line here.
+
+[tools]
+glab = "latest"          # GitLab CLI — the corporate forge; personal work lives on GitHub
+1password-cli = "latest" # work machines unlock secrets through 1Password, personal ones Bitwarden

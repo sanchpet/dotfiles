@@ -13,6 +13,12 @@ mise.toml
 # (work.email set). Omitted entirely elsewhere so no empty stub lands in $HOME.
 {{ if not (dig "work" "email" "" .) }}.config/git/work.inc{{ end }}
 
+# Work-only mise tools. mise merges every conf.d/*.toml it finds, so withholding the file is
+# what withholds the tools — config.toml itself stays a plain file (see that file's header).
+{{ if ne .profile "work" }}
+.config/mise/conf.d/work.toml
+{{ end }}
+
 # Teleport SSH node — the reverse-tunnel agent that publishes a machine as an SSH target of the
 # personal cluster. Personal profile only: a corporate machine must never register itself into
 # personal infrastructure, whatever its owner can install on it. The client side (home-desktop,
