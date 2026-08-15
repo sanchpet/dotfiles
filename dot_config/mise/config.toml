@@ -33,6 +33,10 @@ gh = "latest"
 kubectl = "latest"
 node = "latest"
 kubectx = "latest"
+# kubectl view-secret — decode a Secret without the base64 pipeline. aqua backend, not github:
+# the aqua entry renames the binary to kubectl-view_secret, which is what kubectl needs to
+# expose it as the `view-secret` subcommand, and it verifies the release checksums.
+"aqua:elsesiy/kubectl-view-secret" = "latest"
 starship = "latest"  # zsh prompt — initialized in dot_zshrc.tmpl
 zoxide = "latest"    # smarter cd — initialized in dot_zshrc.tmpl
 python = "latest"
