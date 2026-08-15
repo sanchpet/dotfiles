@@ -14,11 +14,18 @@
 {{ if eq (dig "agent" "kind" "" .) "1password" -}}
 sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 {{- else -}}
-# Socket path differs by build (direct/cask ~/.bitwarden-ssh-agent.sock vs the older sandboxed
-# Containers path) — take the first that exists.
-for sock in "$HOME/.bitwarden-ssh-agent.sock" \
-            "$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"; do
-  [ -S "$sock" ] && break
+# Socket path differs by build: an unsandboxed cask serves ~/.bitwarden-ssh-agent.sock, the
+# App Store one serves it inside its sandbox container. Probe for one that answers rather than
+# one that exists — switching builds leaves the previous socket file behind, and a mere -S test
+# picks the dead one, which fails as "Couldn't get agent socket" with no hint why.
+sock=""
+for candidate in "$HOME/.bitwarden-ssh-agent.sock" \
+                 "$HOME/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"; do
+  [ -S "$candidate" ] || continue
+  SSH_AUTH_SOCK="$candidate" ssh-add -l >/dev/null 2>&1
+  rc=$?
+  # 2 means "cannot connect"; 1 is a reachable agent holding no identities.
+  [ "$rc" -eq 2 ] || { sock="$candidate"; break; }
 done
 {{- end }}
 [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
