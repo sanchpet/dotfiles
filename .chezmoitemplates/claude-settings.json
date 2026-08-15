@@ -9,6 +9,7 @@
   "tui": "fullscreen",
   "theme": "dark",
   "skipDangerousModePermissionPrompt": true,
+  "agentPushNotifEnabled": true,
   "permissions": {
     "defaultMode": "bypassPermissions",
     "allow": [
