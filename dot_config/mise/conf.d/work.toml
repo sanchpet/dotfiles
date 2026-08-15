@@ -2,7 +2,13 @@
 # block inside config.toml because `miseg`/`miserm` run `chezmoi add` on config.toml, and chezmoi
 # add on a template overwrites the source with rendered content. mise merges every conf.d/*.toml.
 # Consequence: `miseg` on a work machine writes into the shared config.toml — move the line here.
+#
+# Group headings mirror config.toml, so an entry keeps its place in the shared ordering.
 
 [tools]
-glab = "latest"          # GitLab CLI — the corporate forge; personal work lives on GitHub
+
+# === Git & forges ===
+glab = "latest" # GitLab CLI — the corporate forge; personal work lives on GitHub
+
+# === Cloud, secrets & networking ===
 1password-cli = "latest" # work machines unlock secrets through 1Password, personal ones Bitwarden

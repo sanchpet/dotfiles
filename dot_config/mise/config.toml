@@ -1,6 +1,10 @@
 # Tools for every machine. Deliberately NOT a chezmoi template: `miseg`/`miserm` call
 # `chezmoi add` on this file, which on a template would overwrite the source with rendered
 # content. Work-only tools therefore live in conf.d/work.toml, gated by .chezmoiignore.
+#
+# Grouped by purpose, and the same groups in the same order run through Brewfile.tmpl and the
+# README, so a tool sits in the same place in the declaration and in the documentation.
+# `miseg` appends to the end of [tools] — move the new line into its group by hand.
 
 # Claude Code is managed by mise (backend aqua:anthropics/claude-code), updated via
 # `mise up claude`. Disable the built-in self-updater: otherwise it recreates the
@@ -25,79 +29,13 @@ minimum_release_age_excludes = ["github:sanchpet/sweb"]
 disable_backends = ["ubi"]
 
 [tools]
-bitwarden = "latest"
-chezmoi = "latest"
-uv = "latest"
-claude = "latest"     # CLI; update via `mise up claude` (self-update off in [env])
-gh = "latest"
-kubectl = "latest"
-node = "latest"
-kubectx = "latest"
-# kubectl view-secret — decode a Secret without the base64 pipeline. aqua backend, not github:
-# the aqua entry renames the binary to kubectl-view_secret, which is what kubectl needs to
-# expose it as the `view-secret` subcommand, and it verifies the release checksums.
-"aqua:elsesiy/kubectl-view-secret" = "latest"
-starship = "latest"  # zsh prompt — initialized in dot_zshrc.tmpl
-zoxide = "latest"    # smarter cd — initialized in dot_zshrc.tmpl
-python = "latest"
-helm = "latest"
-terragrunt = "latest"
-awscli = { version = "latest", symlink_bins = "true" }
-fzf = "latest"
-ripgrep = "latest"
-bat = "latest"
-delta = "latest"
-dust = "latest"
-duf = "latest"
-"aqua:Byron/dua-cli" = "latest" # dua — interactive disk explorer (aqua, not cargo → no rust)
-go = "latest"
-fd = "latest"
-typst = "latest"
-terraform = "latest"
-vault = "latest"
-flux2 = "latest"
-"pipx:ansible-core" = "latest" # engine + CLIs via uv (bundle `ansible` needs --include-deps/pipx)
-yamllint = "latest"            # pipx backend → uv tool install
-"pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
-hyperfine = "latest"
-# The aqua CLI, not the aqua backend — mise resolves aqua packages on its own. Kept for
-# contributing to aqua-registry, where `aqua gr <owner>/<repo>` generates a package entry.
-aqua = "latest"
+
+# === Agent tooling ===
+claude = "latest" # CLI; update via `mise up claude` (self-update off in [env])
 # claudeline — Claude Code statusline. aqua backend: checksum-verified, per-version installs
 # (vs the github backend's best-effort asset guess). Switched once the aqua-registry entry
 # landed (aquaproj/aqua-registry#55083). Fallback if aqua ever lags: "github:lexfrei/claudeline".
 "aqua:lexfrei/claudeline" = "latest"
-# The single OCI registry client. crane, oras and skopeo were dropped in favour of it: their
-# unique parts (podman transports, standalone artifact push) serve ecosystems not used here,
-# while manifest indexes and OCI artifacts — the GHCR chart publishing case — are its strength.
-regctl = "latest"
-# Tunnel over websocket/HTTP2. Ansible installs its own pinned Linux build on the hub
-# (homelab wstunnel_hub role); this is the client side. No mise registry entry, hence github:.
-"github:erebe/wstunnel" = "latest"
-"github:sanchpet/sweb" = "latest" # my SpaceWeb hosting CLI (excluded from minimum_release_age above)
-# Telegram MCP server (MTProto, user session). Version-pinned rather than "latest": it holds a
-# credential that authorises the whole account, so a new release is something to read before
-# running. Session lives in the login keychain, not on disk. Write tools are denied in
-# ~/.claude/settings.json — the server itself has no read-only mode.
-"github:lexfrei/mcp-tg" = "1.3.1"
-terraform-docs = "latest"
-cilium-cli = "latest"
-age = "latest"
-teleport-community = "latest"
-# kubectl credential plugin for OIDC clusters. No context uses it here yet — it is kept for
-# the LDAP-login lab stands, and because the work clusters authenticate this way.
-kubelogin = "latest"
-shellcheck = "latest"
-# Unofficial Wolt CLI — one archive ships both binaries (wolt, wolt-mcp), so a single
-# declaration exposes both. github backend because no aqua package exists yet; an entry is
-# proposed upstream, and this becomes "aqua:mekedron/wolt-cli" once it lands. Unlike most
-# github: tools here, this release publishes no attestations, so that verification step is
-# a no-op — the only integrity anchor is the release's own SHA256SUMS. Pinned rather than
-# "latest" for the same reason as mcp-tg: it holds a session tied to payment methods, so a
-# new release is something to read before running.
-"github:mekedron/wolt-cli" = "2.3.1"
-actionlint = "latest" # GitHub Actions workflow linter
-hadolint = "latest"   # Dockerfile linter — the same one work CI runs, so findings match locally
 # rtk — CLI proxy that compresses command output before an agent reads it. The registry name
 # resolves to aqua:rtk-ai/rtk; the unrelated `rtk` crate on crates.io is a different project,
 # so never install this one through the cargo backend.
@@ -106,9 +44,97 @@ rtk = "latest"
 # `serena-agent`, binary `serena`; pipx backend (via uv) because Python is its honest home. The
 # MCP registration is the other half — run_onchange_after_register-serena.sh.
 "pipx:serena-agent" = "latest"
+# Telegram MCP server (MTProto, user session). Version-pinned rather than "latest": it holds a
+# credential that authorises the whole account, so a new release is something to read before
+# running. Session lives in the login keychain, not on disk. Write tools are denied in
+# ~/.claude/settings.json — the server itself has no read-only mode.
+"github:lexfrei/mcp-tg" = "1.3.1"
+# Unofficial Wolt CLI — one archive ships both binaries (wolt, wolt-mcp), so a single
+# declaration exposes both. github backend because no aqua package exists yet; an entry is
+# proposed upstream, and this becomes "aqua:mekedron/wolt-cli" once it lands. Unlike most
+# github: tools here, this release publishes no attestations, so that verification step is
+# a no-op — the only integrity anchor is the release's own SHA256SUMS. Pinned rather than
+# "latest" for the same reason as mcp-tg: it holds a session tied to payment methods, so a
+# new release is something to read before running.
+"github:mekedron/wolt-cli" = "2.3.1"
 
-# Yandex Cloud CLI — not in the mise registry (closed source, no GitHub Releases),
-# so the http backend: version pin + sha256 = reproducibility and supply-chain.
+# === Shell, terminal & editing ===
+starship = "latest" # zsh prompt — initialized in dot_zshrc.tmpl
+zoxide = "latest"   # smarter cd — initialized in dot_zshrc.tmpl
+fzf = "latest"
+ripgrep = "latest"
+bat = "latest"
+fd = "latest"
+dust = "latest"
+duf = "latest"
+"aqua:Byron/dua-cli" = "latest" # dua — interactive disk explorer (aqua, not cargo → no rust)
+hyperfine = "latest"
+
+# === Git & forges ===
+gh = "latest"
+delta = "latest" # git's pager, wired as core.pager — not typed directly
+# glab lives in conf.d/work.toml: GitLab is the corporate forge.
+
+# === Language & data toolchains ===
+go = "latest"
+node = "latest"
+python = "latest"
+uv = "latest"
+
+# === Kubernetes, IaC & containers ===
+kubectl = "latest"
+kubectx = "latest"
+# kubectl view-secret — decode a Secret without the base64 pipeline. aqua backend, not github:
+# the aqua entry renames the binary to kubectl-view_secret, which is what kubectl needs to
+# expose it as the `view-secret` subcommand, and it verifies the release checksums.
+"aqua:elsesiy/kubectl-view-secret" = "latest"
+# kubectl credential plugin for OIDC clusters. No context uses it here yet — it is kept for
+# the LDAP-login lab stands, and because the work clusters authenticate this way.
+kubelogin = "latest"
+helm = "latest"
+flux2 = "latest"
+cilium-cli = "latest"
+terraform = "latest"
+terragrunt = "latest"
+terraform-docs = "latest"
+"pipx:ansible-core" = "latest" # engine + CLIs via uv (bundle `ansible` needs --include-deps/pipx)
+# The single OCI registry client. crane, oras and skopeo were dropped in favour of it: their
+# unique parts (podman transports, standalone artifact push) serve ecosystems not used here,
+# while manifest indexes and OCI artifacts — the GHCR chart publishing case — are its strength.
+regctl = "latest"
+
+# === Cloud, secrets & networking ===
+awscli = { version = "latest", symlink_bins = "true" }
+vault = "latest"
+bitwarden = "latest" # bw — secret retrieval at `chezmoi apply`
+age = "latest"
+teleport-community = "latest"
+# Tunnel over websocket/HTTP2. Ansible installs its own pinned Linux build on the hub
+# (homelab wstunnel_hub role); this is the client side. No mise registry entry, hence github:.
+"github:erebe/wstunnel" = "latest"
+"github:sanchpet/sweb" = "latest" # my SpaceWeb hosting CLI (excluded from minimum_release_age above)
+# yc belongs here too — TOML puts its [tools."http:yc"] table after every plain key, at the
+# bottom of this file. 1password-cli lives in conf.d/work.toml.
+
+# === Quality & linting ===
+shellcheck = "latest"
+actionlint = "latest"          # GitHub Actions workflow linter
+hadolint = "latest"            # Dockerfile linter — the same one work CI runs, so findings match locally
+yamllint = "latest"            # pipx backend → uv tool install
+"pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
+
+# === Media & documents ===
+typst = "latest"
+
+# === System & productivity ===
+chezmoi = "latest"
+# The aqua CLI, not the aqua backend — mise resolves aqua packages on its own. Kept for
+# contributing to aqua-registry, where `aqua gr <owner>/<repo>` generates a package entry.
+aqua = "latest"
+
+# Cloud, secrets & networking — Yandex Cloud CLI, out of group order because TOML requires
+# a sub-table to follow every plain key. Not in the mise registry (closed source, no GitHub
+# Releases), so the http backend: version pin + sha256 = reproducibility and supply-chain.
 # To update: bump version + url + checksum (sha256 of the new binary), then commit.
 # Latest version: curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/stable
 [tools."http:yc"]

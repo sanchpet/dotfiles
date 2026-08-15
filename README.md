@@ -35,110 +35,190 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 
 ### CLI tools (managed via mise)
 
+Grouped by purpose. The same groups, in the same order, run through `dot_config/mise/config.toml`, `Brewfile.tmpl` and every table below, so an entry keeps its place between the declaration and the documentation.
+
+#### Agent tooling
+
 | Tool | Purpose | Link |
 |------|---------|------|
-| Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
-| uv | Fast Python package & project manager — also backs mise's `pipx:` tools (`settings.pipx.uvx`) | [docs](https://docs.astral.sh/uv/) · [github](https://github.com/astral-sh/uv) |
-| Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | claudeline | Real-time Claude Code statusline (quota / context / model) — wired via `~/.claude/settings.json` `statusLine` | [github](https://github.com/lexfrei/claudeline) |
-| rtk | CLI proxy that compresses command output before an agent reads it — wired as a `PreToolUse` hook, see below | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
-| Serena | MCP server giving the agent LSP-backed symbolic navigation and editing (`serena-agent` on PyPI, binary `serena`) — registered in the work profile, see below | [docs](https://oraios.github.io/serena/) · [github](https://github.com/oraios/serena) |
-| sweb | CLI for the SpaceWeb (sweb.ru) hosting API — my own tool (github backend) | [github](https://github.com/sanchpet/sweb) |
-| aqua | Declarative CLI version manager — used to author/test aqua-registry packages | [docs](https://aquaproj.github.io) · [github](https://github.com/aquaproj/aqua) |
-| GitHub CLI (`gh`) | GitHub from the terminal | [docs](https://cli.github.com) |
-| GitLab CLI (`glab`) | GitLab from the terminal — **work profile only** (`conf.d/work.toml`); personal work is on GitHub | [docs](https://gitlab.com/gitlab-org/cli) |
-| 1Password CLI (`op`) | Secret retrieval on work machines — **work profile only**; personal machines use `bw` | [docs](https://developer.1password.com/docs/cli/) |
-| kubectl | Kubernetes cluster CLI | [docs](https://kubernetes.io/docs/reference/kubectl/) |
-| kubectx | Switch kubectl context / namespace (aliased `kctx`) | [github](https://github.com/ahmetb/kubectx) |
-| kubectl-view-secret | `kubectl view-secret <secret> [key]` — decode a Secret in place, no `base64 -d` pipeline. Installed via the aqua backend, which renames the binary to `kubectl-view_secret` so kubectl picks it up as a plugin | [github](https://github.com/elsesiy/kubectl-view-secret) |
-| kubelogin | kubectl credential plugin for OIDC clusters — no local context uses it yet, kept for the LDAP-login lab stands | [github](https://github.com/int128/kubelogin) |
-| node | Node.js runtime | [docs](https://nodejs.org) |
+| rtk | CLI proxy that compresses command output before an agent reads it — wired as a `PreToolUse` hook, see [Agent bash output](#agent-bash-output-rtk) | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
+| Serena | MCP server giving the agent LSP-backed symbolic navigation and editing (`serena-agent` on PyPI, binary `serena`) — see [Agent access](#agent-access-mcp) | [docs](https://oraios.github.io/serena/) · [github](https://github.com/oraios/serena) |
+| mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. **Version-pinned, not `latest`**: it holds a session that authorises the whole account. See [Agent access](#agent-access-mcp) | [github](https://github.com/lexfrei/mcp-tg) |
+| wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned** for the same reason as mcp-tg: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement | [github](https://github.com/mekedron/wolt-cli) |
+
+#### Shell, terminal & editing
+
+| Tool | Purpose | Link |
+|------|---------|------|
 | Starship | Cross-shell prompt (zsh prompt; `starship init` in `.zshrc`) | [docs](https://starship.rs) |
 | zoxide | Frecency `cd` — replaces `cd` (`--cmd cd`); `cdi` = interactive | [github](https://github.com/ajeetdsouza/zoxide) |
 | fzf | Fuzzy finder (`fzf --zsh` in `.zshrc`) | [github](https://github.com/junegunn/fzf) |
 | ripgrep (`rg`) | Fast recursive search | [github](https://github.com/BurntSushi/ripgrep) |
 | bat | `cat` with syntax highlighting & paging (aliased to `cat`) | [github](https://github.com/sharkdp/bat) |
-| delta | Syntax-highlighting pager for git diffs (wired as git `core.pager`) | [github](https://github.com/dandavison/delta) |
+| fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
 | dust | Intuitive `du` — disk-usage tree (aliased to `du`) | [github](https://github.com/bootandy/dust) |
 | duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
 | dua (`dua i`) | Interactive disk-usage explorer — find & delete big dirs | [github](https://github.com/Byron/dua-cli) |
-| fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
 | hyperfine | Command-line benchmarking tool | [github](https://github.com/sharkdp/hyperfine) |
-| python | Python runtime | [docs](https://www.python.org) |
-| helm | Kubernetes package manager | [docs](https://helm.sh) |
-| terragrunt | Terraform/OpenTofu wrapper (aliased `tg`) | [docs](https://terragrunt.gruntwork.io) |
-| awscli (`aws`) | AWS CLI | [docs](https://aws.amazon.com/cli/) |
+
+#### Git & forges
+
+| Tool | Purpose | Link |
+|------|---------|------|
+| GitHub CLI (`gh`) | GitHub from the terminal | [docs](https://cli.github.com) |
+| delta | Syntax-highlighting pager for git diffs (wired as git `core.pager`) — invoked by git, not typed | [github](https://github.com/dandavison/delta) |
+| GitLab CLI (`glab`) | GitLab from the terminal — **work profile only** (`conf.d/work.toml`); personal work is on GitHub | [docs](https://gitlab.com/gitlab-org/cli) |
+
+#### Language & data toolchains
+
+| Tool | Purpose | Link |
+|------|---------|------|
 | go | Go toolchain | [docs](https://go.dev) |
-| terraform | Infrastructure as code | [docs](https://developer.hashicorp.com/terraform) |
-| vault | Secrets management CLI | [docs](https://developer.hashicorp.com/vault) |
+| node | Node.js runtime | [docs](https://nodejs.org) |
+| python | Python runtime | [docs](https://www.python.org) |
+| uv | Fast Python package & project manager — also backs mise's `pipx:` tools (`settings.pipx.uvx`) | [docs](https://docs.astral.sh/uv/) · [github](https://github.com/astral-sh/uv) |
+
+#### Kubernetes, IaC & containers
+
+| Tool | Purpose | Link |
+|------|---------|------|
+| kubectl | Kubernetes cluster CLI | [docs](https://kubernetes.io/docs/reference/kubectl/) |
+| kubectx | Switch kubectl context / namespace (aliased `kctx`) | [github](https://github.com/ahmetb/kubectx) |
+| kubectl-view-secret | `kubectl view-secret <secret> [key]` — decode a Secret in place, no `base64 -d` pipeline. Installed via the aqua backend, which renames the binary to `kubectl-view_secret` so kubectl picks it up as a plugin | [github](https://github.com/elsesiy/kubectl-view-secret) |
+| kubelogin | kubectl credential plugin for OIDC clusters — no local context uses it yet, kept for the LDAP-login lab stands | [github](https://github.com/int128/kubelogin) |
+| helm | Kubernetes package manager | [docs](https://helm.sh) |
 | flux2 (`flux`) | GitOps continuous delivery for Kubernetes | [docs](https://fluxcd.io) |
 | cilium-cli (`cilium`) | Cilium CNI — install, status, connectivity tests | [docs](https://docs.cilium.io) |
+| terraform | Infrastructure as code | [docs](https://developer.hashicorp.com/terraform) |
+| terragrunt | Terraform/OpenTofu wrapper (aliased `tg`) | [docs](https://terragrunt.gruntwork.io) |
 | terraform-docs | Generate module documentation from Terraform sources | [docs](https://terraform-docs.io) |
+| ansible (`ansible-core`) | IT automation engine — installed via uv (`pipx:` backend) | [docs](https://docs.ansible.com) |
+| regctl | The OCI registry client — manifests, indexes, artifacts, copy/retag and `image mod` without a daemon. Deliberately the only one: see [Design decisions](#design-decisions-decision-record) | [github](https://github.com/regclient/regclient) |
+
+#### Cloud, secrets & networking
+
+| Tool | Purpose | Link |
+|------|---------|------|
+| awscli (`aws`) | AWS CLI | [docs](https://aws.amazon.com/cli/) |
+| Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
+| vault | Secrets management CLI | [docs](https://developer.hashicorp.com/vault) |
+| Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
+| 1Password CLI (`op`) | Secret retrieval on work machines — **work profile only**; personal machines use `bw` | [docs](https://developer.1password.com/docs/cli/) |
+| age | Modern file encryption | [github](https://github.com/FiloSottile/age) |
 | teleport-community (`tsh`, `tctl`, `teleport`) | Access plane for infrastructure — client, admin CLI, and the node agent this Mac runs (see [Remote access](#remote-access-teleport)) | [docs](https://goteleport.com/docs/) |
 | wstunnel | Tunnel traffic over websocket/HTTP2 — client side; ansible installs its own pinned Linux build on the homelab hub | [github](https://github.com/erebe/wstunnel) |
-| typst | Markup-based typesetting (LaTeX alternative) | [github](https://github.com/typst/typst) |
-| ansible (`ansible-core`) | IT automation engine — installed via uv (`pipx:` backend) | [docs](https://docs.ansible.com) |
-| ansible-lint | Ansible playbook linter (via uv) | [github](https://github.com/ansible/ansible-lint) |
-| yamllint | YAML linter (via uv) | [github](https://github.com/adrienverge/yamllint) |
-| regctl | The OCI registry client — manifests, indexes, artifacts, copy/retag and `image mod` without a daemon. Deliberately the only one: see [Design decisions](#design-decisions-decision-record) | [github](https://github.com/regclient/regclient) |
-| hadolint | Dockerfile linter — a native binary, so no container pull stands between an edit and its findings | [github](https://github.com/hadolint/hadolint) |
-| mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. **Version-pinned, not `latest`**: it holds a session that authorises the whole account. See [Agent access](#agent-access-mcp). | [github](https://github.com/lexfrei/mcp-tg) |
-| wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned** for the same reason as mcp-tg: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement. | [github](https://github.com/mekedron/wolt-cli) |
+| sweb | CLI for the SpaceWeb (sweb.ru) hosting API — my own tool (github backend) | [github](https://github.com/sanchpet/sweb) |
 
-### Quality / dev workflow
+#### Quality & linting
+
+| Tool | Purpose | Link |
+|------|---------|------|
+| shellcheck | Static analysis for shell scripts. Declared twice on purpose: the pre-commit hook brings its own copy (`shellcheck-py`), the mise one is for running it by hand | [shellcheck](https://github.com/koalaman/shellcheck) · [hook](https://github.com/shellcheck-py/shellcheck-py) |
+| actionlint | GitHub Actions workflow linter — catches a broken workflow before a push burns a CI run | [github](https://github.com/rhysd/actionlint) |
+| hadolint | Dockerfile linter — a native binary, so no container pull stands between an edit and its findings | [github](https://github.com/hadolint/hadolint) |
+| yamllint | YAML linter (via uv) | [github](https://github.com/adrienverge/yamllint) |
+| ansible-lint | Ansible playbook linter (via uv) | [github](https://github.com/ansible/ansible-lint) |
+
+#### Media & documents
+
+| Tool | Purpose | Link |
+|------|---------|------|
+| typst | Markup-based typesetting (LaTeX alternative) | [github](https://github.com/typst/typst) |
+
+#### System & productivity
+
+| Tool | Purpose | Link |
+|------|---------|------|
+| aqua | Declarative CLI version manager — kept to author/test aqua-registry packages (`aqua gr`), not to resolve them: mise's aqua backend needs no CLI | [docs](https://aquaproj.github.io) · [github](https://github.com/aquaproj/aqua) |
+
+`mise` and `chezmoi` are declared here too, but documented under [Foundation](#foundation) — they carry the whole setup rather than serve one purpose.
+
+### Pre-commit hooks
+
+Declared in the repo-local `mise.toml` and `.pre-commit-config.yaml`, not in the machine-wide config: they belong to this repository's workflow, not to the machine.
 
 | Tool | Purpose | Link |
 |------|---------|------|
 | pre-commit | Git pre-commit hook framework | <https://pre-commit.com> · [github](https://github.com/pre-commit/pre-commit) |
-| shellcheck | Static analysis for shell scripts. Declared twice on purpose: the pre-commit hook brings its own copy (`shellcheck-py`), the mise one is for running it by hand | [shellcheck](https://github.com/koalaman/shellcheck) · [hook](https://github.com/shellcheck-py/shellcheck-py) |
 | pre-commit-hooks | Standard hygiene hooks (whitespace, EOF, YAML, …) | [github](https://github.com/pre-commit/pre-commit-hooks) |
-| actionlint | GitHub Actions workflow linter — catches a broken workflow before a push burns a CI run | [github](https://github.com/rhysd/actionlint) |
 
 ### GUI (Homebrew cask)
 
+Same groups, same order. The work-only casks sit in a profile-guarded block in `Brewfile.tmpl`, so their physical position there differs from their group position here.
+
+#### Shell, terminal & editing
+
 | Tool | Purpose | Profile | Link |
 |------|---------|---------|------|
+| cmux | Ghostty-based terminal with vertical tabs + notifications for AI coding agents | all | [site](https://www.cmux.dev/) |
 | Visual Studio Code | Primary code editor (self-updating; adopted into brew) | all | [docs](https://code.visualstudio.com) |
+| Obsidian | Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask) | all | [site](https://obsidian.md) |
+
+#### Language & data toolchains
+
+| Tool | Purpose | Profile | Link |
+|------|---------|---------|------|
+| .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
+
+#### Kubernetes, IaC & containers
+
+| Tool | Purpose | Profile | Link |
+|------|---------|---------|------|
+| OrbStack | Docker-compatible container & Linux VM runtime, replaces Docker Desktop (launch once to start the engine) | all | [docs](https://docs.orbstack.dev/) |
+| Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
+
+#### Cloud, secrets & networking
+
+| Tool | Purpose | Profile | Link |
+|------|---------|---------|------|
 | Bitwarden | Password manager — also serves the SSH agent that signs commits and authenticates git. Cask rather than the App Store build, which cannot be reinstalled without a signed-in Store | all | [site](https://bitwarden.com) |
 | AmneziaVPN | VPN client — the desktop side of the VPN fleet | all | [github](https://github.com/amnezia-vpn/amnezia-client) |
 | GLKVM | GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes. Cask rather than App Store: the two are separate channels for the same app, and a vendor-site update leaves a `mas` declaration unsatisfiable | all | [site](https://www.gl-inet.com/products/glkvm/) |
-| Obsidian | Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask) | all | [site](https://obsidian.md) |
-| Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
-| cmux | Ghostty-based terminal with vertical tabs + notifications for AI coding agents | all | [site](https://www.cmux.dev/) |
-| WakaTime | Menu-bar time tracker — whole-system activity beyond editor plugins | all | [docs](https://wakatime.com/mac) |
-| Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
-| OrbStack | Docker-compatible container & Linux VM runtime, replaces Docker Desktop (launch once to start the engine) | all | [docs](https://docs.orbstack.dev/) |
-| Yandex Music | Desktop music player (self-updating cask) | all | [site](https://music.yandex.ru) |
-| Slack | Team chat client (self-updating cask) | all | [site](https://slack.com) |
-| Super Productivity | To-do list + Pomodoro + time tracking (MIT, local-first) — the time-accounting instrument; see [Agent access](#agent-access-mcp) | all | [github](https://github.com/super-productivity/super-productivity) |
-| .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
 | Windows App | Microsoft's official RDP client (succeeds the discontinued Microsoft Remote Desktop) | `work` only | [docs](https://learn.microsoft.com/windows-app/) |
 
-### Mac App Store (mas)
-
-Installed via the `mas` CLI. A one-time App Store sign-in is the only step that can't live in code; the entries are skipped in CI (the runner isn't signed in).
-
-| App | Purpose | Profile | Link |
-|------|---------|---------|------|
-| one sec | Delay distracting apps — digital-hygiene gate (a mindful pause before Telegram/feeds) | all | [site](https://one-sec.app/mac/) |
-| Focus To-Do | Superseded by Super Productivity; kept only until its history is migrated out ([#3](https://github.com/sanchpet/dotfiles/issues/3)) | all | [site](https://www.focustodo.cn) |
-| WireGuard | WireGuard VPN client | all | [site](https://www.wireguard.com) |
-| v2RayTun | V2Ray / proxy client | all | [site](https://v2raytun.com) |
-| MKPlayer | Media player | all | — |
-
-### Homebrew formulae (CLI mise can't provide)
+#### Media & documents
 
 | Tool | Purpose | Profile | Link |
 |------|---------|---------|------|
-| sshpass | Non-interactive ssh password auth — ansible needs it for the `-k` root-password bootstrap play; not in the mise registry | all | [docs](https://sourceforge.net/projects/sshpass/) |
-| libpq | PostgreSQL client (`psql`, `pg_dump`, …) without the server — mise's `postgres` builds the full server; keg-only, so `.zshrc` adds its `bin` to `PATH` | all | [docs](https://formulae.brew.sh/formula/libpq) |
-| qrencode | QR encoder — not in the mise registry, and upstream ships source only | all | [site](https://fukuchi.org/works/qrencode/) |
-| eza | Modern `ls` — git-aware, colors (aliased to `ls`/`ll`/`la`/`tree`); eza ships no macOS binary upstream so mise can't provide it cleanly (asdf 404s, cargo needs Rust) — brew has a bottle | all | [github](https://github.com/eza-community/eza) |
-| mas | Mac App Store CLI — installs/declares the App Store apps above | all | [github](https://github.com/mas-cli/mas) |
-| ffmpeg | Video/audio transcoding — mise offers only `conda:` (a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus) | all | [site](https://ffmpeg.org) |
-| gnu-sed | GNU sed as `gsed` — Darwin-aware build scripts call it for in-place edits BSD sed can't do (external-secrets' `make reviewable`); not in the mise registry | all | [docs](https://www.gnu.org/software/sed/) |
-| gnupg | `gpg` — verifies the signed helm plugin tarballs (`run_onchange_after_install-helm-plugins.sh`); declared explicitly because it was present only as a transitive dep of skopeo, so dropping skopeo would have silently taken plugin verification with it | all | [site](https://gnupg.org) |
+| Yandex Music | Desktop music player (self-updating cask) | all | [site](https://music.yandex.ru) |
+
+#### System & productivity
+
+| Tool | Purpose | Profile | Link |
+|------|---------|---------|------|
+| Slack | Team chat client (self-updating cask) | all | [site](https://slack.com) |
+| Super Productivity | To-do list + Pomodoro + time tracking (MIT, local-first) — the time-accounting instrument; see [Agent access](#agent-access-mcp) | all | [github](https://github.com/super-productivity/super-productivity) |
+| WakaTime | Menu-bar time tracker — whole-system activity beyond editor plugins | all | [docs](https://wakatime.com/mac) |
+| Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | all | [github](https://github.com/alienator88/Pearcleaner) |
+
+### Mac App Store (mas)
+
+Installed via the `mas` CLI. A one-time App Store sign-in is the only step that can't live in code; the entries are skipped in CI (the runner isn't signed in). Every entry is installed on every machine, so the profile column is dropped in favour of the group.
+
+| App | Purpose | Group | Link |
+|------|---------|-------|------|
+| WireGuard | WireGuard VPN client | Cloud, secrets & networking | [site](https://www.wireguard.com) |
+| v2RayTun | V2Ray / proxy client | Cloud, secrets & networking | [site](https://v2raytun.com) |
+| MKPlayer | Media player | Media & documents | — |
+| one sec | Delay distracting apps — digital-hygiene gate (a mindful pause before Telegram/feeds) | System & productivity | [site](https://one-sec.app/mac/) |
+| Focus To-Do | Superseded by Super Productivity; kept only until its history is migrated out ([#3](https://github.com/sanchpet/dotfiles/issues/3)) | System & productivity | [site](https://www.focustodo.cn) |
+
+### Homebrew formulae (CLI mise can't provide)
+
+Installed on every machine, so the profile column is dropped in favour of the group.
+
+| Tool | Purpose | Group | Link |
+|------|---------|-------|------|
+| eza | Modern `ls` — git-aware, colors (aliased to `ls`/`ll`/`la`/`tree`); eza ships no macOS binary upstream so mise can't provide it cleanly (asdf 404s, cargo needs Rust) — brew has a bottle | Shell, terminal & editing | [github](https://github.com/eza-community/eza) |
+| libpq | PostgreSQL client (`psql`, `pg_dump`, …) without the server — mise's `postgres` builds the full server; keg-only, so `.zshrc` adds its `bin` to `PATH` | Language & data toolchains | [docs](https://formulae.brew.sh/formula/libpq) |
+| sshpass | Non-interactive ssh password auth — ansible needs it for the `-k` root-password bootstrap play; not in the mise registry | Cloud, secrets & networking | [docs](https://sourceforge.net/projects/sshpass/) |
+| gnupg | `gpg` — verifies the signed helm plugin tarballs (`run_onchange_after_install-helm-plugins.sh`); declared in its own right rather than inherited through skopeo, which is what let skopeo be dropped without taking plugin verification with it | Cloud, secrets & networking | [site](https://gnupg.org) |
+| ffmpeg | Video/audio transcoding — mise offers only `conda:` (a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus) | Media & documents | [site](https://ffmpeg.org) |
+| qrencode | QR encoder — not in the mise registry, and upstream ships source only | Media & documents | [site](https://fukuchi.org/works/qrencode/) |
+| gnu-sed | GNU sed as `gsed` — Darwin-aware build scripts call it for in-place edits BSD sed can't do (external-secrets' `make reviewable`); not in the mise registry | System & productivity | [docs](https://www.gnu.org/software/sed/) |
+| mas | Mac App Store CLI — installs/declares the App Store apps above | System & productivity | [github](https://github.com/mas-cli/mas) |
 
 ## Zsh shell (Oh My Zsh)
 
