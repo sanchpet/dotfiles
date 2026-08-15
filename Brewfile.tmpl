@@ -6,38 +6,64 @@
 #
 # Per-machine: blocks under `if eq .profile "..."` are installed only on machines
 # with the matching profile (set once at `chezmoi init`, see .chezmoi.toml.tmpl).
-
+#
 # CLI tools — via mise (mise-first), see ~/.config/mise/config.toml.
 # Brewfile holds only GUI casks and formulae that mise can't provide.
+#
+# Three blocks, because the split by mechanism is load-bearing: the mas entries must stay
+# inside the CI guard and the work casks inside the profile guard. Within each block, entries
+# follow the same purpose groups in the same order as ~/.config/mise/config.toml and the README.
 
 # === CLI formulae mise can't provide — all machines ===
-brew "sshpass"  # non-interactive ssh password auth — ansible needs it for the `-k` root-password bootstrap play; not in mise registry
-brew "libpq"    # PostgreSQL client only (psql, pg_dump, …) without the server — mise's postgres builds the full server; keg-only, PATH added in .zshrc
-brew "qrencode" # QR encoder — not in mise registry, and upstream ships source only
+
+# Shell, terminal & editing
 brew "eza"      # modern ls (git-aware) — eza ships no macOS binary upstream, so mise's asdf backend 404s and cargo needs Rust; brew has a bottle
-brew "mas"      # Mac App Store CLI — declares/installs the App Store apps listed below; not in mise
-brew "ffmpeg"   # video/audio transcoding — mise offers only `conda:` (drags in a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus)
-brew "gnu-sed"  # GNU sed as `gsed` — build scripts that detect Darwin call gsed for in-place edits BSD sed can't do (external-secrets' `make reviewable` dies without it); not in mise registry
+
+# Language & data toolchains
+brew "libpq"    # PostgreSQL client only (psql, pg_dump, …) without the server — mise's postgres builds the full server; keg-only, PATH added in .zshrc
+
+# Cloud, secrets & networking
+brew "sshpass"  # non-interactive ssh password auth — ansible needs it for the `-k` root-password bootstrap play; not in mise registry
 brew "gnupg"    # gpg — verifies the signed helm plugin tarballs installed by run_onchange_after_install-helm-plugins.sh; not in mise registry. Declared in its own right, not inherited through skopeo → gpgme, which is what let skopeo be dropped without taking plugin verification with it
 
+# Media & documents
+brew "ffmpeg"   # video/audio transcoding — mise offers only `conda:` (drags in a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus)
+brew "qrencode" # QR encoder — not in mise registry, and upstream ships source only
+
+# System & productivity
+brew "gnu-sed"  # GNU sed as `gsed` — build scripts that detect Darwin call gsed for in-place edits BSD sed can't do (external-secrets' `make reviewable` dies without it); not in mise registry
+brew "mas"      # Mac App Store CLI — declares/installs the App Store apps listed below; not in mise
+
 # === GUI apps (casks) — all machines ===
+
+# Shell, terminal & editing
+cask "cmux"               # Ghostty-based terminal with vertical tabs + notifications for AI coding agents
 cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
+cask "obsidian"           # Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask, auto_updates)
+
+# Kubernetes, IaC & containers
+cask "orbstack"           # Docker-compatible container & Linux VM runtime, replaces Docker Desktop: returns idle RAM to the host, reaches container IPs directly, built-in Rosetta for amd64 images. Free tier is personal use only. Launch once to start the engine
+cask "freelens"           # Kubernetes IDE (open-source Lens fork)
+
+# Cloud, secrets & networking
 cask "bitwarden"          # password manager — also serves the SSH agent that signs commits and authenticates git (see ~/.ssh/config IdentityAgent). Cask rather than the App Store build: the sandboxed one is slower to reach and cannot be reinstalled without a signed-in Store
 cask "amneziavpn"         # AmneziaVPN client — the desktop side of the VPN fleet
 cask "glkvm"              # GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes. Cask, not mas: the App Store entry and the vendor download are different channels for the same app, and updating from the vendor site (which the app prompts for) leaves a mas declaration unsatisfiable
-cask "obsidian"           # Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask, auto_updates)
-cask "freelens"           # Kubernetes IDE (open-source Lens fork)
-cask "cmux"               # Ghostty-based terminal with vertical tabs + notifications for AI coding agents
-cask "wakatime"           # Menu-bar time tracker — whole-system activity beyond editor plugins
-cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
-cask "orbstack"           # Docker-compatible container & Linux VM runtime, replaces Docker Desktop: returns idle RAM to the host, reaches container IPs directly, built-in Rosetta for amd64 images. Free tier is personal use only. Launch once to start the engine
+
+# Media & documents
 cask "yandex-music"       # Yandex Music desktop player (self-updating cask)
+
+# System & productivity
 cask "slack"              # Slack desktop client (self-updating cask, auto_updates)
 cask "super-productivity" # To-do list + Pomodoro + time tracking (MIT, local-first). Replaces Focus To-Do as the time-accounting instrument: its data is a local directory that can live inside the vault, and it publishes a plugin API, so an agent reads the accounting without reverse-engineering a vendor's private endpoints
+cask "wakatime"           # Menu-bar time tracker — whole-system activity beyond editor plugins
+cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
+# Language & data toolchains
 cask "dotnet-sdk"  # .NET SDK — needed on the work machine only
+# Cloud, secrets & networking
 cask "windows-app" # Microsoft's official RDP client (formerly Remote Desktop; microsoft-remote-desktop discontinued 2025-10) — connect to Windows over RDP
 {{- end }}
 
@@ -47,9 +73,12 @@ cask "windows-app" # Microsoft's official RDP client (formerly Remote Desktop; m
 # machine needs a one-time App Store sign-in before bootstrap — the only step here
 # that cannot live in code.
 {{ if not (env "CI") -}}
-mas "one sec", id: 1532875441     # delay distracting apps — digital-hygiene gate (pause before Telegram/feeds)
-mas "Focus To-Do", id: 1258530160 # superseded by Super Productivity as the time-accounting instrument; kept only until its history is migrated out (issue #3)
+# Cloud, secrets & networking
 mas "WireGuard", id: 1451685025   # WireGuard VPN client
 mas "v2RayTun", id: 6476628951    # V2Ray / proxy client
+# Media & documents
 mas "MKPlayer", id: 1335612105    # media player
+# System & productivity
+mas "one sec", id: 1532875441     # delay distracting apps — digital-hygiene gate (pause before Telegram/feeds)
+mas "Focus To-Do", id: 1258530160 # superseded by Super Productivity as the time-accounting instrument; kept only until its history is migrated out (issue #3)
 {{- end }}
