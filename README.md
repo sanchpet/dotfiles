@@ -100,6 +100,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Tool | Purpose | Profile | Link |
 |------|---------|---------|------|
 | Visual Studio Code | Primary code editor (self-updating; adopted into brew) | all | [docs](https://code.visualstudio.com) |
+| Zed | Fast multiplayer code editor (self-updating cask) | all | [site](https://zed.dev) |
 | Obsidian | Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask) | all | [site](https://obsidian.md) |
 | Freelens | Kubernetes IDE (open-source Lens fork) | all | [github](https://github.com/freelensapp/freelens) |
 | cmux | Ghostty-based terminal with vertical tabs + notifications for AI coding agents | all | [site](https://www.cmux.dev/) |
@@ -110,6 +111,7 @@ git clone https://github.com/sanchpet/dotfiles ~/dotfiles && ~/dotfiles/bootstra
 | Slack | Team chat client (self-updating cask) | all | [site](https://slack.com) |
 | Super Productivity | To-do list + Pomodoro + time tracking (MIT, local-first) — the time-accounting instrument; see [Agent access](#agent-access-mcp) | all | [github](https://github.com/super-productivity/super-productivity) |
 | .NET SDK | .NET toolchain | `work` only | [docs](https://dotnet.microsoft.com/download) |
+| Windows App | Microsoft's official RDP client (succeeds the discontinued Microsoft Remote Desktop) | `work` only | [docs](https://learn.microsoft.com/windows-app/) |
 
 ### Mac App Store (mas)
 
@@ -124,6 +126,7 @@ Installed via the `mas` CLI. A one-time App Store sign-in is the only step that 
 | v2RayTun | V2Ray / proxy client | all | [site](https://v2raytun.com) |
 | Endel | Adaptive focus/sleep soundscapes | all | [site](https://endel.io) |
 | MKPlayer | Media player | all | — |
+| GLKVM | GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes | all | [site](https://www.gl-inet.com/products/glkvm/) |
 
 ### Homebrew formulae (CLI mise can't provide)
 
@@ -132,9 +135,12 @@ Installed via the `mas` CLI. A one-time App Store sign-in is the only step that 
 | sshpass | Non-interactive ssh password auth (used by ansible) — not in the mise registry | all | [docs](https://sourceforge.net/projects/sshpass/) |
 | libpq | PostgreSQL client (`psql`, `pg_dump`, …) without the server — mise's `postgres` builds the full server; keg-only, so `.zshrc` adds its `bin` to `PATH` | all | [docs](https://formulae.brew.sh/formula/libpq) |
 | skopeo | Inspect/copy/sign OCI & container images without a daemon — not in the mise registry | all | [docs](https://github.com/containers/skopeo) |
+| unar | Universal unarchiver (rar, 7z, …) — not in the mise registry | all | [site](https://theunarchiver.com) |
 | eza | Modern `ls` — git-aware, colors (aliased to `ls`/`ll`/`la`/`tree`); eza ships no macOS binary upstream so mise can't provide it cleanly (asdf 404s, cargo needs Rust) — brew has a bottle | all | [github](https://github.com/eza-community/eza) |
 | mas | Mac App Store CLI — installs/declares the App Store apps above | all | [github](https://github.com/mas-cli/mas) |
 | ffmpeg | Video/audio transcoding — mise offers only `conda:` (a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus) | all | [site](https://ffmpeg.org) |
+| gnu-sed | GNU sed as `gsed` — Darwin-aware build scripts call it for in-place edits BSD sed can't do (external-secrets' `make reviewable`); not in the mise registry | all | [docs](https://www.gnu.org/software/sed/) |
+| gnupg | `gpg` — verifies the signed helm plugin tarballs (`run_onchange_after_install-helm-plugins.sh`); declared explicitly because it was present only as a transitive dep of skopeo, so dropping skopeo would have silently taken plugin verification with it | all | [site](https://gnupg.org) |
 
 ## Zsh shell (Oh My Zsh)
 
@@ -294,6 +300,7 @@ Note that a closed lid still sleeps an Apple Silicon laptop without an external 
 | `dot_local/bin/executable_login-agents` | `~/.local/bin/login-agents` — bootout/bootstrap cycle for the login agents below; run by the `run_onchange` hook and by bootstrap step 10 |
 | `Library/LaunchAgents/*.plist` | `~/Library/LaunchAgents/` — launchd agents started at login, one file per app (`dev.sanchpet.orbstack` starts the OrbStack engine so the Docker socket is up without opening the app). Add an app = add a plist |
 | `run_onchange_after_login-agents.sh.tmpl` | Reloads the login agents on `chezmoi apply` whenever a plist changes (keyed on their hashes) |
+| `run_onchange_after_install-helm-plugins.sh` | Installs `helm-unittest` from its signed release tarball into helm's own plugin directory — a plugin is not a tool on `PATH`, so mise cannot declare it. Verifies the signature against a pinned key fingerprint in an isolated keyring; skips (not fails) when helm or gpg is absent |
 | `run_onchange_after_sudo-touch-id.sh` | Installs `/etc/pam.d/sudo_local` (Touch ID for `sudo`) + `/etc/sudoers.d/timestamp` (no credential cache). Idempotent, macOS-only, skips rather than prompts without a terminal |
 | `dot_config/teleport/teleport.yaml.tmpl` | `~/.config/teleport/teleport.yaml` — SSH node config: reverse tunnel to the personal cluster's proxy, SSH service only. **Personal profile only** (`.chezmoiignore`) |
 | `Library/LaunchAgents/dev.sanchpet.teleport-node.plist` | Runs the node as a login agent, so it serves sessions only as the logged-in user. **Personal profile only** |
