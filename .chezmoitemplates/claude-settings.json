@@ -21,6 +21,10 @@
       "screencapture"
     ]
   },
+{{- with .plugins }}
+  "extraKnownMarketplaces": {{ .marketplaces | toJson }},
+  "enabledPlugins": {{ .enabled | toJson }},
+{{- end }}
   "hooks": {
     "PreToolUse": [
       {
