@@ -6,6 +6,12 @@
 # OrbStack's 'orb' host for its Linux machines. Must stay above any Host block.
 Include ~/.orbstack/ssh/config
 
+# Host-specific drop-ins, read before the catch-all below so they win on any keyword.
+# What a corporate network looks like — bastions, ProxyJump chains, host names — is not
+# publishable, so a work machine keeps ~/.ssh/conf.d/tv.conf outside this repository.
+# A glob that matches nothing is not an error, so this line is inert elsewhere.
+Include ~/.ssh/conf.d/*.conf
+
 Host *
 {{ if eq (dig "agent" "kind" "" .) "1password" -}}
 	IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
