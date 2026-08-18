@@ -19,6 +19,33 @@ if [ -d "$HOME/.krew/bin" ]; then
   export PATH="$HOME/.krew/bin:$PATH"
 fi
 
+# The managed fleet is a generated file, joined here rather than merged into ~/.kube/config.
+# Personal config first: on a duplicate key the earlier file wins, so hand-made entries keep
+# their behaviour and the fleet only adds what they do not already define.
+if [ -f "$HOME/.kube/tv-fleet.yaml" ]; then
+  export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}:$HOME/.kube/tv-fleet.yaml"
+fi
+
+# Tell me when the cluster fleet has moved, without ever making me wait for it. The check talks
+# to a git remote, so it runs detached and what the shell prints is the *previous* run's answer;
+# a slow or unreachable registry costs a stale notice, never a delayed prompt. It reports only —
+# adding or removing a context silently would change where the next command lands.
+_tv_fleet_notice() {
+  local dir="${XDG_CACHE_HOME:-$HOME/.cache}/tv"
+  local stamp="$dir/fleet-check.stamp" msg="$dir/fleet-check.msg"
+  [ -s "$msg" ] && cat "$msg"
+  command -v kubectl-tv >/dev/null 2>&1 || return 0
+  mkdir -p "$dir" 2>/dev/null || return 0
+  # Re-check once a day. -mtime +0 is "last modified more than 24h ago"; a missing stamp is the
+  # first run and checks immediately.
+  if [ ! -e "$stamp" ] || [ -n "$(find "$stamp" -mtime +0 -print 2>/dev/null)" ]; then
+    ( kubectl-tv clusters check --quiet >"$msg.new" 2>/dev/null \
+        && mv -f "$msg.new" "$msg" || rm -f "$msg.new"
+      : >"$stamp" ) &!
+  fi
+}
+_tv_fleet_notice
+
 {{ if .bitwarden.agent -}}
 # --- SSH agent: Bitwarden ---
 # Route SSH auth + git commit signing through the Bitwarden desktop app's SSH agent, whose

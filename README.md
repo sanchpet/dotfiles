@@ -228,6 +228,7 @@ The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — th
 |--------|--------|---------|
 | git | built-in | Git aliases (`gst`, `gco`, `gp`, …) |
 | kubectl | built-in | `k*` aliases + completion (`kgp`, `kgaa`, `kdp`, …) |
+| kubectl fleet | `dot_zshrc.tmpl` | Joins a generated `~/.kube/tv-fleet.yaml` onto `KUBECONFIG` when it exists, personal config first, and prints a once-a-day notice when the fleet has moved. The check runs detached, so the prompt shows the previous run's answer rather than waiting for a git remote; it never edits contexts by itself |
 | helm | built-in | Helm completion |
 | terraform | built-in | `tf*` aliases + completion + workspace |
 | aws | built-in | `asp`/`acp` profile switch + completion |
