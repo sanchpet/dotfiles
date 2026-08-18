@@ -20,10 +20,16 @@ if [ -d "$HOME/.krew/bin" ]; then
 fi
 
 # The managed fleet is a generated file, joined here rather than merged into ~/.kube/config.
-# Personal config first: on a duplicate key the earlier file wins, so hand-made entries keep
-# their behaviour and the fleet only adds what they do not already define.
+# It comes first: on a duplicate key the earlier file wins, so the fleet is what a context
+# resolves to and the personal config holds only what the fleet does not describe (a local
+# kind cluster, a one-off). That ordering is what makes removal work — a cluster that leaves
+# the registry leaves the workstation instead of lingering in a hand-made entry.
+#
+# Consequence worth knowing: `kubectl config set-*` writes to the first file in the list, so
+# it would edit the generated fragment and lose the edit on the next sync. Point such commands
+# at the personal file explicitly: KUBECONFIG=$HOME/.kube/config kubectl config set-context …
 if [ -f "$HOME/.kube/tv-fleet.yaml" ]; then
-  export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}:$HOME/.kube/tv-fleet.yaml"
+  export KUBECONFIG="$HOME/.kube/tv-fleet.yaml:${KUBECONFIG:-$HOME/.kube/config}"
 fi
 
 # Tell me when the cluster fleet has moved, without ever making me wait for it. The check talks
