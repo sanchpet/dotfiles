@@ -84,6 +84,10 @@ uv = "latest"
 # === Kubernetes, IaC & containers ===
 kubectl = "latest"
 kubectx = "latest"
+# krew is the kubectl plugin manager, and what mise ships is its *installer*: the binary is
+# krew-<os>_<arch>, while kubectl only resolves kubectl-krew. The bootstrap that turns one into
+# the other lives in run_onchange_after_install-krew-plugins.sh.tmpl.
+krew = "latest"
 # kubectl view-secret — decode a Secret without the base64 pipeline. aqua backend, not github:
 # the aqua entry renames the binary to kubectl-view_secret, which is what kubectl needs to
 # expose it as the `view-secret` subcommand, and it verifies the release checksums.

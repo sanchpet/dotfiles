@@ -12,6 +12,13 @@ if [ -d "$(brew --prefix 2>/dev/null)/opt/libpq/bin" ]; then
   export PATH="$(brew --prefix)/opt/libpq/bin:$PATH"
 fi
 
+# krew installs kubectl plugins into its own root, not into a mise shim dir, so kubectl finds
+# them only if that bin is on PATH. Guarded on the directory: the entry is meaningless until
+# krew has bootstrapped itself (run_onchange_after_install-krew-plugins.sh.tmpl).
+if [ -d "$HOME/.krew/bin" ]; then
+  export PATH="$HOME/.krew/bin:$PATH"
+fi
+
 {{ if .bitwarden.agent -}}
 # --- SSH agent: Bitwarden ---
 # Route SSH auth + git commit signing through the Bitwarden desktop app's SSH agent, whose
