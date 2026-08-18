@@ -6,8 +6,9 @@
 #
 # revision: 1  — bump to force a re-run after editing the list below.
 #
-# The index is the team's private one on the corporate GitLab; krew clones it through the system
-# git, so the engineer's existing SSH key authenticates it and no token is stored anywhere. That
+# The index is declared in the machine-local chezmoi config, never in this public repository:
+# its URL is an internal host. krew clones it through the system git, so the engineer's existing
+# SSH key authenticates it and no token is stored anywhere. That
 # also makes the step reachability-dependent: a machine off the VPN skips it with a message rather
 # than failing the bootstrap, exactly as the Vault-backed registrations next door do.
 #
@@ -15,9 +16,11 @@
 # newly built cluster reaches this workstation without anyone editing a wiki page by hand.
 set -eu
 
-INDEX_NAME=tv
-INDEX_URL=<private-index-url>
-PLUGINS="tv/tv"
+{{ with (dig "krew" false .) -}}
+INDEX_NAME={{ .indexName | quote }}
+INDEX_URL={{ .indexUrl | quote }}
+PLUGINS={{ join " " .plugins | quote }}
+{{ end -}}
 
 # Absolute shim path, not `command -v`: chezmoi runs this without the interactive shell's PATH,
 # so mise's shims are not on it — the same reason the helm plugin script next door does this.
@@ -32,8 +35,9 @@ fi
 
 KREW="$HOME/.krew/bin/kubectl-krew"
 
-{{ if .work.email -}}
-# Work machine only: the index and the plugins it serves are employer infrastructure.
+{{ if (dig "krew" false .) -}}
+# Only where an index is declared: it and the plugins it serves are employer
+# infrastructure, so its URL lives in the machine-local chezmoi config, never here.
 if ! git ls-remote --exit-code "$INDEX_URL" HEAD >/dev/null 2>&1; then
   echo "krew: $INDEX_URL unreachable (off VPN?) — skipping the $INDEX_NAME index"
   exit 0
@@ -55,5 +59,5 @@ for plugin in $PLUGINS; do
   fi
 done
 {{- else }}
-echo "krew: personal machine — no private index to add"
+echo "krew: no private index declared for this machine"
 {{- end }}
