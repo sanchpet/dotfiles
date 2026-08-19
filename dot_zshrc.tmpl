@@ -19,14 +19,6 @@ if [ -d "$HOME/.krew/bin" ]; then
   export PATH="$HOME/.krew/bin:$PATH"
 fi
 
-# kubectl tv owns its own shell wiring: the fleet ahead of the personal config on KUBECONFIG,
-# and a once-a-day notice when the fleet has moved. Keeping the snippet in the tool rather than
-# here is what lets a colleague get the same behaviour from one line, and lets a fix arrive with
-# `krew upgrade` instead of with an instruction someone has to follow correctly.
-if command -v kubectl-tv >/dev/null 2>&1; then
-  eval "$(kubectl-tv clusters shell-init)"
-fi
-
 {{ if .bitwarden.agent -}}
 # --- SSH agent: Bitwarden ---
 # Route SSH auth + git commit signing through the Bitwarden desktop app's SSH agent, whose
@@ -308,3 +300,18 @@ if [[ -o interactive ]] && (( $+commands[updates] )); then
     ( updates --bg & ) &>/dev/null    # refresh cache in the background for next time
   }
 fi
+
+# --- Work-specific shell code, kept out of this repository ---
+# This repo is public, so anything naming an employer's tools, hosts or paths lives in files
+# under the directory below — which nothing here tracks, renders or creates. Sourced last, so a
+# snippet can rely on everything above it (plugins, compinit, aliases) and override any of it.
+# The (N) qualifier makes the loop inert when the directory does not exist, which is every
+# machine that is not a work one.
+#
+# What belongs there is shell code a tool prints for itself, not settings typed by hand: losing
+# an untracked file must cost one command to regenerate, not an afternoon of remembering. See
+# the README section "Work-specific shell code".
+for _work_rc in "${XDG_CONFIG_HOME:-$HOME/.config}"/zsh/work.d/*.zsh(N); do
+  source "$_work_rc"
+done
+unset _work_rc

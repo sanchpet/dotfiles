@@ -228,7 +228,6 @@ The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — th
 |--------|--------|---------|
 | git | built-in | Git aliases (`gst`, `gco`, `gp`, …) |
 | kubectl | built-in | `k*` aliases + completion (`kgp`, `kgaa`, `kdp`, …) |
-| kubectl fleet | `dot_zshrc.tmpl` | Joins a generated `~/.kube/tv-fleet.yaml` onto `KUBECONFIG` when it exists, personal config first, and prints a once-a-day notice when the fleet has moved. The check runs detached, so the prompt shows the previous run's answer rather than waiting for a git remote; it never edits contexts by itself |
 | helm | built-in | Helm completion |
 | terraform | built-in | `tf*` aliases + completion + workspace |
 | aws | built-in | `asp`/`acp` profile switch + completion |
@@ -247,6 +246,18 @@ The prompt is [Starship](https://starship.rs) (`dot_config/starship.toml` — th
 | zsh-autocomplete | external | Live menu completion (loaded **last** so its keybindings win) |
 
 > **Load order matters.** `zsh-autocomplete` owns the completion/history UI, so it loads last, and plugins that fight over the same keys — `fzf-tab`, `zsh-history-substring-search` — are deliberately **not** used. Beyond the plugins, `dot_zshrc.tmpl` adds custom aliases (`kg`, `kgy`, `kctx`; modern-CLI swaps `cat`→`bat`, `ls`→`eza`, `du`→`dust`, `df`→`duf`) and the `miseg`/`miserm`/`miseup` helpers (add / remove a global mise tool and re-import the config; `miseup` upgrades with a fresh version list — clears mise's cached release list first so a just-published release is picked up). `brewdiff` reports drift between installed Homebrew packages and the rendered `Brewfile.tmpl` (brew has no `miseg`-style auto-sync — the manifest is a curated template, so new packages are ported in by hand). `updates` reports available mise + Homebrew package updates (cached; the first interactive shell of the day refreshes it in the background and prints the summary — never blocks the prompt; `updates -r` rechecks now, upgrades stay manual via `brew upgrade` / `mise upgrade` / `mise self-update`). `tg` aliases `terragrunt` (the omz `terraform` plugin covers `tf*`, but terragrunt has no plugin); terragrunt ships no completion script, so its built-in `COMP_LINE` completion is wired via `bashcompinit` + `complete -C` and shared with the `tg` alias through `compdef`.
+
+## Work-specific shell code
+
+This repository is public. Shell code that names an employer's tools, hosts or paths does not belong in it, and "be careful" does not scale past the second line — so there is a place for it instead:
+
+```
+${XDG_CONFIG_HOME:-$HOME/.config}/zsh/work.d/*.zsh
+```
+
+`dot_zshrc.tmpl` sources every `.zsh` file there, last, after the plugins and after `compinit`, so a snippet can use anything the rc file set up and override any of it. Nothing tracks, renders or creates that directory; on a machine without one the loop does nothing.
+
+**What belongs there:** shell code a tool prints for itself. That is the property that makes an untracked file safe — losing it costs one command, not an afternoon of remembering what was in it. Settings typed by hand belong in this repository, sanitised, or nowhere.
 
 ## Agent bash output (rtk)
 
