@@ -7,9 +7,10 @@
 # CLI tools — via mise (mise-first), see ~/.config/mise/config.toml.
 # Brewfile holds only GUI casks and formulae that mise can't provide.
 #
-# The mas entries must stay inside the CI guard, which is what splits the file into blocks.
-# Within each block, entries follow the same purpose groups in the same order as
-# ~/.config/mise/config.toml and the README.
+# Two guards split the file, and the split by mechanism is load-bearing: the mas entries must
+# stay inside the CI guard and the personal-only casks inside the profile guard. Within each
+# block, entries follow the same purpose groups in the same order as ~/.config/mise/config.toml
+# and the README.
 
 # === CLI formulae mise can't provide — all machines ===
 
@@ -35,26 +36,34 @@ brew "mas"      # Mac App Store CLI — declares/installs the App Store apps lis
 
 # Shell, terminal & editing
 cask "cmux"               # Ghostty-based terminal with vertical tabs + notifications for AI coding agents
-cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
 cask "obsidian"           # Markdown knowledge base / vault editor (hypomnemata exocortex; self-updating cask, auto_updates)
 
 # Kubernetes, IaC & containers
 cask "orbstack"           # Docker-compatible container & Linux VM runtime, replaces Docker Desktop: returns idle RAM to the host, reaches container IPs directly, built-in Rosetta for amd64 images. Free tier is personal use only. Launch once to start the engine
 cask "freelens"           # Kubernetes IDE (open-source Lens fork)
 
-# Cloud, secrets & networking
-cask "bitwarden"          # password manager — also serves the SSH agent that signs commits and authenticates git (see ~/.ssh/config IdentityAgent). Cask rather than the App Store build: the sandboxed one is slower to reach and cannot be reinstalled without a signed-in Store
-cask "amneziavpn"         # AmneziaVPN client — the desktop side of the VPN fleet
-cask "glkvm"              # GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes. Cask, not mas: the App Store entry and the vendor download are different channels for the same app, and updating from the vendor site (which the app prompts for) leaves a mas declaration unsatisfiable
-
 # Media & documents
 cask "yandex-music"       # Yandex Music desktop player (self-updating cask)
 
 # System & productivity
-cask "slack"              # Slack desktop client (self-updating cask, auto_updates)
 cask "super-productivity" # To-do list + Pomodoro + time tracking (MIT, local-first). Replaces Focus To-Do as the time-accounting instrument: its data is a local directory that can live inside the vault, and it publishes a plugin API, so an agent reads the accounting without reverse-engineering a vendor's private endpoints
 cask "wakatime"           # Menu-bar time tracker — whole-system activity beyond editor plugins
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
+
+# === Personal machine only (profile = personal) ===
+# A work machine gets its editor, chat client and password manager from the employer's MDM —
+# declaring them here too would have brew install a second copy into an occupied /Applications
+# slot. The VPN and KVM clients reach personal infrastructure and have no business there at all.
+{{ if eq (dig "profile" "personal" .) "personal" -}}
+# Shell, terminal & editing
+cask "visual-studio-code" # primary editor (self-updating; cask is auto_updates, brew won't fight it)
+# Cloud, secrets & networking
+cask "bitwarden"          # password manager — also serves the SSH agent that signs commits and authenticates git (see ~/.ssh/config IdentityAgent). Cask rather than the App Store build: the sandboxed one is slower to reach and cannot be reinstalled without a signed-in Store
+cask "amneziavpn"         # AmneziaVPN client — the desktop side of the VPN fleet
+cask "glkvm"              # GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes. Cask, not mas: the App Store entry and the vendor download are different channels for the same app, and updating from the vendor site (which the app prompts for) leaves a mas declaration unsatisfiable
+# System & productivity
+cask "slack"              # Slack desktop client (self-updating cask, auto_updates)
+{{- end }}
 
 # === Mac App Store apps (mas) — real machines only ===
 # Skipped in CI: the macOS runner is not signed into the App Store, so `mas install`

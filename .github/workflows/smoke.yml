@@ -22,8 +22,9 @@ jobs:
     runs-on: macos-latest
     # chezmoi init triggers .chezmoi.toml.tmpl → promptStringOnce. In a non-TTY (CI)
     # the interactive prompt fails with "could not open a new TTY", so the profile is
-    # set explicitly via env (env-override in .chezmoi.toml.tmpl). personal is the light
-    # path: it withholds the work-only mise tools.
+    # set explicitly via env (env-override in .chezmoi.toml.tmpl). personal is the profile a
+    # runner can actually satisfy: it withholds the work-only mise tools, and the casks it adds
+    # are the ones no MDM would be supplying here.
     env:
       DOTFILES_PROFILE: personal
       # mise resolves tool versions via the GitHub API; unauthenticated CI hits the
@@ -88,18 +89,25 @@ jobs:
       - name: Install chezmoi
         run: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
 
-      - name: profile gate — work-only mise tools withheld from a personal machine
+      - name: profile gate — per-machine casks and work-only mise tools
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           printf '[data]\n  profile = "work"\n'     > /tmp/work.toml
           printf '[data]\n  profile = "personal"\n' > /tmp/personal.toml
-          # No cask is profile-specific any more, so the branch is checked where it now
-          # lives: .chezmoiignore withholds the work-only mise conf.d file from a personal
-          # machine. The Brewfile is still rendered — cheap template-syntax cover on the
-          # fast job, ahead of the macOS bootstrap that installs from it.
-          chezmoi --config /tmp/personal.toml execute-template < Brewfile.tmpl \
-            | grep -q 'cask "freelens"' \
-            || { echo "❌ Brewfile.tmpl: missing shared cask freelens"; exit 1; }
+          # Both directions of the profile branch, on the fast job and without installing
+          # anything: the Brewfile withholds the personal-only casks from a work machine, and
+          # .chezmoiignore withholds the work-only mise conf.d file from a personal one.
+          bw=$(chezmoi --config /tmp/work.toml execute-template < Brewfile.tmpl)
+          bp=$(chezmoi --config /tmp/personal.toml execute-template < Brewfile.tmpl)
+          for b in "$bw" "$bp"; do
+            grep -q 'cask "freelens"' <<<"$b" || { echo "❌ Brewfile.tmpl: missing shared cask freelens"; exit 1; }
+          done
+          if ! grep -q 'cask "slack"' <<<"$bp"; then
+            echo "❌ personal: missing personal-only cask slack"; exit 1
+          fi
+          if grep -q 'cask "slack"' <<<"$bw"; then
+            echo "❌ work: personal-only cask slack leaked into the work profile"; exit 1
+          fi
           work=$(chezmoi --config /tmp/work.toml execute-template < .chezmoiignore)
           personal=$(chezmoi --config /tmp/personal.toml execute-template < .chezmoiignore)
           if grep -qx '\.config/mise/conf\.d/work\.toml' <<<"$work"; then
@@ -108,7 +116,7 @@ jobs:
           if ! grep -qx '\.config/mise/conf\.d/work\.toml' <<<"$personal"; then
             echo "❌ personal: work-only mise tools leaked into the personal profile"; exit 1
           fi
-          echo "✅ profile gate: work.toml deployed on work, withheld on personal"
+          echo "✅ profile gate: personal-only casks and work-only mise tools both withheld"
 
       - name: git identity — personal default, corporate identity data-driven & out of repo
         run: |
