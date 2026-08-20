@@ -4,15 +4,12 @@
 # Install:   chezmoi execute-template < Brewfile.tmpl | brew bundle --file=/dev/stdin
 # Snapshot:  brew bundle dump --force --describe --file=Brewfile   (then port into .tmpl)
 #
-# Per-machine: blocks under `if eq .profile "..."` are installed only on machines
-# with the matching profile (set once at `chezmoi init`, see .chezmoi.toml.tmpl).
-#
 # CLI tools — via mise (mise-first), see ~/.config/mise/config.toml.
 # Brewfile holds only GUI casks and formulae that mise can't provide.
 #
-# Three blocks, because the split by mechanism is load-bearing: the mas entries must stay
-# inside the CI guard and the work casks inside the profile guard. Within each block, entries
-# follow the same purpose groups in the same order as ~/.config/mise/config.toml and the README.
+# The mas entries must stay inside the CI guard, which is what splits the file into blocks.
+# Within each block, entries follow the same purpose groups in the same order as
+# ~/.config/mise/config.toml and the README.
 
 # === CLI formulae mise can't provide — all machines ===
 
@@ -58,12 +55,6 @@ cask "slack"              # Slack desktop client (self-updating cask, auto_updat
 cask "super-productivity" # To-do list + Pomodoro + time tracking (MIT, local-first). Replaces Focus To-Do as the time-accounting instrument: its data is a local directory that can live inside the vault, and it publishes a plugin API, so an agent reads the accounting without reverse-engineering a vendor's private endpoints
 cask "wakatime"           # Menu-bar time tracker — whole-system activity beyond editor plugins
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
-
-# === Work machine only (profile = work) ===
-{{ if eq (dig "profile" "personal" .) "work" -}}
-# Cloud, secrets & networking
-cask "windows-app" # Microsoft's official RDP client (formerly Remote Desktop; microsoft-remote-desktop discontinued 2025-10) — connect to Windows over RDP
-{{- end }}
 
 # === Mac App Store apps (mas) — real machines only ===
 # Skipped in CI: the macOS runner is not signed into the App Store, so `mas install`
