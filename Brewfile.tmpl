@@ -61,8 +61,6 @@ cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source 
 
 # === Work machine only (profile = work) ===
 {{ if eq (dig "profile" "personal" .) "work" -}}
-# Language & data toolchains
-cask "dotnet-sdk"  # .NET SDK — needed on the work machine only
 # Cloud, secrets & networking
 cask "windows-app" # Microsoft's official RDP client (formerly Remote Desktop; microsoft-remote-desktop discontinued 2025-10) — connect to Windows over RDP
 {{- end }}

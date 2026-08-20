@@ -23,7 +23,7 @@ jobs:
     # chezmoi init triggers .chezmoi.toml.tmpl → promptStringOnce. In a non-TTY (CI)
     # the interactive prompt fails with "could not open a new TTY", so the profile is
     # set explicitly via env (env-override in .chezmoi.toml.tmpl). personal is the light
-    # path: it installs only the shared casks, without the heavy work-only dotnet-sdk.
+    # path: it installs only the shared casks, without the work-only ones.
     env:
       DOTFILES_PROFILE: personal
       # mise resolves tool versions via the GitHub API; unauthenticated CI hits the
@@ -76,8 +76,8 @@ jobs:
           echo "✅ brew bundle OK (casks installed)"
 
   # Quick check of the per-machine template logic — without installing packages.
-  # Covers the profile=work branch (dotnet-sdk) that the bootstrap job does not install,
-  # to avoid pulling the heavy cask + sudo. Rendering is compared for both profiles.
+  # Covers the profile=work branch (windows-app) that the bootstrap job does not install.
+  # Rendering is compared for both profiles.
   # Pure template rendering is OS-independent → ubuntu runner (faster/cheaper than macOS);
   # this is NOT a Linux-support check.
   templates:
@@ -99,13 +99,13 @@ jobs:
           if ! grep -q 'cask "freelens"' <<<"$work"; then
             echo "❌ work: missing shared cask freelens"; exit 1
           fi
-          if ! grep -q 'cask "dotnet-sdk"' <<<"$work"; then
-            echo "❌ work: missing work-only cask dotnet-sdk"; exit 1
+          if ! grep -q 'cask "windows-app"' <<<"$work"; then
+            echo "❌ work: missing work-only cask windows-app"; exit 1
           fi
-          if grep -q 'cask "dotnet-sdk"' <<<"$personal"; then
-            echo "❌ personal: dotnet-sdk leaked into the personal profile"; exit 1
+          if grep -q 'cask "windows-app"' <<<"$personal"; then
+            echo "❌ personal: windows-app leaked into the personal profile"; exit 1
           fi
-          echo "✅ Brewfile.tmpl: work=freelens+dotnet-sdk, personal=freelens"
+          echo "✅ Brewfile.tmpl: work=freelens+windows-app, personal=freelens"
 
       - name: git identity — personal default, corporate identity data-driven & out of repo
         run: |
