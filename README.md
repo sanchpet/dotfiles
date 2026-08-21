@@ -87,6 +87,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | kubectl | Kubernetes cluster CLI | [docs](https://kubernetes.io/docs/reference/kubectl/) |
 | kubectx | Switch kubectl context / namespace (aliased `kctx`) | [github](https://github.com/ahmetb/kubectx) |
 | kubectl-view-secret | `kubectl view-secret <secret> [key]` — decode a Secret in place, no `base64 -d` pipeline. Installed via the aqua backend, which renames the binary to `kubectl-view_secret` so kubectl picks it up as a plugin | [github](https://github.com/elsesiy/kubectl-view-secret) |
+| radar | `kubectl radar` — cluster UI (topology, event timeline, Helm, GitOps, live traffic, audits) with a built-in MCP server for agents. Single Go binary talking to the API server with your own kubeconfig and RBAC; nothing is deployed to the cluster. github backend — no aqua-registry entry yet, and the release binary is already named `kubectl-radar` | [github](https://github.com/skyhook-io/radar) · [docs](https://radarhq.io/docs) |
 | kubelogin | kubectl credential plugin for OIDC clusters — no local context uses it yet, kept for the LDAP-login lab stands | [github](https://github.com/int128/kubelogin) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
 | flux2 (`flux`) | GitOps continuous delivery for Kubernetes | [docs](https://fluxcd.io) |

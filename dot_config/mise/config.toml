@@ -92,6 +92,11 @@ krew = "latest"
 # the aqua entry renames the binary to kubectl-view_secret, which is what kubectl needs to
 # expose it as the `view-secret` subcommand, and it verifies the release checksums.
 "aqua:elsesiy/kubectl-view-secret" = "latest"
+# radar — cluster UI (topology, timeline, Helm, GitOps, traffic) with a built-in MCP server,
+# invoked as `kubectl radar`: the release already ships the binary dash-named kubectl-radar, so
+# unlike view-secret above nothing needs a rename and github: is enough — no aqua entry exists
+# yet. The release publishes no attestations, so checksums.txt is the only integrity anchor.
+"github:skyhook-io/radar" = "latest"
 # kubectl credential plugin for OIDC clusters. No context uses it here yet — it is kept for
 # the LDAP-login lab stands, and because the work clusters authenticate this way.
 kubelogin = "latest"
