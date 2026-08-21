@@ -4,6 +4,11 @@
 # Consequence: `miseg` on a work machine writes into the shared config.toml — move the line here.
 #
 # Group headings mirror config.toml, so an entry keeps its place in the shared ordering.
+#
+# Withheld from personal machines, but not private: this repository is public. A tool that can
+# only be declared by naming an internal host therefore does not belong here either, and is
+# declared in the work repository instead, reaching mise through its own conf.d/*.toml. Nothing
+# about that arrangement is recorded here beyond this note.
 
 [tools]
 
