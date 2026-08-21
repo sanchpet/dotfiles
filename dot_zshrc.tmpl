@@ -134,6 +134,16 @@ unset _ght
 # --- sweb: completion (Cobra-generated native zsh; sweb is a mise tool, on PATH above) ---
 command -v sweb >/dev/null && source <(sweb completion zsh)
 
+# --- Local drop-ins: whatever the machine's own repositories put here ---
+# The same shape as mise's conf.d, and for the same reason: a tool that can only be described
+# by naming something this public repository must not name is described in the repository that
+# may name it, and drops a file in here. Nothing in this repository manages that directory's
+# contents; an absent drop-in is an absent integration, which is the right way for it to read.
+for _local in "$HOME/.config/zsh/local.d"/*.zsh(N); do
+  source "$_local"
+done
+unset _local
+
 # --- fzf ---
 eval "$(fzf --zsh)"
 
