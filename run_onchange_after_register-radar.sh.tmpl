@@ -1,0 +1,46 @@
+#!/bin/sh
+# Register Radar's built-in MCP server (the binary is declared in dot_config/mise/config.toml)
+# with the WORK Claude profile. Like the registrations beside it, this otherwise lives only as
+# hand-typed state under ~/.claude-work and is lost the moment that profile is rebuilt or the
+# machine is replaced.
+#
+# revision: 1  — bump to force a re-run after editing the intent below.
+#
+# Work MACHINE only — a stronger condition than the work profile serena settles for, and the
+# same one super-productivity-mcp uses: the clusters Radar reads are reachable from nowhere else,
+# so a registration on a personal machine would be an endpoint that can never answer.
+# CLAUDE_CONFIG_DIR is still set explicitly rather than inherited from whatever shell runs
+# `chezmoi apply`.
+#
+# HTTP at a fixed port rather than stdio, because Radar's stdio mode serves only the tool catalog
+# for registry introspection and cannot answer a cluster-backed call. So this attaches to a Radar
+# that is ALREADY running (`kubectl radar`) and both halves have to agree on 9280 — the same
+# arrangement as chrome-devtools and cometdbg, for the same reason.
+#
+# 7 of the 29 tools mutate the cluster and Radar has no read-only mode (`--no-mcp` is all or
+# nothing), so the bound is the deny list in .chezmoitemplates/claude-settings.json. It has to be
+# a deny rather than a narrow allow: `defaultMode: bypassPermissions` permits anything that is
+# merely not allowed.
+set -eu
+
+{{ if ne .profile "work" -}}
+echo "radar: not a work machine — skipping MCP registration"
+exit 0
+{{ end -}}
+
+CONFIG_DIR="$HOME/.claude-work"
+ENDPOINT="http://localhost:9280/mcp"
+
+command -v claude >/dev/null 2>&1 || { echo "radar: claude not on PATH — skipping registration"; exit 0; }
+[ -x "$HOME/.local/share/mise/shims/kubectl-radar" ] || { echo "radar: binary not installed (mise not applied yet?) — skipping"; exit 0; }
+
+# Idempotent: already registered is the steady state, not an error.
+if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^radar'; then
+  echo "radar: already registered in the work profile"
+  exit 0
+fi
+
+CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add radar --scope user --transport http "$ENDPOINT"
+
+echo "radar: registered in the work profile. The endpoint answers only while Radar runs —"
+echo "       start it with 'kubectl radar' before asking an agent to use it."

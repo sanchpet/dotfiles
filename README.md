@@ -265,7 +265,7 @@ Three things about this deployment are choices rather than defaults:
 
 ## Agent access (MCP)
 
-Five MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, and symbolic navigation over source. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
+Six MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, symbolic navigation over source, and a Kubernetes cluster. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
 
 ### Code intelligence — `serena`
 
@@ -276,6 +276,18 @@ An MCP server that puts a language server between the agent and the code: find a
 **Its global memories are a symlink into the vault** (`~/.serena/memories/global` → `~/tv/adversaria/70-memory`). Serena's own path for these is hardcoded (`serena_config.py`, no setting for it), and leaving them in `~/.serena` would put durable knowledge outside version control. The symlink survives Serena's `mkdir(exist_ok=True)` on startup. Note the ordering trap: any `serena` invocation, `--version` included, creates that directory, so the symlink has to be in place before the first run or it lands *inside* the directory instead of replacing it.
 
 **Project memories are a different matter and are not adopted yet.** Not because of where they land — `project_serena_folder_location` relocates the whole `.serena` folder anywhere, `$projectDir` and `$projectFolderName` included — but because of what Serena calls a project. It identifies one by directory path, with no git awareness, so under a one-worktree-per-branch workflow every branch is a separate project and neither placeholder can express "the repository". The one arrangement where the memories follow the code is committing them, which is what upstream expects (their own `.serena/.gitignore` excludes only `cache` and `project.local.yml`) — and that is a team decision, not a personal one. Global memories only until it is asked.
+
+### Kubernetes — `radar`
+
+Radar's own MCP server, registered at user scope in the **work profile** against `http://localhost:9280/mcp`. It is worth a registration rather than leaving the agent on `kubectl` because of what it removes: `kubectl get -o yaml` spends a context window on managed fields and status noise, while these tools return minified resources, a topology graph, deduplicated events and logs pre-filtered to errors — plus `diagnose`, which answers a CrashLoopBackOff or a broken ingress in one call instead of five. Secret values are never returned, env values are redacted and log output is scrubbed for tokens.
+
+**The registration is reproducible** (`run_onchange_after_register-radar.sh.tmpl`), idempotent, and gated to the **work machine** — the stronger condition super-productivity-mcp uses, not the profile the other two settle for. The endpoint can only ever answer where the clusters are reachable, so a personal machine gets a skip message rather than a registration that times out.
+
+**It attaches to a Radar that is already running** (`kubectl radar`), which is why the port is fixed on both sides — the same arrangement as `chrome-devtools` and `cometdbg`. Radar's stdio transport is not an alternative: it serves the tool catalog for registry introspection and cannot answer a cluster-backed call.
+
+**Seven of the 29 tools mutate the cluster, and Radar has no read-only mode** — `--no-mcp` disables the server outright. So `apply_resource`, `patch_resource` and the five `manage_*` tools (workload, node, rollout, cronjob, gitops) are in the `deny` list of `.chezmoitemplates/claude-settings.json`. A deny rather than a narrow allow, because `defaultMode: bypassPermissions` permits everything that is not explicitly denied: without those entries an agent could drain a node with no prompt at all. What remains is the 21 read-only tools plus `diagnose`, which is annotated non-destructive but *not* read-only — the one tool here trusted on its own word.
+
+**RBAC is the floor, not the ceiling.** Radar acts as whoever holds the kubeconfig, so the deny list bounds what an agent may ask for and the cluster's own roles bound what it can get. Neither substitutes for the other.
 
 ### Browser — `chrome-devtools-mcp`
 
@@ -370,11 +382,12 @@ Note that a closed lid still sleeps an Apple Silicon laptop without an external 
 | `dot_*` | Dotfiles rendered into `$HOME` by chezmoi (e.g. `dot_gitconfig` → `~/.gitconfig`) |
 | `dot_config/mise/config.toml` | Global mise config → `~/.config/mise/config.toml` (user CLI tools) |
 | `dot_config/mise/conf.d/work.toml` | Work-only CLI tools; mise merges every `conf.d/*.toml`, and `.chezmoiignore` withholds this one from personal machines |
-| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline, `screencapture` sandbox exclusion, rtk `PreToolUse` hook), included by every account profile below. Plugin marketplaces and enabled plugins are rendered from `claudePlugins` in the machine-local chezmoi config and omitted when it is absent — the URLs and plugin names belong to an employer and must not land in this public repository |
+| `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, claudeline statusline, `screencapture` sandbox exclusion, rtk `PreToolUse` hook, and the `deny` list that withholds Radar's cluster-mutating MCP tools), included by every account profile below. Plugin marketplaces and enabled plugins are rendered from `claudePlugins` in the machine-local chezmoi config and omitted when it is absent — the URLs and plugin names belong to an employer and must not land in this public repository |
 | `private_dot_claude/private_settings.json.tmpl` | `~/.claude/settings.json` (0600) — default profile. Secrets/permissions stay in `settings.local.json` (untracked) |
 | `private_dot_claude/RTK.md` | `~/.claude/RTK.md` — rtk's agent-facing reference, pulled into `CLAUDE.md` by an `@RTK.md` import. Vendored from `rtk init`; refresh it from a new `rtk init` rather than editing by hand |
 | `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile; `CLAUDE.md` and `RTK.md` are symlinks to the canonical copies under `~/.claude/` |
 | `run_onchange_after_install-krew-plugins.sh.tmpl` | Bootstraps krew and installs the kubectl plugins it serves. mise ships the krew *installer*; `kubectl krew` only resolves a binary named `kubectl-krew`, which krew produces by installing itself into `~/.krew`. The private index is added on the work machine only, and the step skips with a message when the host is unreachable |
+| `run_onchange_after_register-radar.sh.tmpl` | Registers Radar's MCP server with the work Claude profile over HTTP at the fixed port Radar serves. Work machine only, idempotent, and skips with a message where `claude` or the binary is absent — see [Agent access](#agent-access-mcp) |
 | `dot_config/starship.toml` | Starship prompt config → `~/.config/starship.toml` (kubernetes/aws/terraform modules) |
 | `dot_zshrc.tmpl` | `~/.zshrc` — Oh My Zsh (plugins only) + Starship prompt + zoxide + mise + aliases (kubectl, modern CLI); secrets pending |
 | `dot_local/bin/` | Executable scripts symlinked to `~/.local/bin/` by chezmoi |

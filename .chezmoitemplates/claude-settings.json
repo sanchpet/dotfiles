@@ -14,6 +14,15 @@
     "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(screencapture:*)"
+    ],
+    "deny": [
+      "mcp__radar__apply_resource",
+      "mcp__radar__patch_resource",
+      "mcp__radar__manage_workload",
+      "mcp__radar__manage_node",
+      "mcp__radar__manage_rollout",
+      "mcp__radar__manage_cronjob",
+      "mcp__radar__manage_gitops"
     ]
   },
   "sandbox": {
