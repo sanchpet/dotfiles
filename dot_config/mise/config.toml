@@ -48,7 +48,7 @@ rtk = "latest"
 # credential that authorises the whole account, so a new release is something to read before
 # running. Session lives in the login keychain, not on disk. Write tools are denied in
 # ~/.claude/settings.json — the server itself has no read-only mode.
-"github:lexfrei/mcp-tg" = "1.3.1"
+"github:lexfrei/mcp-tg" = "1.4.0"
 # Unofficial Wolt CLI — one archive ships both binaries (wolt, wolt-mcp), so a single
 # declaration exposes both. github backend because no aqua package exists yet; an entry is
 # proposed upstream, and this becomes "aqua:mekedron/wolt-cli" once it lands. Unlike most
