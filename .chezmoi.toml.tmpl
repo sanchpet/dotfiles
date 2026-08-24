@@ -64,21 +64,28 @@
 {{- if env "DOTFILES_BW_SERVER" -}}{{- $bwServer = env "DOTFILES_BW_SERVER" -}}
 {{- else if stdinIsATTY -}}{{- $bwServer = promptStringOnce . "bitwarden.server" "Bitwarden/Vaultwarden server URL (blank = bitwarden.com)" $bwServer -}}{{- end }}
 
+{{- /* Out-of-band data keys: set by hand on a machine, never prompted, and never present in  */ -}}
+{{- /* this PUBLIC repo (an employer marketplace URL, an internal krew index). They are       */ -}}
+{{- /* carried through re-init exactly as work.* and agent.* are seeded above. Without the    */ -}}
+{{- /* carry, init regenerates this file, the block is gone, and the tooling it declared is   */ -}}
+{{- /* silently switched off on a machine that had it. Add a key here when a new out-of-band  */ -}}
+{{- /* block appears. A value that is the same on every machine does NOT belong here: put it  */ -}}
+{{- /* in .chezmoidata/ instead, because a copy written into this file would take precedence  */ -}}
+{{- /* over the repo and shadow it for good.                                                  */ -}}
+{{- $root := . -}}
+{{- $data := dict
+      "profile" $profile
+      "work" (dict "name" $workName "email" $workEmail "gitdir" $workGitdir "signingKey" $workSignKey)
+      "agent" (dict "kind" $agentKind "signingKey" $agentSignKey)
+      "bitwarden" (dict "agent" $bwAgent "server" $bwServer) -}}
+{{- range $key := list "claudePlugins" "krew" -}}
+{{-   $carried := dig $key false $root -}}
+{{-   if $carried -}}{{- $data = set $data $key $carried -}}{{- end -}}
+{{- end }}
+
 # Pin the source to the directory init ran from (.chezmoi.sourceDir), so `chezmoi`
 # without --source always looks here. No hardcoded path in the repo: on a bare
 # machine this is ~/.local/share/chezmoi, for the author it's the working clone.
 sourceDir = {{ .chezmoi.sourceDir | quote }}
 
-[data]
-    profile = {{ $profile | quote }}
-[data.work]
-    name = {{ $workName | quote }}
-    email = {{ $workEmail | quote }}
-    gitdir = {{ $workGitdir | quote }}
-    signingKey = {{ $workSignKey | quote }}
-[data.agent]
-    kind = {{ $agentKind | quote }}
-    signingKey = {{ $agentSignKey | quote }}
-[data.bitwarden]
-    agent = {{ $bwAgent }}
-    server = {{ $bwServer | quote }}
+{{ dict "data" $data | toToml }}
