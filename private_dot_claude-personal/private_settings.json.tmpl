@@ -1,1 +1,1 @@
-{{ template "claude-settings.json" (dict "chezmoi" .chezmoi "plugins" false) -}}
+{{ template "claude-settings.json" (dict "chezmoi" .chezmoi "plugins" (dig "claudePluginsPersonal" false .)) -}}
