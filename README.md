@@ -43,7 +43,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 |------|---------|------|
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | claudeline | Real-time Claude Code statusline (quota / context / model) — wired via `~/.claude/settings.json` `statusLine` | [github](https://github.com/lexfrei/claudeline) |
-| rtk | CLI proxy that compresses command output before an agent reads it — wired as a `PreToolUse` hook, see [Agent bash output](#agent-bash-output-rtk) | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
+| rtk | CLI proxy that compresses command output before an agent reads it — called explicitly, not hooked, see [Agent bash output](#agent-bash-output-rtk) | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
 | mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. **Version-pinned, not `latest`**: it holds a session that authorises the whole account. See [Agent access](#agent-access-mcp) | [github](https://github.com/lexfrei/mcp-tg) |
 | wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned** for the same reason as mcp-tg: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement | [github](https://github.com/mekedron/wolt-cli) |
 
@@ -254,13 +254,18 @@ ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/work.d/*.zsh
 
 ## Agent bash output (rtk)
 
-`rtk` is a `PreToolUse` hook on the `Bash` tool: it rewrites a command to its `rtk` equivalent (`git status` → `rtk git status`) so the agent reads a compressed rendering instead of raw output. It applies to `Bash` calls only — Claude Code's built-in `Read`, `Grep` and `Glob` bypass hooks entirely.
+`rtk` compresses command output so an agent reads a rendering instead of raw text. It is **called explicitly**, not wired as a hook — the `PreToolUse` entry that used to rewrite every `Bash` command was removed on 2026-08-31, and `hooks` is now empty in `.chezmoitemplates/claude-settings.json`.
 
-Three things about this deployment are choices rather than defaults:
+**Why it is not a hook.** Some filters truncate without saying so, and a hook applies them to every command whether or not completeness matters. Measured: a bare `cat` returned 2178 of 26108 tokens of a 104 KB file, and across the tool's own ledger 203 of 1573 reads did the same, the largest returning 44 tokens out of 387373. A bare `git log` stops at 50 of 469 commits. Neither prints a count, a marker, or a recovery path, so the output reads as complete. Upstream has these as open `priority:high` reports since June 2026, plus a `no_truncation` feature request (rtk-ai/rtk#1313) unresolved since July, and no configuration on this machine was found to disable the caps.
 
-- **The hook command is the mise shim's absolute path, not a bare `rtk`.** mise puts tools on `PATH` at shell activation, so a bare name resolves only under an already-activated interactive shell. The shim resolves without one, the same reason the `statusLine` entry is absolute. Note this only hardens the hook itself: the command it *emits* is a bare `rtk …`, which still needs `rtk` on the agent's `PATH`. An agent started before rtk was installed keeps the old `PATH` and fails every rewritten command with `command not found` — restart it after installing.
-- **Never run `rtk init -g` on this machine.** It patches `~/.claude*/settings.json`, writes `RTK.md`, and appends the `@RTK.md` import — all in `$HOME`, i.e. chezmoi targets. Those edits survive until the next `chezmoi apply` silently reverts them. The hook, `RTK.md` and the import live in the source here; run `init` only against a throwaway `CLAUDE_CONFIG_DIR` to see what a new version would write, then port it.
-- **Output is lossy by design, and what matters is whether it says so.** Most filters either drop presentation only (`ls -la` returned all 300 names, minus owner/group/date) or truncate loudly: `grep`, `find` and `jq` each print the true total, the number withheld, and a `tail` command that recovers the rest from a tee log. Two do neither. `cat` returned 2178 of 26108 tokens of a 104 KB file in silence, so it is in `exclude_commands` (`Library/Application Support/rtk/config.toml`, tracked here). A bare `git log` stops at 50 commits the same way, but honours an explicit `-n`/`--since` exactly, so it is left alone and reported upstream. The test for any new filter: not how little it removes, but whether its output refuses to look complete. For a one-off, `rtk proxy <cmd>` bypasses the filter.
+**What it is still good for, called by hand.** Two kinds of filter are safe, and the difference is not how much they remove:
+
+- **Drops presentation only** — `ls -la` returned all 300 names, minus owner, group and date. `diff` and `git status` likewise.
+- **Truncates, and says so** — `grep` returned 25 of 100 matches, `find` 52 of 300, `jq` 42 of 300, each printing the true total, the number withheld, and a `tail` command that recovers the rest from a tee log.
+
+The test for trusting any filter: not how little it removes, but whether its output **refuses to look complete**. `rtk grep`, `rtk find`, `rtk jq`, `rtk ls`, `rtk diff` and `rtk git status` pass it; reading files and unbounded history do not.
+
+**Never run `rtk init -g` on this machine.** It patches `~/.claude*/settings.json`, writes `RTK.md`, and appends the `@RTK.md` import — all in `$HOME`, i.e. chezmoi targets, and it would reinstall the hook removed above. `RTK.md` and the import live in the source here; run `init` only against a throwaway `CLAUDE_CONFIG_DIR` to see what a new version would write, then port it.
 
 ## Agent access (MCP)
 

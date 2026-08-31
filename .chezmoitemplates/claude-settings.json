@@ -34,17 +34,5 @@
   "extraKnownMarketplaces": {{ .marketplaces | toJson }},
   "enabledPlugins": {{ .enabled | toJson }},
 {{- end }}
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "{{ .chezmoi.homeDir }}/.local/share/mise/shims/rtk hook claude"
-          }
-        ]
-      }
-    ]
-  }
+  "hooks": {}
 }
