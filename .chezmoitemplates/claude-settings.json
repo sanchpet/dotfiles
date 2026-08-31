@@ -34,5 +34,11 @@
   "extraKnownMarketplaces": {{ .marketplaces | toJson }},
   "enabledPlugins": {{ .enabled | toJson }},
 {{- end }}
-  "hooks": {}
+  "language": "Russian",
+  "editorMode": "normal",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    }
+  }
 }
