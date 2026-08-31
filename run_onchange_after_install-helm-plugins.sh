@@ -1,8 +1,8 @@
 #!/bin/sh
 # Install the helm plugins that mise cannot declare. A plugin is not a tool on PATH: it lives in
 # helm's own plugin directory and is registered by `helm plugin install`, so without this it exists
-# only as hand-typed state that disappears with the machine — the same gap the Serena registration
-# next door closes.
+# only as hand-typed state that disappears with the machine — the same gap the other
+# run_onchange_after_* scripts here close.
 #
 # revision: 2  — bump to force a re-run after editing the list below.
 #

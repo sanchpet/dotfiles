@@ -40,10 +40,6 @@ claude = "latest" # CLI; update via `mise up claude` (self-update off in [env])
 # resolves to aqua:rtk-ai/rtk; the unrelated `rtk` crate on crates.io is a different project,
 # so never install this one through the cargo backend.
 rtk = "latest"
-# Serena — MCP server giving the agent LSP-backed symbolic navigation and editing. PyPI package
-# `serena-agent`, binary `serena`; pipx backend (via uv) because Python is its honest home. The
-# MCP registration is the other half — run_onchange_after_register-serena.sh.
-"pipx:serena-agent" = "latest"
 # Telegram MCP server (MTProto, user session). Version-pinned rather than "latest": it holds a
 # credential that authorises the whole account, so a new release is something to read before
 # running. Session lives in the login keychain, not on disk. Write tools are denied in

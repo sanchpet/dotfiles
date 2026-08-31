@@ -44,7 +44,6 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | claudeline | Real-time Claude Code statusline (quota / context / model) — wired via `~/.claude/settings.json` `statusLine` | [github](https://github.com/lexfrei/claudeline) |
 | rtk | CLI proxy that compresses command output before an agent reads it — wired as a `PreToolUse` hook, see [Agent bash output](#agent-bash-output-rtk) | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
-| Serena | MCP server giving the agent LSP-backed symbolic navigation and editing (`serena-agent` on PyPI, binary `serena`) — see [Agent access](#agent-access-mcp) | [docs](https://oraios.github.io/serena/) · [github](https://github.com/oraios/serena) |
 | mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. **Version-pinned, not `latest`**: it holds a session that authorises the whole account. See [Agent access](#agent-access-mcp) | [github](https://github.com/lexfrei/mcp-tg) |
 | wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned** for the same reason as mcp-tg: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement | [github](https://github.com/mekedron/wolt-cli) |
 
@@ -265,17 +264,7 @@ Three things about this deployment are choices rather than defaults:
 
 ## Agent access (MCP)
 
-Six MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, symbolic navigation over source, and a Kubernetes cluster. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
-
-### Code intelligence — `serena`
-
-An MCP server that puts a language server between the agent and the code: find a symbol, find what references it, replace a symbol's body — instead of reading whole files and editing by text match. On trial in the **work profile only**, against declared criteria and a review date; whether it belongs in the personal contour is a later decision.
-
-**The registration is reproducible** (`run_onchange_after_register-serena.sh`), idempotent, and pins the profile for the same reason the others do. `--project-from-cwd` means one registration serves every repository — Serena activates whichever project the agent is working in.
-
-**Its global memories are a symlink into the vault** (`~/.serena/memories/global` → `~/tv/adversaria/70-memory`). Serena's own path for these is hardcoded (`serena_config.py`, no setting for it), and leaving them in `~/.serena` would put durable knowledge outside version control. The symlink survives Serena's `mkdir(exist_ok=True)` on startup. Note the ordering trap: any `serena` invocation, `--version` included, creates that directory, so the symlink has to be in place before the first run or it lands *inside* the directory instead of replacing it.
-
-**Project memories are a different matter and are not adopted yet.** Not because of where they land — `project_serena_folder_location` relocates the whole `.serena` folder anywhere, `$projectDir` and `$projectFolderName` included — but because of what Serena calls a project. It identifies one by directory path, with no git awareness, so under a one-worktree-per-branch workflow every branch is a separate project and neither placeholder can express "the repository". The one arrangement where the memories follow the code is committing them, which is what upstream expects (their own `.serena/.gitignore` excludes only `cache` and `project.local.yml`) — and that is a team decision, not a personal one. Global memories only until it is asked.
+Five MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, and a Kubernetes cluster. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
 
 ### Kubernetes — `radar`
 
