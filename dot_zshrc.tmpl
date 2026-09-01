@@ -222,6 +222,16 @@ spdbg() {
   print "spdbg: started on :$port"
 }
 
+# --- macOS: unstick Mission Control (restart Dock) ---
+# Dock owns Space switching, and its transition state latches under memory pressure: Ctrl+arrow
+# stops moving between desktops while everything else is fine. Killing it is the reset — launchd
+# respawns it (KeepAlive, SuccessfulExit=false), and windows, Spaces and layout live outside Dock.
+# It prints because the respawn blanks the screen and otherwise reads as the crash, not the fix.
+redock() {
+  killall Dock 2>/dev/null || { print -u2 "redock: killall Dock failed — no Dock process, or the signal was refused"; return 1 }
+  print "redock: Dock killed, launchd respawns it — windows, Spaces and layout survive"
+}
+
 # --- Claude Code: account profiles ---
 # CLAUDE_CONFIG_DIR relocates the entire config dir — settings, credentials, MCP server
 # registrations (.claude.json) and session history — so each account authenticates on its
