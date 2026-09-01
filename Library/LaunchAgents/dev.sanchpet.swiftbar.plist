@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.swiftbar</string>
+
+  <!-- SwiftBar's own "Launch at Login" toggle is SMAppService.mainApp.register() (its
+       LaunchAtLogin.swift) — a login-items database entry no file in this repo can declare, so
+       the repo's existing agent pattern carries it instead. Leave the in-app toggle OFF, or the
+       machine gets two registrations. `open -g` keeps the app from stealing focus at login; the
+       guard makes this a no-op where the cask is not installed yet (bootstrap applies dotfiles
+       before `brew bundle`). -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>[ -d /Applications/SwiftBar.app ] &amp;&amp; exec /usr/bin/open -g -a /Applications/SwiftBar.app</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>

@@ -49,6 +49,7 @@ cask "yandex-music"       # Yandex Music desktop player (self-updating cask)
 cask "super-productivity" # To-do list + Pomodoro + time tracking (MIT, local-first). Replaces Focus To-Do as the time-accounting instrument: its data is a local directory that can live inside the vault, and it publishes a plugin API, so an agent reads the accounting without reverse-engineering a vendor's private endpoints
 cask "wakatime"           # Menu-bar time tracker — whole-system activity beyond editor plugins
 cask "pearcleaner"        # app uninstaller + orphaned-file finder (open-source CleanMyMac alt)
+cask "swiftbar"           # runs a script on a timer and puts its stdout in the menu bar — hosts `workday.60s.py`, which shows the working day's start and length from Super Productivity's own accounting. All machines, work included: the plugin reads numeric day aggregates only, never task content (its header states the contract). Replaced the Apple Stopwatch, whose live view redrew at 30 fps for ~22% of a core
 
 # === Personal machine only (profile = personal) ===
 # A work machine gets its editor, chat client and password manager from the employer's MDM —
