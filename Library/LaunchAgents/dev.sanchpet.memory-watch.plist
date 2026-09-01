@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.memory-watch</string>
+
+  <!-- Watches for the machine running out of memory and posts a notification on the crossing.
+       A gui-domain agent because the alert is a Notification Center banner, which only exists
+       inside a login session.
+
+       launchd agents get the bare /usr/bin:/bin:/usr/sbin:/sbin PATH, so the script is called
+       by absolute path via $HOME (set for gui-domain agents), with the usual guard for the
+       window where the agent is loaded before chezmoi has laid the script down.
+
+       stderr is kept, unlike the other agents: this detector's output channel is
+       "notifications you did not receive", so a script dying on a typo would look exactly
+       like a quiet machine. `2>` not `2>>`, so the file holds the last tick and cannot grow
+       unbounded at one append a minute. Not StandardErrorPath: launchd does not expand
+       variables there, and a fixed path in world-writable /tmp is a symlink target. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>mw="$HOME/.local/bin/memory-watch"; [ -x "$mw" ] || exit 0; exec "$mw" 2&gt;"${TMPDIR:-/tmp}/dev.sanchpet.memory-watch.err"</string>
+  </array>
+
+  <!-- One tick a minute: the check is one vm_stat, two sysctls and a file read, and 60 s still
+       leaves a dozen or so samples across the ramp from half-a-RAM-in-swap to the wall.
+       RunAtLoad so a login is covered; that first tick has no previous sample, so it reports
+       no swapin rate while the level check runs normally. -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>60</integer>
+  <key>KeepAlive</key>
+  <false/>
+
+  <!-- Interactive, and no LowPriorityIO, unlike the other two agents here. launchd(5) throttles
+       Background jobs precisely "to prevent them from disrupting the user experience", which is
+       the one band a detector that must be heard during a stall cannot sit in — and an unset
+       ProcessType still draws light CPU and I/O limits. Affordable because the job is three
+       counter reads a minute, not because it is important. -->
+  <key>ProcessType</key>
+  <string>Interactive</string>
+
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>

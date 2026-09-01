@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+# memory-watch — one banner when the machine is genuinely out of memory, silence otherwise: a
+# permanently visible indicator costs more attention than it saves. Driven every 60 s by
+# dev.sanchpet.memory-watch; `--test` forces a banner and deliberately touches no state.
+# Not "memory-pressure": /usr/bin/memory_pressure exists, and a homograph on PATH gets run.
+set -uo pipefail
+
+# Fractions of RAM, not literal gigabytes, so the file is right on a 16, 32 or 64 GB machine.
+# On this 16 GiB one: 8 and 12 GiB — the empty band between a comfortable 4.6 GiB (measured)
+# and the incident's 16.08 GiB.
+WARN_FRACTION_NUM=50
+CRIT_FRACTION_NUM=75
+# Re-arm needs swap a further tenth of RAM BELOW the warn line; without that gap a reading
+# oscillating around 8 GiB re-arms and re-fires every tick.
+REARM_FRACTION_NUM=10
+# A repeat needs another tenth of RAM swallowed: a plateau carries no new information, and
+# macOS does not shrink swap occupancy once the pressure ends.
+GROWTH_FRACTION_NUM=10
+DEBOUNCE_SECONDS=1800          # floor under the repeat, so a slow climb cannot chatter
+
+state_file="${TMPDIR:-/tmp}/dev.sanchpet.memory-watch.state"
+
+die() { echo "memory-watch: $*" >&2; exit 1; }
+
+# One fork for page size, free, compressor and cumulative swapins — and the page size arrives
+# in the same output it scales, so the reading cannot be silently 4x wrong (pages are 16 KiB).
+vmstat_out="$(/usr/bin/vm_stat 2>/dev/null)" || die "vm_stat unavailable"
+[ -n "$vmstat_out" ] || die "vm_stat returned nothing"
+
+read -r page_size pages_free pages_compressor swapins <<EOF
+$(awk '
+  /page size of/      { for (i = 1; i <= NF; i++) if ($i == "of") ps = $(i + 1) }
+  /^Pages free:/                  { gsub(/\./, "", $3); free = $3 }
+  /^Pages occupied by compressor:/{ gsub(/\./, "", $5); comp = $5 }
+  /^Swapins:/                     { gsub(/\./, "", $2); swi = $2 }
+  END { print ps, free, comp, swi }
+' <<<"$vmstat_out")
+EOF
+if ! [ "${page_size:-}" -gt 0 ] 2>/dev/null; then
+  die "could not read page size from vm_stat"
+fi
+
+mem_total="$(/usr/sbin/sysctl -n hw.memsize 2>/dev/null)" || die "hw.memsize unavailable"
+
+# vm.swapusage prints a human string whose unit varies with magnitude ("used = 4684.94M"), so
+# scale off the suffix. Absolute bytes, never the used/total ratio: macOS grows the swap file
+# on demand, so that ratio was 92% at the wall against 76% measured now. Do not "fix" it back.
+swap_used_bytes="$(/usr/sbin/sysctl -n vm.swapusage 2>/dev/null | awk '
+  { for (i = 1; i <= NF; i++) if ($i == "used") { v = $(i + 2); break } }
+  END {
+    if (v == "") exit 1
+    u = substr(v, length(v)); n = substr(v, 1, length(v) - 1)
+    m = (u == "G") ? 1073741824 : (u == "M") ? 1048576 : (u == "K") ? 1024 : 1
+    printf "%.0f", n * m
+  }')" || die "could not parse vm.swapusage"
+
+# Nor the other two readings the incident invites. Its "66 MB free" is not a symptom —
+# kern.vm_page_free_target is 4000 pages of 16 KiB = 65.5 MB, i.e. the pageout daemon's own
+# set-point, which a healthy machine also sits on. Its compressor was 40% of RAM against 28%
+# now: too narrow a band to threshold. Both are reported below as corroboration only.
+warn_bytes=$(( mem_total * WARN_FRACTION_NUM / 100 ))
+crit_bytes=$(( mem_total * CRIT_FRACTION_NUM / 100 ))
+rearm_bytes=$(( warn_bytes - mem_total * REARM_FRACTION_NUM / 100 ))
+growth_step=$(( mem_total * GROWTH_FRACTION_NUM / 100 ))
+
+severity=ok
+[ "$swap_used_bytes" -ge "$warn_bytes" ] && severity=warn
+[ "$swap_used_bytes" -ge "$crit_bytes" ] && severity=critical
+
+now="$(date +%s)"
+
+# Losing the previous sample at boot is correct: a freshly booted machine has no swap history
+# to debounce against. Not in ~/Library/Caches — the OS purges that at will.
+prev_ts=0 prev_swapins=0 prev_alert_ts=0 prev_alert_sev=ok prev_alert_bytes=0
+if [ -f "$state_file" ] && [ ! -L "$state_file" ]; then
+  # shellcheck disable=SC1090  # a fixed-shape key=value file this script wrote itself
+  . "$state_file" 2>/dev/null || true
+fi
+
+# Swapin rate is the honest measure of thrash, but the only rate ever measured is the quiet
+# baseline (~15/s here) — the incident left a cumulative total, not a rate. So it is recorded
+# and reported, and stays OUT of the predicate until a reading from a bad moment exists.
+swapin_rate=""
+if [ "$prev_ts" -gt 0 ] && [ "$now" -gt "$prev_ts" ] && [ "$swapins" -ge "$prev_swapins" ]; then
+  swapin_rate=$(( (swapins - prev_swapins) / (now - prev_ts) ))
+fi
+
+# A banner is earned by a change, never by persistence: first crossing, escalation, or another
+# growth step. Otherwise a plateau above 8 GiB — which macOS will hold for hours on a machine
+# that already feels fine — reprints a number the owner has already been given.
+fire=false
+if [ "$severity" != ok ]; then
+  if [ "$prev_alert_sev" = ok ]; then
+    fire=true
+  elif [ "$severity" = critical ] && [ "$prev_alert_sev" != critical ]; then
+    fire=true
+  elif [ $(( now - prev_alert_ts )) -ge "$DEBOUNCE_SECONDS" ] &&
+       [ $(( swap_used_bytes - prev_alert_bytes )) -ge "$growth_step" ]; then
+    fire=true
+  fi
+fi
+
+# --test proves the notification path and nothing else. Were it to consume the debounce, the
+# very step that authorises Notification Center would blind the detector for half an hour,
+# with silence — its normal state — as the only symptom.
+test_only=false
+if [ "${1:-}" = "--test" ]; then
+  severity=warn
+  fire=true
+  test_only=true
+fi
+
+alert_ts="$prev_alert_ts"
+alert_sev="$prev_alert_sev"
+alert_bytes="$prev_alert_bytes"
+if [ "$test_only" = false ] && [ "$swap_used_bytes" -lt "$rearm_bytes" ]; then
+  alert_sev=ok                                  # re-armed, with hysteresis
+  alert_bytes=0
+fi
+
+if [ "$fire" = true ]; then
+  gib=1073741824
+  swap_gb="$(awk -v b="$swap_used_bytes" -v g="$gib" 'BEGIN { printf "%.1f", b / g }')"
+  ram_gb="$(awk -v b="$mem_total" -v g="$gib" 'BEGIN { printf "%.0f", b / g }')"
+  comp_pct=$(( pages_compressor * page_size * 100 / mem_total ))
+  free_mb=$(( pages_free * page_size / 1048576 ))
+  level="$(/usr/sbin/sysctl -n kern.memorystatus_level 2>/dev/null || echo '?')"
+
+  # "Swap is at 12 GB" is not actionable, "quit Chrome" is. Aggregated to the outer .app
+  # bundle because a browser is many processes: measured here, the largest single process was
+  # 0.44G while Chrome as a whole held 2.98G. Alert path only — a quiet tick never pays it.
+  top_line="$(/bin/ps -Axo rss=,comm= 2>/dev/null | awk '
+    { rss = $1; $1 = ""; sub(/^ /, ""); path = $0
+      if (match(path, /\/[^\/]+\.app\//)) name = substr(path, RSTART + 1, RLENGTH - 6)
+      else { n = split(path, p, "/"); name = p[n] }
+      sum[name] += rss }
+    END { for (k in sum) printf "%d %s\n", sum[k], k }' | sort -rn | head -1)"
+  top_name="${top_line#* }"
+  top_gb="$(awk -v k="${top_line%% *}" 'BEGIN { printf "%.1f", k / 1048576 }')"
+
+  if [ "$severity" = critical ]; then
+    title="Memory: critical"
+  else
+    title="Memory: pressure rising"
+  fi
+  body="Swap ${swap_gb}G of ${ram_gb}G RAM · compressor ${comp_pct}% · free ${free_mb}M / level ${level}%"
+  [ -n "$swapin_rate" ] && body="$body · ${swapin_rate} swapin/s"
+  body="$body — quit ${top_name:-the largest app} (${top_gb}G) first."
+
+  # Sound on critical only: a silent banner during a WindowServer stall gets missed, a chime
+  # on every warn is the attention tax this design exists to avoid.
+  sound=""
+  [ "$severity" = critical ] && sound="Basso"
+
+  # Never fatal: on CI, or where notification authorisation was denied, this stays a no-op
+  # rather than turning the agent red.
+  /usr/bin/osascript - "$title" "$body" "$sound" >/dev/null 2>&1 <<'OSA' || true
+on run argv
+  set s to item 3 of argv
+  if s is "" then
+    display notification (item 2 of argv) with title (item 1 of argv)
+  else
+    display notification (item 2 of argv) with title (item 1 of argv) sound name s
+  end if
+end run
+OSA
+
+  if [ "$test_only" = false ]; then
+    alert_ts="$now"
+    alert_sev="$severity"
+    alert_bytes="$swap_used_bytes"
+  fi
+fi
+
+umask 077
+tmp="${state_file}.$$"
+{
+  printf 'prev_ts=%s\n' "$now"
+  printf 'prev_swapins=%s\n' "$swapins"
+  printf 'prev_alert_ts=%s\n' "$alert_ts"
+  printf 'prev_alert_sev=%s\n' "$alert_sev"
+  printf 'prev_alert_bytes=%s\n' "$alert_bytes"
+} > "$tmp" && mv -f "$tmp" "$state_file"
+
+# Chatty only by hand; the agent's stdout goes to /dev/null.
+if [ -t 1 ]; then
+  printf 'severity=%s swap=%s/%s bytes (warn %s, crit %s, rearm %s) swapin_rate=%s fired=%s\n' \
+    "$severity" "$swap_used_bytes" "$mem_total" "$warn_bytes" "$crit_bytes" "$rearm_bytes" \
+    "${swapin_rate:-n/a}" "$fire"
+fi
