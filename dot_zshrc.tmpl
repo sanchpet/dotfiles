@@ -197,6 +197,30 @@ cometdbg() {
   print "cometdbg: started on :$port (profile $dir)"
 }
 
+# The everyday profile, brought back up with the same endpoint. The launchd agent
+# (Library/LaunchAgents/dev.sanchpet.comet.plist) does this at login; this covers the case after a
+# manual quit, where the Dock icon would return Comet without the flag. Unlike cometdbg there is
+# no isolation: the endpoint reaches every tab and every signed-in session in the main profile.
+# That reach is the point — an agent can only order lunch or drive a paid platform from the
+# profile that holds those logins — and it is also the price, paid deliberately.
+# Restarts a flagless instance, because the flag belongs to whichever process starts first.
+cometmain() {
+  local port=9222 app='/Applications/Comet.app/Contents/MacOS/Comet'
+  [[ -x $app ]] || { print -u2 "cometmain: Comet not found at $app"; return 1 }
+  if curl -sf --max-time 1 "http://127.0.0.1:$port/json/version" >/dev/null 2>&1; then
+    print "cometmain: already listening on :$port"
+    return 0
+  fi
+  if pgrep -qf "$app"; then
+    print "cometmain: running without the port — restarting it"
+    osascript -e 'quit app "Comet"' >/dev/null 2>&1
+    local i
+    for i in {1..20}; do pgrep -qf "$app" || break; sleep 0.5; done
+  fi
+  open -a Comet --args --remote-debugging-port=$port
+  print "cometmain: started on :$port (everyday profile — the endpoint reaches all of it)"
+}
+
 # Super Productivity with a CDP endpoint, so an agent can drive its UI.
 # Electron IS Chromium, so the same chrome-devtools-mcp attaches to the app — no separate
 # tool needed, just a second endpoint. Port 9223, because 9222 belongs to cometdbg and two

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.comet</string>
+
+  <!-- Start the everyday browser with a DevTools endpoint, so chrome-devtools-mcp can attach to
+       the profile that actually holds the sessions. macOS has no way to pin a flag onto a bundle
+       launched from the Dock, and the flag only counts for the process that starts first: a
+       Chromium already running owns the profile, and later launches just hand it a window. So the
+       agent has to be the first starter, which is why Comet is NOT a Login Item any more —
+       the two would race and the icon would usually win.
+
+       `open -a` rather than `-na`: no second instance if something got there first.
+       The guard keeps this a no-op on a machine where the cask is not installed yet. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>[ -d /Applications/Comet.app ] &amp;&amp; exec /usr/bin/open -a Comet --args --remote-debugging-port=9222</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>
