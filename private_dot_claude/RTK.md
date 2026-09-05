@@ -2,7 +2,7 @@
 
 **Usage**: Token-optimized CLI proxy (cuts up to 90% of bash output)
 
-## Meta Commands (always use rtk directly)
+## Meta Commands
 
 ```bash
 rtk gain              # Show token savings analytics
@@ -21,9 +21,8 @@ which rtk             # Verify correct binary
 
 ⚠️ **Name collision**: If `rtk gain` fails, you may have reachingforthejack/rtk (Rust Type Kit) installed instead.
 
-## Hook-Based Usage
+## Explicit Usage
 
-All other commands are automatically rewritten by the Claude Code hook.
-Example: `git status` → `rtk git status` (transparent, 0 tokens overhead)
+rtk is not hooked into Bash — no command is rewritten automatically. Prefix a command with `rtk` yourself where the filter's output refuses to look complete, which two kinds of filter manage: `rtk ls`, `rtk diff` and `rtk git status` drop presentation and keep every entry, while `rtk grep`, `rtk find` and `rtk jq` cut hard but print the true total, the number withheld and the command that recovers the rest.
 
-Refer to CLAUDE.md for full command reference.
+Run bare whatever truncates in silence — reading files and unbounded history. `rtk cat` and `rtk git log` return a fraction with no count, no marker and no recovery path, so what they hand back reads as the whole thing.
