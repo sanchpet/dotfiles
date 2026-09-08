@@ -63,7 +63,12 @@ bat = "latest"
 fd = "latest"
 dust = "latest"
 duf = "latest"
-"aqua:Byron/dua-cli" = "latest" # dua — interactive disk explorer (aqua, not cargo → no rust)
+# dua — interactive disk explorer (aqua, not cargo → no rust). Constrained to the 2.x series
+# rather than "latest": the repository publishes two tag streams, `vX.Y.Z` for the CLI and
+# `dua-core-vX.Y.Z` for the library crate, and the library tags carry no release assets. "latest"
+# lands on whichever came last, so a library release breaks every fresh install until the next
+# CLI one. Widen this only once the aqua-registry entry filters the tags.
+"aqua:Byron/dua-cli" = "2"
 hyperfine = "latest"
 
 # === Git & forges ===

@@ -59,7 +59,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | fd | Fast, user-friendly `find` | [github](https://github.com/sharkdp/fd) |
 | dust | Intuitive `du` — disk-usage tree (aliased to `du`) | [github](https://github.com/bootandy/dust) |
 | duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
-| dua (`dua i`) | Interactive disk-usage explorer — find & delete big dirs | [github](https://github.com/Byron/dua-cli) |
+| dua (`dua i`) | Interactive disk-usage explorer — find & delete big dirs. Constrained to `2` rather than `latest`: the repo also tags `dua-core-vX.Y.Z` library releases, which ship no binaries, and `latest` follows whichever tag came last | [github](https://github.com/Byron/dua-cli) |
 | hyperfine | Command-line benchmarking tool | [github](https://github.com/sharkdp/hyperfine) |
 
 #### Git & forges
