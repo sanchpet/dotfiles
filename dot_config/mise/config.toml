@@ -96,6 +96,10 @@ krew = "latest"
 # kubectl credential plugin for OIDC clusters. No context uses it here yet — it is kept for
 # the LDAP-login lab stands, and because the work clusters authenticate this way.
 kubelogin = "latest"
+# labctl — iximiuz Labs CLI: starts the remote playgrounds and lab stands from the terminal
+# (SSH, port-forward, file copy) instead of the browser. No aqua package, hence github:; the
+# releases carry no attestations either, so checksums.txt is the only integrity anchor.
+"github:iximiuz/labctl" = "latest"
 helm = "latest"
 flux2 = "latest"
 cilium-cli = "latest"
