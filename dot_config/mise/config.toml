@@ -125,6 +125,10 @@ teleport-community = "latest"
 shellcheck = "latest"
 actionlint = "latest"          # GitHub Actions workflow linter
 hadolint = "latest"            # Dockerfile linter — the same one work CI runs, so findings match locally
+kubeconform = "latest"         # k8s manifest schema validation — offline, no cluster needed
+# trivy — image/IaC/secret scanner. Version carried over from the local install that predated
+# this declaration; the reason for the pin was never recorded, so it is kept rather than floated.
+trivy = "0.74.0"
 yamllint = "latest"            # pipx backend → uv tool install
 "pipx:ansible-lint" = "latest" # not in mise registry — backend stated explicitly
 

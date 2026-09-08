@@ -118,6 +118,8 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | shellcheck | Static analysis for shell scripts. Declared twice on purpose: the pre-commit hook brings its own copy (`shellcheck-py`), the mise one is for running it by hand | [shellcheck](https://github.com/koalaman/shellcheck) · [hook](https://github.com/shellcheck-py/shellcheck-py) |
 | actionlint | GitHub Actions workflow linter — catches a broken workflow before a push burns a CI run | [github](https://github.com/rhysd/actionlint) |
 | hadolint | Dockerfile linter — a native binary, so no container pull stands between an edit and its findings | [github](https://github.com/hadolint/hadolint) |
+| kubeconform | Validates Kubernetes manifests against the API schemas offline — no cluster, no kubeconfig | [github](https://github.com/yannh/kubeconform) |
+| trivy | Scans images, IaC and repositories for vulnerabilities, misconfiguration and leaked secrets. Version-pinned: carried over from the pre-declaration local install | [github](https://github.com/aquasecurity/trivy) |
 | yamllint | YAML linter (via uv) | [github](https://github.com/adrienverge/yamllint) |
 | ansible-lint | Ansible playbook linter (via uv) | [github](https://github.com/ansible/ansible-lint) |
 
