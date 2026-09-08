@@ -273,7 +273,7 @@ The test for trusting any filter: not how little it removes, but whether its out
 
 ## Agent access (MCP)
 
-Five MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, and a Kubernetes cluster. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
+Six MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, a Kubernetes cluster, and the iximiuz Labs practice platform. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
 
 ### Kubernetes — `radar`
 
@@ -346,6 +346,18 @@ To reinstate a restriction later, `permissions.deny` in `~/.claude/settings.json
 gh api repos/lexfrei/mcp-tg/contents/docs/tools.md --jq .content | base64 -d
 ```
 
+### Practice platform — `ixlabs`
+
+The agent-facing half of iximiuz Labs; `labctl` (mise) is the terminal half. A remote HTTP server at `https://labs.iximiuz.com/mcp`, so nothing is installed and nothing here holds a credential. What it buys over reading the site is the loop a lesson actually needs: search the catalog, start the playground VM, run the commands in it, and read back what happened — without the agent leaving the session or the practice leaving a real machine.
+
+**Registered in both profiles, on both machines** (`run_onchange_after_register-ixlabs.sh`) — the only registration here that is gated on neither. The Kubernetes and Linux practice is the same practice whichever contour the day runs in, and a public endpoint needs neither a corporate host nor the mesh. The script is idempotent and uses `claude mcp get` rather than `mcp list`, so an unauthenticated server cannot stall a `chezmoi apply` on a health check.
+
+**Authentication is OAuth, per profile, interactive** — the same split as mcp-tg: the registration converges on its own, the login does not. Run `/mcp` in a session under each profile and pick Authenticate. The access-token alternative exists for headless environments; here it would only add a secret to hold and a 365-day expiry to forget.
+
+**Authorisation is chosen on the consent screen, not in this repo.** Eight scopes across four areas (`account`, `learning`, `playground`, `author`), read and write; write implies read. Granting `account:read`, `learning:*` and `playground:*` covers the practice loop — `author:*` is Pro-only and only needed for drafting Labs content. Shell commands run only in playgrounds the account owns, whatever is granted, and every grant is revocable under Account → Connected apps.
+
+**`learning:write` is the one to think about.** It lets an agent start *and complete* challenges and tutorials, which writes to the same progress record that says what has actually been practised. That record is only worth reading if nothing but real practice reaches it.
+
 ## Remote access (Teleport)
 
 This Mac is a **Teleport SSH node**: the agent dials out to the cluster proxy on `:443` and holds a reverse tunnel, so there is no inbound port, no port forwarding on the router, and no dependence on the network it sits behind — home, office or a cafe are the same to it.
@@ -395,6 +407,7 @@ Note that a closed lid still sleeps an Apple Silicon laptop without an external 
 | `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile, except that each passes its own plugin set: the work profile takes `claudePlugins` from the machine-local chezmoi config, since those marketplace URLs and plugin names belong to an employer and must not land in this public repository, while the personal profile takes `claudePluginsPersonal` from the `.chezmoidata/` file above. `CLAUDE.md` and `RTK.md` are symlinks to the canonical copies under `~/.claude/` |
 | `run_onchange_after_install-krew-plugins.sh.tmpl` | Bootstraps krew and installs the kubectl plugins it serves. mise ships the krew *installer*; `kubectl krew` only resolves a binary named `kubectl-krew`, which krew produces by installing itself into `~/.krew`. The private index is added on the work machine only, and the step skips with a message when the host is unreachable |
 | `run_onchange_after_register-radar.sh.tmpl` | Registers Radar's MCP server with the work Claude profile over HTTP at the fixed port Radar serves. Work machine only, idempotent, and skips with a message where `claude` or the binary is absent — see [Agent access](#agent-access-mcp) |
+| `run_onchange_after_register-ixlabs.sh` | Registers the iximiuz Labs MCP server (remote HTTP) with both Claude profiles, on every machine — the practice platform is not tied to a contour. Idempotent; the OAuth login stays interactive, one per profile — see [Agent access](#agent-access-mcp) |
 | `dot_config/starship.toml` | Starship prompt config → `~/.config/starship.toml` (kubernetes/aws/terraform modules) |
 | `dot_zshrc.tmpl` | `~/.zshrc` — Oh My Zsh (plugins only) + Starship prompt + zoxide + mise + aliases (kubectl, modern CLI); secrets pending |
 | `dot_local/bin/` | Executable scripts symlinked to `~/.local/bin/` by chezmoi |
