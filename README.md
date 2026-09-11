@@ -61,6 +61,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | duf | Better `df` — disk free, tabular (aliased to `df`) | [github](https://github.com/muesli/duf) |
 | dua (`dua i`) | Interactive disk-usage explorer — find & delete big dirs. Constrained to `2` rather than `latest`: the repo also tags `dua-core-vX.Y.Z` library releases, which ship no binaries, and `latest` follows whichever tag came last | [github](https://github.com/Byron/dua-cli) |
 | hyperfine | Command-line benchmarking tool | [github](https://github.com/sharkdp/hyperfine) |
+| coreutils | GNU utilities macOS ships none of — `shuf`, `timeout`. uutils installs one multi-call binary (`coreutils shuf`), so the plain names come from `~/.local/bin/coreutils-shim`, which it dispatches on `argv[0]`. Only utilities absent from macOS are symlinked to it; `ls`, `cp`, `date` and `sort` stay BSD, because every script here expects those semantics | [github](https://github.com/uutils/coreutils) |
 
 #### Git & forges
 
@@ -415,6 +416,7 @@ Note that a closed lid still sleeps an Apple Silicon laptop without an external 
 | `dot_local/bin/executable_updates` | `~/.local/bin/updates` — reports available mise + Homebrew package updates |
 | `dot_local/bin/executable_statusline` | `~/.local/bin/statusline` — Claude Code statusline: prefixes a marker for the active account profile (`🏢` work, `🏠` personal, read from `CLAUDE_CONFIG_DIR`), then execs `claudeline` with every segment intact |
 | `dot_local/bin/executable_git-agent-sign.tmpl` | `~/.local/bin/git-agent-sign` — signing shim: forces this machine's vault agent socket, then execs `ssh-keygen`, so non-login shells sign too |
+| `dot_local/bin/executable_coreutils-shim` + `symlink_shuf`, `symlink_timeout` | `~/.local/bin/{shuf,timeout}` — the GNU utilities macOS ships none of. mise installs uutils as one multi-call binary, which dispatches on `argv[0]`, so each name is a symlink to the shim and arrives as its own command. The shim resolves the binary by glob at call time rather than being a symlink to it directly, because that path carries the version and `mise up coreutils` would otherwise leave every link dangling; missing install exits 127 naming the fix. **Only utilities absent from macOS get a symlink** — linking `ls`, `cp`, `date` or `sort` would swap BSD semantics every script here relies on |
 | `private_dot_ssh/private_config.tmpl` | `~/.ssh/config` (0600) — `IdentityAgent` pointed at the machine's vault agent, OrbStack's include, and an `Include ~/.ssh/conf.d/*.conf` glob for unpublishable per-host config |
 | `dot_local/bin/executable_login-agents` | `~/.local/bin/login-agents` — bootout/bootstrap cycle for the login agents below; run by the `run_onchange` hook and by bootstrap step 10 |
 | `Library/LaunchAgents/*.plist` | `~/Library/LaunchAgents/` — launchd agents started at login, one file per app (`dev.sanchpet.orbstack` starts the OrbStack engine so the Docker socket is up without opening the app). Add an app = add a plist |

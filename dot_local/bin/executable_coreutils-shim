@@ -1,0 +1,23 @@
+#!/bin/sh
+# Serves the GNU utilities macOS does not ship at all, out of the single multi-call
+# binary mise installs as `coreutils` (aqua:uutils/coreutils). uutils dispatches on
+# argv[0], so every name symlinked to this wrapper arrives as its own command:
+# `shuf` and `timeout` today, both previously absent.
+#
+# Why a wrapper and not a symlink straight to the binary: its path carries the version
+# (installs/coreutils/latest/coreutils-<version>-<arch>/coreutils), so the next
+# `mise up coreutils` would leave every symlink dangling. The glob below resolves at
+# call time and survives the bump.
+#
+# Only names macOS lacks entirely get a symlink. Never link ls, cp, mv, date or sort:
+# the BSD versions are what every script on this machine already expects, and swapping
+# them for GNU semantics changes behaviour far outside the reason coreutils is here.
+set -eu
+
+for candidate in "$HOME"/.local/share/mise/installs/coreutils/latest/*/coreutils; do
+	[ -x "$candidate" ] || continue
+	exec "$candidate" "${0##*/}" "$@"
+done
+
+echo "${0##*/}: uutils coreutils not installed — run 'mise install coreutils'" >&2
+exit 127

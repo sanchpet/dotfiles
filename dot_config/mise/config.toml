@@ -70,6 +70,11 @@ duf = "latest"
 # CLI one. Widen this only once the aqua-registry entry filters the tags.
 "aqua:Byron/dua-cli" = "2"
 hyperfine = "latest"
+# coreutils — the GNU utilities macOS ships none of, notably `shuf` and `timeout`. This is
+# uutils (Rust), and it installs as a single multi-call binary: `coreutils shuf`, not `shuf`.
+# The names are exposed by ~/.local/bin/coreutils-shim, which uutils dispatches on argv[0];
+# only utilities absent from macOS get a symlink there, never ls/cp/date/sort.
+coreutils = "latest"
 
 # === Git & forges ===
 gh = "latest"
