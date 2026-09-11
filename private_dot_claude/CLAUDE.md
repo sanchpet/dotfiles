@@ -68,7 +68,7 @@ This file lives in a **public** dotfiles repo — keep it free of private detail
 
 - **mise-first:** if a CLI tool can be installed via mise, use mise. What mise can't manage (GUI casks, etc.) → Homebrew.
 - **`gh`** for all GitHub operations (PRs, issues, runs, API).
-- **macOS has no coreutils `timeout`** — use `gtimeout`, or run in background and kill. A bare `timeout` fails as "command not found", which reads as the wrapped command failing rather than the wrapper being absent.
+- **macOS ships no coreutils at all** — `timeout`, `shuf` and their kin are absent from a bare system, and so are the `g`-prefixed Homebrew variants unless that formula is installed. These dotfiles now supply `timeout` and `shuf` under their plain names (mise `coreutils` + `~/.local/bin/coreutils-shim`), so reach for those, not `gtimeout`. Elsewhere check `command -v` before use: a missing wrapper fails as "command not found", which reads as the wrapped command failing rather than the wrapper being absent.
 
 ## Code quality
 
