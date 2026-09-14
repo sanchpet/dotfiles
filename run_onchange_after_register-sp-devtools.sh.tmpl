@@ -10,8 +10,10 @@
 # app runs without a debugging port until someone asks for one, and that is the whole isolation
 # story here (unlike the browser, there is no separate profile to sandbox: one app, one store).
 #
-# Personal MACHINE only, matching the SuperSync MCP next to it: the work machine runs the same
-# app against the same account, and nothing there should be reachable by an agent.
+# Personal MACHINE only. The SP MCP reader next to this one was drawn the same way until the owner
+# lifted it on 2026-09-14; this one was not part of that decision and keeps the gate. Reading a task
+# store through a published API is one thing, driving the app's own interface on the work machine is
+# another: it reaches whatever the renderer shows, including surfaces nobody scoped for an agent.
 #
 # What this deliberately does NOT enable: the app's Node-execution consent dialog. It is a
 # security prompt whose entire purpose is a human answer, and consent an agent gives on the

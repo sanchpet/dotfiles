@@ -1,14 +1,14 @@
 #!/bin/sh
-# Register the Super Productivity MCP server with the PERSONAL Claude profile. Like the
+# Register the Super Productivity MCP server with the Claude profile of this machine. Like the
 # chrome-devtools and mcp-tg registrations next to it, this otherwise lives only as hand-typed
-# state under ~/.claude-personal and is lost the moment that profile is rebuilt or the machine
+# state under a profile directory and is lost the moment that profile is rebuilt or the machine
 # is replaced.
 #
-# revision: 1  — bump to force a re-run after editing the intent below.
+# revision: 2  — bump to force a re-run after editing the intent below.
 #
-# Personal profile ONLY, for the reason spelled out in the chrome-devtools script: `--scope user`
-# writes into whichever profile CLAUDE_CONFIG_DIR names, so leaving it to the ambient shell is how
-# a registration ends up in the wrong contour.
+# Profile-scoped, never ambient, for the reason spelled out in the chrome-devtools script:
+# `--scope user` writes into whichever profile CLAUDE_CONFIG_DIR names, so leaving it to the
+# shell is how a registration ends up in the wrong contour. The profile follows the machine.
 #
 # Unpinned `@latest`, unlike mcp-tg and wolt-cli. Those two are pinned because each holds a live
 # session — one authorises the whole Telegram account, the other is tied to payment methods. This
@@ -20,27 +20,29 @@
 # the plugin has to be uploaded through Super Productivity's own Settings UI, and SP >= 18.13.0
 # then raises a one-time Node execution consent dialog that only a human can accept.
 #
-# Personal MACHINE only, which is a stronger condition than the personal profile the other two
-# registrations settle for. The app itself is declared for every machine — work time is tracked on
-# the work machine too — but that instance stays agentless on purpose: its task titles belong to an
-# employer, and the cheapest way to keep them from reaching an agent is to never register a reader
-# for them. Only the weekly per-bucket totals cross that boundary, and a human carries them.
+# The personal-machine restriction was lifted by the owner on 2026-09-14, and the reason it stood
+# is worth keeping written down: the work instance holds task titles belonging to an employer, and
+# withholding the reader was the cheapest way to keep them from an agent. What changed is not the
+# sensitivity of those titles but the honesty of the barrier — on the work machine the agent already
+# reads the same work through the Atlassian connector and authors the task cards in the vault, so
+# the third store was withheld while the first two were open. What it bought was a gap in what the
+# agent could write to, not a boundary around what it could read. The UI-driving registration next
+# to this one (sp-devtools) stays personal-machine only: it was not part of that decision.
 set -eu
 
 PROFILE="{{ dig "profile" "personal" . }}"
-CONFIG_DIR="$HOME/.claude-personal"
 
-if [ "$PROFILE" != "personal" ]; then
-  echo "super-productivity: profile=$PROFILE — the app is installed, the MCP reader deliberately is not"
-  exit 0
-fi
+case "$PROFILE" in
+  work) CONFIG_DIR="$HOME/.claude-work" ;;
+  *)    CONFIG_DIR="$HOME/.claude-personal" ;;
+esac
 
 command -v claude >/dev/null 2>&1 || { echo "super-productivity: claude not on PATH — skipping registration"; exit 0; }
 command -v npx    >/dev/null 2>&1 || { echo "super-productivity: npx not on PATH (node not applied yet?) — skipping"; exit 0; }
 
 # Idempotent: already registered is the steady state, not an error.
 if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^super-productivity'; then
-  echo "super-productivity: already registered in the personal profile"
+  echo "super-productivity: already registered in the $PROFILE profile"
   exit 0
 fi
 
@@ -48,7 +50,7 @@ CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add super-productivity \
   --scope user \
   -- npx -y super-productivity-mcp
 
-echo "super-productivity: registered. Two manual steps remain, both inside the app:"
+echo "super-productivity: registered in the $PROFILE profile. Two manual steps remain, both inside the app:"
 echo "  1. npx -y super-productivity-mcp@latest --extract-plugin"
 echo "     then Settings -> Plugins -> Upload Plugin, pick plugin.zip, restart the app."
 echo "  2. Accept the one-time Node execution consent dialog SP raises afterwards."
