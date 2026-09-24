@@ -90,6 +90,7 @@ uv = "latest"
 # === Kubernetes, IaC & containers ===
 kubectl = "latest"
 kubectx = "latest"
+kubens = "latest"
 # krew is the kubectl plugin manager, and what mise ships is its *installer*: the binary is
 # krew-<os>_<arch>, while kubectl only resolves kubectl-krew. The bootstrap that turns one into
 # the other lives in run_onchange_after_install-krew-plugins.sh.tmpl.
