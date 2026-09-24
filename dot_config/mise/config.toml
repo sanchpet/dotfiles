@@ -154,6 +154,9 @@ chezmoi = "latest"
 # The aqua CLI, not the aqua backend — mise resolves aqua packages on its own. Kept for
 # contributing to aqua-registry, where `aqua gr <owner>/<repo>` generates a package entry.
 aqua = "latest"
+promtool = "latest"
+pint = "latest"
+yq = "4.53.3"
 
 # Cloud, secrets & networking — Yandex Cloud CLI, out of group order because TOML requires
 # a sub-table to follow every plain key. Not in the mise registry (closed source, no GitHub
