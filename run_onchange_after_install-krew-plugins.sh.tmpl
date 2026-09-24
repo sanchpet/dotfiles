@@ -4,7 +4,7 @@
 # kubectl-krew, which krew produces by installing itself into its own root. Without this step the
 # tool is on the machine and still unusable, which is the worst of both.
 #
-# revision: 1  — bump to force a re-run after editing the list below.
+# revision: 2  — bump to force a re-run after editing either list below.
 #
 # The index is declared in the machine-local chezmoi config, never in this public repository:
 # its URL is an internal host. krew clones it through the system git, so the engineer's existing
@@ -12,9 +12,18 @@
 # also makes the step reachability-dependent: a machine off the VPN skips it with a message rather
 # than failing the bootstrap, exactly as the Vault-backed registrations next door do.
 #
+# Plugins from the public krew-index are declared here, in the open, because nothing about
+# them is employer-specific. They install before the private-index block below, which exits
+# early on a machine that cannot reach the internal host.
+#
+# node-shell: a root shell on a node through nsenter, for the state kubectl cannot show —
+# kubelet's on-disk checkpoints, sysctl as the kernel actually holds it, systemd units.
+#
 # tv: the team kubectl toolbox — `kubectl tv clusters list` reads the cluster fleet registry, so a
 # newly built cluster reaches this workstation without anyone editing a wiki page by hand.
 set -eu
+
+PUBLIC_PLUGINS="node-shell"
 
 {{ with (dig "krew" false .) -}}
 INDEX_NAME={{ .indexName | quote }}
@@ -34,6 +43,13 @@ if [ ! -x "$HOME/.krew/bin/kubectl-krew" ]; then
 fi
 
 KREW="$HOME/.krew/bin/kubectl-krew"
+
+for plugin in $PUBLIC_PLUGINS; do
+  if ! "$KREW" list 2>/dev/null | grep -qx "$plugin"; then
+    "$KREW" install "$plugin"
+    echo "krew: $plugin installed"
+  fi
+done
 
 {{ if (dig "krew" false .) -}}
 # Only where an index is declared: it and the plugins it serves are employer
