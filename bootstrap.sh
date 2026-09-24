@@ -283,6 +283,10 @@ if [ -s "$BREWFILE" ] && grep -qE '^[[:space:]]*(cask|brew)[[:space:]]' "$BREWFI
         warn "Brewfile lists mas apps but no TTY to prompt for App Store sign-in — those installs may fail; sign in and re-run."
       fi
     fi
+    # A cask whose publisher deleted an old release installs only from a fresh definition;
+    # a runner image or a long-idle machine keeps the stale one and gets a 404 (super-productivity, 2026-09).
+    log "brew update — fresh package definitions"
+    brew update --quiet || warn "brew update failed — installing from the definitions already here"
     log "brew bundle — GUI apps from Brewfile"
     brew bundle --file="$BREWFILE"
   fi
