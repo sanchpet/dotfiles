@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# bwa — bw CLI as the agent's own Vaultwarden account, unlocked from the Keychain unattended.
+# It sees only the collection the owner shares with it; separate app-data leaves the owner's bw alone.
+#   bwa init | bwa get password <item>   (secrets go to stdout — pipe them, e.g. into cdp-fill)
+set -euo pipefail
+
+export BITWARDENCLI_APPDATA_DIR="$HOME/.config/bw-agent"
+email="${BWA_EMAIL:-agent@sanch.pet}"
+server="{{ .bitwarden.server }}"
+service=bw-agent
+
+keychain_password() { security find-generic-password -s "$service" -a "$email" -w; }
+
+if [ "${1:-}" = init ]; then
+  if keychain_password >/dev/null 2>&1; then
+    echo "bwa: master password for $email already in Keychain" >&2
+    exit 0
+  fi
+  # Fed through `security -i` on stdin so the value never appears in a process argv.
+  pw="$(openssl rand -base64 48 | tr -d '/+=\n' | cut -c1-40)"
+  printf 'add-generic-password -s %s -a %s -l "Vaultwarden agent (%s)" -w %s\n' \
+    "$service" "$email" "$email" "$pw" | security -i >/dev/null
+  unset pw
+  echo "bwa: master password for $email generated into Keychain (service $service)" >&2
+  exit 0
+fi
+
+mkdir -p "$BITWARDENCLI_APPDATA_DIR"
+BW_PASSWORD="$(keychain_password)" || { echo "bwa: no Keychain entry — run 'bwa init'" >&2; exit 1; }
+export BW_PASSWORD
+
+status="$(bw status | jq -r .status)"
+if [ "$status" = unauthenticated ]; then
+  [ -n "$server" ] && bw config server "$server" >/dev/null
+  BW_SESSION="$(bw login "$email" --passwordenv BW_PASSWORD --raw)"
+else
+  BW_SESSION="$(bw unlock --passwordenv BW_PASSWORD --raw)"
+fi
+unset BW_PASSWORD
+export BW_SESSION
+
+# The owner moves items in and out of the collection at any time; a stale cache would hide that.
+bw sync --quiet
+exec bw "$@"

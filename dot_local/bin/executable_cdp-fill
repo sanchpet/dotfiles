@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+// cdp-fill — put a secret from stdin into a form field of an open tab over CDP, so an agent
+// driving the browser never holds the value in its own tool calls.
+//   bwa get password ipserver | cdp-fill ipserver.su 'input[name=password]'
+const [urlPart, selector] = process.argv.slice(2);
+if (!urlPart || !selector) {
+  console.error("usage: <secret> | cdp-fill <url-substring> <css-selector>");
+  process.exit(2);
+}
+
+const port = process.env.CDP_PORT || "9222";
+
+async function readStdin() {
+  const chunks = [];
+  for await (const c of process.stdin) chunks.push(c);
+  return Buffer.concat(chunks).toString("utf8").replace(/\r?\n$/, "");
+}
+
+async function main() {
+  const value = await readStdin();
+  if (!value) throw new Error("empty secret on stdin");
+
+  const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+  const page = pages.find((p) => p.type === "page" && p.url.includes(urlPart));
+  if (!page) throw new Error(`no open tab whose URL contains "${urlPart}"`);
+
+  // Frameworks (Angular, React) track input through the native setter and input events, so a
+  // bare `el.value = …` is overwritten on the next change detection.
+  const expression = `(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    if (!el) return "no-element";
+    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement : HTMLInputElement;
+    Object.getOwnPropertyDescriptor(proto.prototype, "value").set.call(el, ${JSON.stringify(value)});
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return "ok";
+  })()`;
+
+  const ws = new WebSocket(page.webSocketDebuggerUrl);
+  const result = await new Promise((resolve, reject) => {
+    ws.onopen = () => ws.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true } }));
+    ws.onmessage = (m) => {
+      const msg = JSON.parse(m.data);
+      if (msg.id !== 1) return;
+      if (msg.error || msg.result?.exceptionDetails) reject(new Error("evaluate failed in page"));
+      else resolve(msg.result.result.value);
+    };
+    ws.onerror = () => reject(new Error("CDP websocket error"));
+  });
+  ws.close();
+
+  if (result !== "ok") throw new Error(`selector ${selector} matched nothing on ${page.url}`);
+  console.error(`cdp-fill: filled ${selector} on ${new URL(page.url).host}`);
+}
+
+main().catch((e) => {
+  console.error(`cdp-fill: ${e.message}`);
+  process.exit(1);
+});
