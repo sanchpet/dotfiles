@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.dispositif</string>
+
+  <!-- The agent's Telegram responder: answers allowlisted messages to the agent account
+       with one headless `claude -p` run each (github.com/sanchpet/dispositif, a mise tool).
+       The policy lives in the vault, not here. The guard keeps this inert on a machine
+       without the vault or the binary, e.g. the work machine. State stays in the
+       prototype's directory, whose format dispositif kept, so nothing is answered twice. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>bin="$HOME/.local/share/mise/installs/github-sanchpet-dispositif/latest/dispositif"; cfg="$HOME/hypomnemata/.claude/dispositif/config.toml"; [ -x "$bin" ] &amp;&amp; [ -r "$cfg" ] || exit 0; export DISPOSITIF_STATE_DIR="$HOME/.local/state/tg-inbox" PATH="$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"; exec "$bin" run --config "$cfg" 2&gt;&gt;"$HOME/Library/Logs/dispositif.log"</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>
