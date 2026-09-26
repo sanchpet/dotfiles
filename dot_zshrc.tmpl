@@ -246,6 +246,17 @@ spdbg() {
   print "spdbg: started on :$port"
 }
 
+# --- Telegram: log the agent's own account into its mcp-tg daemon ---
+# A bare `mcp-tg login` writes the default keychain key, which is the OWNER's session: logging the
+# agent's number in that way silently replaces the owner's account. This pins the agent daemon's
+# key (Library/LaunchAgents/dev.sanchpet.mcp-tg-agent.plist) and restarts it onto the new session.
+mcp-tg-agent-login() {
+  local env="$HOME/.config/mcp-tg/env"
+  [[ -r $env ]] || { print -u2 "mcp-tg-agent-login: $env missing — run chezmoi apply with Vault reachable"; return 1 }
+  ( . "$env" && TELEGRAM_SESSION_FILE="$HOME/.mcp-tg/agent-session.json" mcp-tg login ) || return
+  launchctl kickstart -k "gui/$(id -u)/dev.sanchpet.mcp-tg-agent"
+}
+
 # --- macOS: unstick Mission Control (restart Dock) ---
 # Dock owns Space switching, and its transition state latches under memory pressure: Ctrl+arrow
 # stops moving between desktops while everything else is fine. Killing it is the reset — launchd

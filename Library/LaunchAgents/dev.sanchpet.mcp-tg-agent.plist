@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.mcp-tg-agent</string>
+
+  <!-- The agent's own Telegram account, beside the owner's daemon (dev.sanchpet.mcp-tg.plist, which
+       documents the shared design). Same binary and API credentials; what differs is the port and
+       TELEGRAM_SESSION_FILE, the keychain key that selects the session. mcp-tg-agent-login in
+       dot_zshrc.tmpl logs in under the same key, so the owner's session is never overwritten. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>bin="$HOME/.local/share/mise/installs/github-lexfrei-mcp-tg/latest/mcp-tg"; env="$HOME/.config/mcp-tg/env"; [ -x "$bin" ] &amp;&amp; [ -r "$env" ] || exit 0; . "$env"; export TELEGRAM_SESSION_FILE="$HOME/.mcp-tg/agent-session.json"; exec "$bin" 2&gt;&gt;"$HOME/Library/Logs/mcp-tg-agent.log"</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MCP_HTTP_PORT</key>
+    <string>8788</string>
+    <key>MCP_HTTP_ONLY</key>
+    <string>true</string>
+    <key>MCP_LOG_LEVEL</key>
+    <string>warn</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>

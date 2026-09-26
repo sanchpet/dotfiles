@@ -1,11 +1,11 @@
 #!/bin/sh
-# Register the Telegram MTProto MCP server (mcp-tg) with the PERSONAL Claude profile. The binary is
-# declared in dot_config/mise/config.toml and runs as the shared HTTP daemon
-# Library/LaunchAgents/dev.sanchpet.mcp-tg.plist; this is the other half — the daemon's credentials
-# and the registration itself, which otherwise live only as hand-typed state and are lost the
-# moment that profile is rebuilt or the machine is replaced.
+# Register the Telegram MTProto MCP servers with the PERSONAL Claude profile: mcp-tg (the owner's
+# account) and mcp-tg-agent (the agent's own). The binary is declared in dot_config/mise/config.toml
+# and runs as two HTTP daemons, Library/LaunchAgents/dev.sanchpet.mcp-tg{,-agent}.plist; this is the
+# other half — the daemons' credentials and the registrations, which otherwise live only as
+# hand-typed state and are lost the moment that profile is rebuilt or the machine is replaced.
 #
-# revision: 2  — bump to force a re-run after editing the intent below.
+# revision: 3  — bump to force a re-run after editing the intent below.
 #
 # Personal profile ONLY. The contours are separated by CLAUDE_CONFIG_DIR, so a --scope user
 # registration made here is invisible to the work profile; that isolation is the reason the
@@ -28,7 +28,6 @@ command -v mcp-tg >/dev/null 2>&1 || { echo "mcp-tg: binary not on PATH (mise no
 command -v vault  >/dev/null 2>&1 || { echo "mcp-tg: vault not on PATH — skipping registration"; exit 0; }
 
 ENV_FILE="$HOME/.config/mcp-tg/env"
-URL="http://127.0.0.1:8787"
 
 app_id=$(vault kv get -field=app_id "$VAULT_PATH" 2>/dev/null || true)
 app_hash=$(vault kv get -field=app_hash "$VAULT_PATH" 2>/dev/null || true)
@@ -42,19 +41,25 @@ elif [ ! -r "$ENV_FILE" ]; then
   exit 0
 fi
 
-# The daemon's guard exits cleanly while the env file is missing, so start it now that it exists.
-launchctl kickstart -k "gui/$(id -u)/dev.sanchpet.mcp-tg" 2>/dev/null || true
-
+# The daemons' guard exits cleanly while the env file is missing, so start them now that it exists;
+# bootstrap first, since a plist chezmoi has just written is not loaded until the next login.
 # Idempotent: the HTTP registration is the steady state. `mcp get`, not `mcp list`, so no health
 # check can stall the apply. An older stdio registration is replaced, not kept alongside.
-current=$(CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp get mcp-tg 2>/dev/null || true)
-case "$current" in
-  *"$URL"*) echo "mcp-tg: already registered over HTTP in the personal profile"; exit 0 ;;
-  "") ;;
-  *) CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp remove mcp-tg --scope user >/dev/null ;;
-esac
+register() {
+  name=$1 url=$2
+  launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/dev.sanchpet.$name.plist" 2>/dev/null || true
+  launchctl kickstart -k "gui/$(id -u)/dev.sanchpet.$name" 2>/dev/null || true
+  current=$(CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp get "$name" 2>/dev/null || true)
+  case "$current" in
+    *"$url"*) echo "$name: already registered over HTTP in the personal profile"; return ;;
+    "") ;;
+    *) CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp remove "$name" --scope user >/dev/null ;;
+  esac
+  CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add --transport http "$name" "$url" --scope user
+}
 
-CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add --transport http mcp-tg "$URL" --scope user
+register mcp-tg http://127.0.0.1:8787
+register mcp-tg-agent http://127.0.0.1:8788
 
-echo "mcp-tg: registered over HTTP. The account login is separate and interactive —"
-echo "        run 'mcp-tg login' in a terminal so the 2FA password never passes through the client."
+echo "mcp-tg: the account logins are separate and interactive, so 2FA never passes through a client:"
+echo "        'mcp-tg login' for the owner, 'mcp-tg-agent-login' (zshrc) for the agent."
