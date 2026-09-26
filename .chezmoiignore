@@ -27,3 +27,8 @@ mise.toml
 .config/teleport/teleport.yaml
 Library/LaunchAgents/dev.sanchpet.teleport-node.plist
 {{ end }}
+
+# Telegram MCP daemon — its registration is personal-profile only, so the daemon is too.
+{{ if ne .profile "personal" }}
+Library/LaunchAgents/dev.sanchpet.mcp-tg.plist
+{{ end }}

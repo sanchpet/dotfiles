@@ -1,19 +1,21 @@
 #!/bin/sh
-# Register the Telegram MTProto MCP server (mcp-tg, pinned in mise) with the PERSONAL Claude
-# profile. The binary is declared in dot_config/mise/config.toml; this is the other half — the
-# registration itself, which otherwise lives only as hand-typed state in ~/.claude-personal and is
-# lost the moment that profile is rebuilt or the machine is replaced.
+# Register the Telegram MTProto MCP server (mcp-tg) with the PERSONAL Claude profile. The binary is
+# declared in dot_config/mise/config.toml and runs as the shared HTTP daemon
+# Library/LaunchAgents/dev.sanchpet.mcp-tg.plist; this is the other half — the daemon's credentials
+# and the registration itself, which otherwise live only as hand-typed state and are lost the
+# moment that profile is rebuilt or the machine is replaced.
 #
-# revision: 1  — bump to force a re-run after editing the intent below.
+# revision: 2  — bump to force a re-run after editing the intent below.
 #
 # Personal profile ONLY. The contours are separated by CLAUDE_CONFIG_DIR, so a --scope user
 # registration made here is invisible to the work profile; that isolation is the reason the
 # variable is set explicitly rather than inherited from whatever shell runs `chezmoi apply`.
 #
 # The credentials are NOT in this repo. They come from Vault at apply time
-# (homelab/telegram/mcp-tg, kind=credential), which keeps a Telegram account credential out of git
-# while still letting a fresh machine converge. Vault is mesh-only, so a machine off the mesh
-# simply skips this step with a message — bootstrap must not hard-fail on a reachability problem.
+# (homelab/telegram/mcp-tg, kind=credential) into ~/.config/mcp-tg/env (0600), which keeps a
+# Telegram account credential out of git while still letting a fresh machine converge. VAULT_ADDR
+# from the environment wins (e.g. a Teleport app proxy); an unreachable Vault skips this step with
+# a message — bootstrap must not hard-fail on a reachability problem.
 set -eu
 
 CONFIG_DIR="$HOME/.claude-personal"
@@ -25,26 +27,34 @@ command -v claude >/dev/null 2>&1 || { echo "mcp-tg: claude not on PATH — skip
 command -v mcp-tg >/dev/null 2>&1 || { echo "mcp-tg: binary not on PATH (mise not applied yet?) — skipping"; exit 0; }
 command -v vault  >/dev/null 2>&1 || { echo "mcp-tg: vault not on PATH — skipping registration"; exit 0; }
 
-# Idempotent: already registered is the steady state, not an error.
-if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^mcp-tg'; then
-  echo "mcp-tg: already registered in the personal profile"
-  exit 0
-fi
+ENV_FILE="$HOME/.config/mcp-tg/env"
+URL="http://127.0.0.1:8787"
 
 app_id=$(vault kv get -field=app_id "$VAULT_PATH" 2>/dev/null || true)
 app_hash=$(vault kv get -field=app_hash "$VAULT_PATH" 2>/dev/null || true)
 
-if [ -z "$app_id" ] || [ -z "$app_hash" ]; then
+if [ -n "$app_id" ] && [ -n "$app_hash" ]; then
+  mkdir -p "$(dirname "$ENV_FILE")"
+  (umask 077 && printf 'export TELEGRAM_APP_ID=%s\nexport TELEGRAM_APP_HASH=%s\n' "$app_id" "$app_hash" > "$ENV_FILE")
+elif [ ! -r "$ENV_FILE" ]; then
   echo "mcp-tg: could not read $VAULT_PATH (Vault unreachable or token expired) — skipping."
-  echo "        Re-run 'chezmoi apply' once on the mesh with a valid token."
+  echo "        Re-run 'chezmoi apply' with Vault reachable (VAULT_ADDR) and a valid token."
   exit 0
 fi
 
-CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add mcp-tg \
-  --scope user \
-  --env "TELEGRAM_APP_ID=$app_id" \
-  --env "TELEGRAM_APP_HASH=$app_hash" \
-  -- mcp-tg
+# The daemon's guard exits cleanly while the env file is missing, so start it now that it exists.
+launchctl kickstart -k "gui/$(id -u)/dev.sanchpet.mcp-tg" 2>/dev/null || true
 
-echo "mcp-tg: registered. The account login is separate and interactive —"
+# Idempotent: the HTTP registration is the steady state. `mcp get`, not `mcp list`, so no health
+# check can stall the apply. An older stdio registration is replaced, not kept alongside.
+current=$(CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp get mcp-tg 2>/dev/null || true)
+case "$current" in
+  *"$URL"*) echo "mcp-tg: already registered over HTTP in the personal profile"; exit 0 ;;
+  "") ;;
+  *) CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp remove mcp-tg --scope user >/dev/null ;;
+esac
+
+CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add --transport http mcp-tg "$URL" --scope user
+
+echo "mcp-tg: registered over HTTP. The account login is separate and interactive —"
 echo "        run 'mcp-tg login' in a terminal so the 2FA password never passes through the client."

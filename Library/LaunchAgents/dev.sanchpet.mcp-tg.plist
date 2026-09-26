@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.mcp-tg</string>
+
+  <!-- One shared Telegram MCP daemon on 127.0.0.1:8787 instead of a stdio process per Claude
+       session: one MTProto connection on the account's auth key rather than one per session, and
+       stateful HTTP negotiates MCP 2025-11-25, where the server's keepalive ping is still legal
+       (on stdio under 2026-07-28 the client drops it and the session hangs).
+
+       A login agent, not a system daemon: the session lives in the login keychain, which a
+       LaunchDaemon cannot read. The API credentials come from ~/.config/mcp-tg/env, written from
+       Vault by run_onchange_after_register-mcp-tg.sh; the guard makes this a clean no-op until
+       both it and the binary exist, and that script kickstarts the agent once they do. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>bin="$HOME/.local/share/mise/installs/github-lexfrei-mcp-tg/latest/mcp-tg"; env="$HOME/.config/mcp-tg/env"; [ -x "$bin" ] &amp;&amp; [ -r "$env" ] || exit 0; . "$env"; exec "$bin" 2&gt;&gt;"$HOME/Library/Logs/mcp-tg.log"</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MCP_HTTP_PORT</key>
+    <string>8787</string>
+    <key>MCP_HTTP_ONLY</key>
+    <string>true</string>
+    <!-- FLOOD_WAIT, retries and transport failures log at warn; info would log every request. -->
+    <key>MCP_LOG_LEVEL</key>
+    <string>warn</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- Restart on a crash (including AUTH_KEY_DUPLICATED, which exits asking for `mcp-tg login`),
+       but not after the guard's clean exit, which would spin. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>
