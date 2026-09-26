@@ -249,12 +249,18 @@ spdbg() {
 # --- Telegram: log the agent's own account into its mcp-tg daemon ---
 # A bare `mcp-tg login` writes the default keychain key, which is the OWNER's session: logging the
 # agent's number in that way silently replaces the owner's account. This pins the agent daemon's
-# key (Library/LaunchAgents/dev.sanchpet.mcp-tg-agent.plist) and restarts it onto the new session.
+# key (Library/LaunchAgents/dev.sanchpet.mcp-tg-agent.plist). The daemon is stopped for the login:
+# without a session it restarts every 10 s and rewrites the same keychain item, clobbering the
+# session the login has just stored.
 mcp-tg-agent-login() {
-  local env="$HOME/.config/mcp-tg/env"
+  local env="$HOME/.config/mcp-tg/env" domain="gui/$(id -u)" rc
+  local plist="$HOME/Library/LaunchAgents/dev.sanchpet.mcp-tg-agent.plist"
   [[ -r $env ]] || { print -u2 "mcp-tg-agent-login: $env missing — run chezmoi apply with Vault reachable"; return 1 }
-  ( . "$env" && TELEGRAM_SESSION_FILE="$HOME/.mcp-tg/agent-session.json" mcp-tg login ) || return
-  launchctl kickstart -k "gui/$(id -u)/dev.sanchpet.mcp-tg-agent"
+  launchctl bootout "$domain/dev.sanchpet.mcp-tg-agent" 2>/dev/null
+  ( . "$env" && TELEGRAM_SESSION_FILE="$HOME/.mcp-tg/agent-session.json" mcp-tg login )
+  rc=$?
+  launchctl bootstrap "$domain" "$plist"
+  return $rc
 }
 
 # --- macOS: unstick Mission Control (restart Dock) ---
