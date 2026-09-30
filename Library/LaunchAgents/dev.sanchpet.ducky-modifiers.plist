@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.ducky-modifiers</string>
+
+  <!-- Mac modifier order on the Ducky One 3 SF (Windows layout): left Alt <-> left Win, right
+       Alt -> right Command, so Command sits next to the space bar. Matched by VendorID 0x3233 /
+       ProductID 0x5311, so the built-in and any other keyboard stay untouched; with the Ducky
+       absent the call matches nothing and exits 0. Usage codes are 0x7000000E2/E3/E6/E7.
+
+       hidutil mappings live on the attached HID service and vanish on reboot or replug, hence
+       StartInterval rather than RunAtLoad alone: a replugged keyboard is remapped within 10 s.
+       Leave System Settings > Modifier Keys at defaults for this keyboard, or two remaps of the
+       same keys may compose into none. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/hidutil</string>
+    <string>property</string>
+    <string>--matching</string>
+    <string>{"VendorID":12851,"ProductID":21265}</string>
+    <string>--set</string>
+    <string>{"UserKeyMapping":[{"HIDKeyboardModifierMappingSrc":30064771298,"HIDKeyboardModifierMappingDst":30064771299},{"HIDKeyboardModifierMappingSrc":30064771299,"HIDKeyboardModifierMappingDst":30064771298},{"HIDKeyboardModifierMappingSrc":30064771302,"HIDKeyboardModifierMappingDst":30064771303}]}</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>10</integer>
+  <key>KeepAlive</key>
+  <false/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>
