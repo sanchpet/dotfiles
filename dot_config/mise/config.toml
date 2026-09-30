@@ -32,10 +32,11 @@ disable_backends = ["ubi"]
 
 # === Agent tooling ===
 claude = "latest" # CLI; update via `mise up claude` (self-update off in [env])
-# claudeline — Claude Code statusline. aqua backend: checksum-verified, per-version installs
-# (vs the github backend's best-effort asset guess). Switched once the aqua-registry entry
-# landed (aquaproj/aqua-registry#55083). Fallback if aqua ever lags: "github:lexfrei/claudeline".
-"aqua:lexfrei/claudeline" = "latest"
+# ailine (formerly claudeline) — Claude Code statusline. Upstream renamed the repository and the
+# release assets to ailine; the aqua entry still points at the old asset names and has no
+# lexfrei/ailine package yet, hence github:. The release archive ships only `ailine` — the
+# `claudeline` compat link exists in the brew/apt packages alone. Back to aqua once the entry lands.
+"github:lexfrei/ailine" = "latest"
 # rtk — CLI proxy that compresses command output before an agent reads it. The registry name
 # resolves to aqua:rtk-ai/rtk; the unrelated `rtk` crate on crates.io is a different project,
 # so never install this one through the cargo backend.
