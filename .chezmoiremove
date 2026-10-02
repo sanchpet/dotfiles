@@ -1,0 +1,4 @@
+# Targets whose source was deleted; chezmoi does not remove them on its own.
+.claude/RTK.md
+.claude-personal/RTK.md
+.claude-work/RTK.md

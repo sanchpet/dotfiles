@@ -43,7 +43,6 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 |------|---------|------|
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
 | ailine | Real-time Claude Code statusline (quota / context / model), formerly claudeline — wired via `~/.claude/settings.json` `statusLine`. github backend until aqua-registry catches up with the rename | [github](https://github.com/lexfrei/ailine) |
-| rtk | CLI proxy that compresses command output before an agent reads it — called explicitly, not hooked, see [Agent bash output](#agent-bash-output-rtk) | [docs](https://www.rtk-ai.app) · [github](https://github.com/rtk-ai/rtk) |
 | mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. `latest` although it holds a session that authorises the whole account: the author is known and trusted. Runs as one shared HTTP daemon. See [Agent access](#agent-access-mcp) | [github](https://github.com/lexfrei/mcp-tg) |
 | wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned**: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement | [github](https://github.com/mekedron/wolt-cli) |
 
@@ -259,21 +258,6 @@ ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/work.d/*.zsh
 
 **What belongs there:** shell code a tool prints for itself. That is the property that makes an untracked file safe — losing it costs one command, not an afternoon of remembering what was in it. Settings typed by hand belong in this repository, sanitised, or nowhere.
 
-## Agent bash output (rtk)
-
-`rtk` compresses command output so an agent reads a rendering instead of raw text. It is **called explicitly**, not wired as a hook — the `PreToolUse` entry that used to rewrite every `Bash` command was removed on 2026-08-31, and `hooks` is now empty in `.chezmoitemplates/claude-settings.json`.
-
-**Why it is not a hook.** Some filters truncate without saying so, and a hook applies them to every command whether or not completeness matters. Measured: a bare `cat` returned 2178 of 26108 tokens of a 104 KB file, and across the tool's own ledger 203 of 1573 reads did the same, the largest returning 44 tokens out of 387373. A bare `git log` stops at 50 of 469 commits. Neither prints a count, a marker, or a recovery path, so the output reads as complete. Upstream has these as open `priority:high` reports since June 2026, plus a `no_truncation` feature request (rtk-ai/rtk#1313) unresolved since July, and no configuration on this machine was found to disable the caps.
-
-**What it is still good for, called by hand.** Two kinds of filter are safe, and the difference is not how much they remove:
-
-- **Drops presentation only** — `ls -la` returned all 300 names, minus owner, group and date. `diff` and `git status` likewise.
-- **Truncates, and says so** — `grep` returned 25 of 100 matches, `find` 52 of 300, `jq` 42 of 300, each printing the true total, the number withheld, and a `tail` command that recovers the rest from a tee log.
-
-The test for trusting any filter: not how little it removes, but whether its output **refuses to look complete**. `rtk grep`, `rtk find`, `rtk jq`, `rtk ls`, `rtk diff` and `rtk git status` pass it; reading files and unbounded history do not.
-
-**Never run `rtk init -g` on this machine.** It patches `~/.claude*/settings.json`, writes `RTK.md`, and appends the `@RTK.md` import — all in `$HOME`, i.e. chezmoi targets, and it would reinstall the hook removed above. `RTK.md` and the import live in the source here; run `init` only against a throwaway `CLAUDE_CONFIG_DIR` to see what a new version would write, then port it.
-
 ## Agent access (MCP)
 
 Six MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, a Kubernetes cluster, and the iximiuz Labs practice platform. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
@@ -413,9 +397,9 @@ Note that a closed lid still sleeps an Apple Silicon laptop without an external 
 | `dot_config/mise/conf.d/work.toml` | Work-only CLI tools; mise merges every `conf.d/*.toml`, and `.chezmoiignore` withholds this one from personal machines |
 | `.chezmoitemplates/claude-settings.json` | Single source for Claude Code's `settings.json` (model, theme, ailine statusline, `screencapture` sandbox exclusion, and the `deny` list that withholds Radar's cluster-mutating MCP tools), included by every account profile below. Plugin marketplaces and enabled plugins are rendered from whatever the including profile passes as `plugins`, and the block is omitted when it passes nothing |
 | `.chezmoidata/claude-plugins-personal.toml` | Marketplaces and enabled plugins for the personal Claude profile. Repository-level on purpose: both marketplaces are the owner's own, so a fresh personal machine arrives with its tools rather than silently having none. Machine-local config data still overrides it |
+| `.chezmoiremove` | Targets whose source was deleted, so `chezmoi apply` removes them on every machine instead of leaving stale copies behind |
 | `private_dot_claude/private_settings.json.tmpl` | `~/.claude/settings.json` (0600) — default profile. Secrets/permissions stay in `settings.local.json` (untracked) |
-| `private_dot_claude/RTK.md` | `~/.claude/RTK.md` — rtk's agent-facing reference, pulled into `CLAUDE.md` by an `@RTK.md` import. Seeded from `rtk init`, then diverged on purpose and edited by hand — a rerun would reinstall the hook and undo that. To see what a newer version writes, run `init` against a throwaway `CLAUDE_CONFIG_DIR` and port the parts worth taking |
-| `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile, except that each passes its own plugin set: the work profile takes `claudePlugins` from the machine-local chezmoi config, since those marketplace URLs and plugin names belong to an employer and must not land in this public repository, while the personal profile takes `claudePluginsPersonal` from the `.chezmoidata/` file above. `CLAUDE.md` and `RTK.md` are symlinks to the canonical copies under `~/.claude/` |
+| `private_dot_claude-personal/`, `private_dot_claude-work/` | `~/.claude-personal`, `~/.claude-work` (0700) — separate accounts selected by `CLAUDE_CONFIG_DIR` (`claude-personal` / `claude-work` functions in `.zshrc`). Same settings as the default profile, except that each passes its own plugin set: the work profile takes `claudePlugins` from the machine-local chezmoi config, since those marketplace URLs and plugin names belong to an employer and must not land in this public repository, while the personal profile takes `claudePluginsPersonal` from the `.chezmoidata/` file above. `CLAUDE.md` is a symlink to the canonical copy under `~/.claude/` |
 | `run_onchange_after_install-krew-plugins.sh.tmpl` | Bootstraps krew and installs the kubectl plugins it serves. mise ships the krew *installer*; `kubectl krew` only resolves a binary named `kubectl-krew`, which krew produces by installing itself into `~/.krew`. Public-index plugins are listed in the script (`node-shell`) and install first; the private index is added on the work machine only, and that half skips with a message when the host is unreachable |
 | `run_onchange_after_register-radar.sh.tmpl` | Registers Radar's MCP server with the work Claude profile over HTTP at the fixed port Radar serves. Work machine only, idempotent, and skips with a message where `claude` or the binary is absent — see [Agent access](#agent-access-mcp) |
 | `run_onchange_after_register-ixlabs.sh` | Registers the iximiuz Labs MCP server (remote HTTP) with both Claude profiles, on every machine — the practice platform is not tied to a contour. Idempotent; the OAuth login stays interactive, one per profile — see [Agent access](#agent-access-mcp) |

@@ -37,10 +37,6 @@ claude = "latest" # CLI; update via `mise up claude` (self-update off in [env])
 # lexfrei/ailine package yet, hence github:. The release archive ships only `ailine` — the
 # `claudeline` compat link exists in the brew/apt packages alone. Back to aqua once the entry lands.
 "github:lexfrei/ailine" = "latest"
-# rtk — CLI proxy that compresses command output before an agent reads it. The registry name
-# resolves to aqua:rtk-ai/rtk; the unrelated `rtk` crate on crates.io is a different project,
-# so never install this one through the cargo backend.
-rtk = "latest"
 # Telegram MCP server (MTProto, user session). "latest" despite the whole-account credential it
 # holds: the author is known personally and trusted, and lagging releases cost more than they
 # guard — 1.4.0 hung every session once Claude Code moved to MCP 2026-07-28. Runs as one shared
