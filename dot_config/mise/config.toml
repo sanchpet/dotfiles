@@ -106,6 +106,10 @@ krew = "latest"
 # unlike view-secret above nothing needs a rename and github: is enough — no aqua entry exists
 # yet. The release publishes no attestations, so checksums.txt is the only integrity anchor.
 "github:skyhook-io/radar" = "latest"
+# kor — lists unused resources (CRDs with no objects, orphaned ConfigMaps, ...). Constrained to
+# 0.x rather than "latest": the repository also tags its Helm chart (`kor-X.Y.Z`, no binary), and
+# "latest" resolves to that tag. Never run it with --delete: it reads Forbidden as empty.
+"aqua:yonahd/kor" = "0"
 # kubectl credential plugin for OIDC clusters. No context uses it here yet — it is kept for
 # the LDAP-login lab stands, and because the work clusters authenticate this way.
 kubelogin = "latest"
