@@ -381,8 +381,12 @@ tsh ssh sanchpet@macbook-air   # terminal only
 Screen Sharing itself is a macOS service, enabled once per machine outside chezmoi (it needs root). The reliable path is System Settings → General → Sharing → Screen Sharing; the `launchctl` equivalent (`enable` then `kickstart -k system/com.apple.screensharing`) is fussy about ordering and silently unhelpful when the service is still disabled. Sleep is separate and matters as much:
 
 ```sh
-sudo pmset -c sleep 0    # a sleeping laptop answers nothing
+sudo pmset -c sleep 0          # a sleeping laptop answers nothing
+sudo pmset -c displaysleep 0   # display sleep locks the session; agents driving GUI apps or signing commits stall
+defaults -currentHost write com.apple.screensaver idleTime -int 0   # the screensaver locks it too
 ```
+
+On battery the display still sleeps and locks as usual; only the charger keeps the session open.
 
 **The tunnel is the access path, not a shield.** macOS binds Screen Sharing on `0.0.0.0:5900`, so the port answers on every network the machine joins — authenticated, but answering. Reaching it *through* Teleport is what gives the audited, certificate-gated path; if the machine sits on networks you do not trust, turn on the application firewall (currently off on this Mac) or narrow the allowed users in the same Sharing pane.
 
