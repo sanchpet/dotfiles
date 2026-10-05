@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.sanchpet.week-time</string>
+
+  <!-- Writes the current week's tracked time from Super Productivity's newest backup into the
+       vault, where the home page reads it. The script lives in the vault, not here; the guard
+       keeps this inert on a machine without the vault, and the script itself exits quietly
+       where SP has never run. Errors only go to the log; a clean run prints nothing. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>script="$HOME/hypomnemata/80-kernel/scripts/week-time.py"; [ -r "$script" ] || exit 0; export PATH="$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"; exec python3 "$script" 2&gt;&gt;"$HOME/Library/Logs/week-time.log"</string>
+  </array>
+
+  <!-- SP backs up every 5 minutes; an hour is fresh enough for a weekly measure. -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>KeepAlive</key>
+  <false/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+</dict>
+</plist>
