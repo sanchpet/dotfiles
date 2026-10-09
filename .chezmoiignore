@@ -28,7 +28,18 @@ mise.toml
 Library/LaunchAgents/dev.sanchpet.teleport-node.plist
 {{ end }}
 
-# Telegram MCP daemon — its registration is personal-profile only, so the daemon is too.
+# Telegram agents — the owner's daemon and the agent's own account. Their registration is
+# personal-profile only, so the daemons are too. They are a pair: gating one without the other
+# leaves a corporate machine advertising a personal Telegram identity it cannot even serve.
 {{ if ne .profile "personal" }}
 Library/LaunchAgents/dev.sanchpet.mcp-tg.plist
+Library/LaunchAgents/dev.sanchpet.mcp-tg-agent.plist
+{{ end }}
+
+# Personal-contour agents that read ~/hypomnemata or start a personal-only app. Each already
+# no-ops behind its own guard when its subject is missing, so this withholds the noise, not a
+# workload: an agent listed at every bootstrap reads as something that runs.
+{{ if ne .profile "personal" }}
+Library/LaunchAgents/dev.sanchpet.dispositif.plist
+Library/LaunchAgents/dev.sanchpet.comet.plist
 {{ end }}
