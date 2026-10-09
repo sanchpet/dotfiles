@@ -132,7 +132,10 @@ regctl = "latest"
 # === Cloud, secrets & networking ===
 awscli = { version = "latest", symlink_bins = "true" }
 vault = "latest"
-bitwarden = "latest" # bw — secret retrieval at `chezmoi apply`
+# Pinned: CLI 2026.9.x breaks login against Vaultwarden — the user-key-id backfill
+# migration POSTs to an endpoint Vaultwarden does not serve and the process dies.
+# https://github.com/dani-garcia/vaultwarden/issues/7820 — unpin when it is fixed.
+bitwarden = "2026.8.0" # bw — secret retrieval at `chezmoi apply`
 age = "latest"
 teleport-community = "latest"
 # Tunnel over websocket/HTTP2. Ansible installs its own pinned Linux build on the hub
