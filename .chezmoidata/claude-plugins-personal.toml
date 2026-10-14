@@ -22,3 +22,4 @@
     "humanize-gate@armamentarium-privatum" = true
     "dotfiles@armamentarium-privatum" = true
     "yaml-madness@armamentarium-privatum" = true
+    "cc-plugin-you-should-know@builtin" = true
