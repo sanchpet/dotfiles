@@ -93,6 +93,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | labctl | iximiuz Labs CLI — start, SSH into and port-forward the remote playgrounds and lab stands without leaving the terminal. github backend: no aqua-registry entry, and the releases carry no attestations, so `checksums.txt` is the only integrity anchor | [github](https://github.com/iximiuz/labctl) · [docs](https://labs.iximiuz.com) |
 | helm | Kubernetes package manager | [docs](https://helm.sh) |
 | flux2 (`flux`) | GitOps continuous delivery for Kubernetes | [docs](https://fluxcd.io) |
+| argocd | GitOps continuous delivery for Kubernetes — app listing, refresh and sync against the work clusters from the terminal | [docs](https://argo-cd.readthedocs.io) |
 | cilium-cli (`cilium`) | Cilium CNI — install, status, connectivity tests | [docs](https://docs.cilium.io) |
 | terraform | Infrastructure as code | [docs](https://developer.hashicorp.com/terraform) |
 | terragrunt | Terraform/OpenTofu wrapper (aliased `tg`) | [docs](https://terragrunt.gruntwork.io) |
