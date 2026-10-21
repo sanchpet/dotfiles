@@ -111,6 +111,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
 | 1Password CLI (`op`) | Secret retrieval on work machines — **work profile only**; personal machines use `bw` | [docs](https://developer.1password.com/docs/cli/) |
 | age | Modern file encryption | [github](https://github.com/FiloSottile/age) |
+| yubikey-manager (`ykman`) | Configure a YubiKey — PIV, FIDO2, OATH, OTP slots (via uv) | [docs](https://docs.yubico.com/software/yubikey/tools/ykman/) · [github](https://github.com/Yubico/yubikey-manager) |
 | teleport-community (`tsh`, `tctl`, `teleport`) | Access plane for infrastructure — client, admin CLI, and the node agent this Mac runs (see [Remote access](#remote-access-teleport)) | [docs](https://goteleport.com/docs/) |
 | wstunnel | Tunnel traffic over websocket/HTTP2 — client side; ansible installs its own pinned Linux build on the homelab hub | [github](https://github.com/erebe/wstunnel) |
 | sweb | CLI for the SpaceWeb (sweb.ru) hosting API — my own tool (github backend) | [github](https://github.com/sanchpet/sweb) |

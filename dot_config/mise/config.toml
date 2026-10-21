@@ -135,6 +135,9 @@ awscli = { version = "latest", symlink_bins = "true" }
 vault = "latest"
 bitwarden = "latest" # bw — secret retrieval at `chezmoi apply`
 age = "latest"
+# ykman — YubiKey CLI. Not in the mise registry; Yubico ships only a .pkg installer for
+# macOS, so pipx: over github:. Key is the PyPI name, the binary it installs is `ykman`.
+"pipx:yubikey-manager" = "latest"
 teleport-community = "latest"
 # Tunnel over websocket/HTTP2. Ansible installs its own pinned Linux build on the hub
 # (homelab wstunnel_hub role); this is the client side. No mise registry entry, hence github:.
