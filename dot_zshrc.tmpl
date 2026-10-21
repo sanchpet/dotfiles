@@ -180,6 +180,11 @@ yk() {
   SSH_AUTH_SOCK=$sock ssh-add -l >/dev/null 2>&1; rc=$?
   # 2 = cannot reach an agent; 1 = agent is up but holds nothing, which needs no restart.
   if (( rc == 2 )); then
+    # An agent can outlive its socket file, and then ssh fails against a path that is no
+    # longer there ("Connection closed by UNKNOWN port 65535"). Reap it by the socket it
+    # was started with: -k would need SSH_AGENT_PID, which a shell that did not start it
+    # never has.
+    pkill -f "ssh-agent -a $sock" 2>/dev/null
     rm -f $sock
     ssh-agent -a $sock -P "${lib:h}/*" >/dev/null || return 1
   fi
@@ -188,7 +193,9 @@ yk() {
 # ykoff: drop the card and stop that agent (e.g. before unplugging the token).
 ykoff() {
   local sock="$HOME/.ssh/agent-yubikey.sock"
-  SSH_AUTH_SOCK=$sock ssh-agent -k >/dev/null 2>&1
+  # Not `ssh-agent -k`: that kills the agent named by SSH_AGENT_PID, which this shell does
+  # not have. Killing by socket is what actually stops it instead of orphaning it.
+  pkill -f "ssh-agent -a $sock" 2>/dev/null
   rm -f $sock && print "yk: agent stopped"
 }
 
