@@ -23,6 +23,7 @@ brew "libpq"    # PostgreSQL client only (psql, pg_dump, …) without the server
 # Cloud, secrets & networking
 brew "sshpass"  # non-interactive ssh password auth — ansible needs it for the `-k` root-password bootstrap play; not in mise registry
 brew "gnupg"    # gpg — verifies the signed helm plugin tarballs installed by run_onchange_after_install-helm-plugins.sh; not in mise registry. Declared in its own right, not inherited through skopeo → gpgme, which is what let skopeo be dropped without taking plugin verification with it
+brew "yubico-piv-tool" # libykcs11 — the PKCS#11 provider ssh-agent loads to reach a PIV key on the YubiKey; not in mise registry, and ykman alone cannot act as an SSH provider
 
 # Media & documents
 brew "ffmpeg"   # video/audio transcoding — mise offers only `conda:` (drags in a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus)
