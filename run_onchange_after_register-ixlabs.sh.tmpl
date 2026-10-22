@@ -1,13 +1,13 @@
 #!/bin/sh
-# Register the iximiuz Labs MCP server (labs.iximiuz.com/mcp) with BOTH Claude profiles. The
+# Register the iximiuz Labs MCP server (labs.iximiuz.com/mcp) with EVERY Claude profile. The
 # labctl binary next to it (dot_config/mise/config.toml) drives the same platform from the
 # terminal; this is the agent-facing half — catalog search, playground VMs, and coaching through
 # a challenge — which otherwise lives only as hand-typed state under ~/.claude-* and is lost the
 # moment a profile is rebuilt or the machine is replaced.
 #
-# revision: 1  — bump to force a re-run after editing the intent below.
+# revision: 2  — bump to force a re-run after editing the intent below.
 #
-# Both profiles and both machines, unlike every other registration here: the Kubernetes and Linux
+# Every profile and both machines, unlike every other registration here: the Kubernetes and Linux
 # practice is the same practice whichever contour the day happens to run in, and the endpoint is
 # public, so neither a corporate host nor the mesh is a precondition.
 #
@@ -23,7 +23,7 @@ ENDPOINT="https://labs.iximiuz.com/mcp"
 command -v claude >/dev/null 2>&1 || { echo "ixlabs: claude not on PATH — skipping registration"; exit 0; }
 
 pending=""
-for config_dir in "$HOME/.claude-personal" "$HOME/.claude-work"; do
+for config_dir in "$HOME/.claude-personal"{{ range .claudeWorkProfiles }} "$HOME/.claude-work-{{ .name }}"{{ end }}; do
   profile=$(basename "$config_dir" | sed 's/^\.claude-//')
 
   # `mcp get` rather than `mcp list`: it reads the config without a health check, so an

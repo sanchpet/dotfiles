@@ -6,11 +6,11 @@
 # them. Claude Code passes the session JSON on stdin and reads one line from stdout; the
 # marker is written first, then ailine inherits stdin untouched.
 #
-# CLAUDE_CONFIG_DIR is set by the claude-work / claude-personal shell functions and is
+# CLAUDE_CONFIG_DIR is set by the claude-work-* / claude-personal shell functions and is
 # inherited by the process Claude Code spawns for the statusline, which is what makes the
 # profile visible here at all. The default profile (~/.claude) stays unmarked.
 case "${CLAUDE_CONFIG_DIR:-}" in
-  *-work)     printf '🏢 ' ;;
+  *-work-*)   printf '🏢%s ' "${CLAUDE_CONFIG_DIR##*-}" ;;  # which subscription: 🏢0, 🏢2
   *-personal) printf '🏠 ' ;;
 esac
 

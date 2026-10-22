@@ -4,7 +4,7 @@
 # state under a profile directory and is lost the moment that profile is rebuilt or the machine
 # is replaced.
 #
-# revision: 2  — bump to force a re-run after editing the intent below.
+# revision: 3  — bump to force a re-run after editing the intent below.
 #
 # Profile-scoped, never ambient, for the reason spelled out in the chrome-devtools script:
 # `--scope user` writes into whichever profile CLAUDE_CONFIG_DIR names, so leaving it to the
@@ -32,25 +32,31 @@ set -eu
 
 PROFILE="{{ dig "profile" "personal" . }}"
 
+# A work machine registers into every work profile (one per team subscription), a personal one
+# into the personal profile.
 case "$PROFILE" in
-  work) CONFIG_DIR="$HOME/.claude-work" ;;
-  *)    CONFIG_DIR="$HOME/.claude-personal" ;;
+  work) CONFIG_DIRS="{{ range $i, $p := .claudeWorkProfiles }}{{ if $i }} {{ end }}$HOME/.claude-work-{{ $p.name }}{{ end }}" ;;
+  *)    CONFIG_DIRS="$HOME/.claude-personal" ;;
 esac
 
 command -v claude >/dev/null 2>&1 || { echo "super-productivity: claude not on PATH — skipping registration"; exit 0; }
 command -v npx    >/dev/null 2>&1 || { echo "super-productivity: npx not on PATH (node not applied yet?) — skipping"; exit 0; }
 
-# Idempotent: already registered is the steady state, not an error.
-if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^super-productivity'; then
-  echo "super-productivity: already registered in the $PROFILE profile"
-  exit 0
-fi
+added=""
+for CONFIG_DIR in $CONFIG_DIRS; do
+  # Idempotent: already registered is the steady state, not an error.
+  if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^super-productivity'; then
+    echo "super-productivity: already registered in $CONFIG_DIR"
+    continue
+  fi
+  CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add super-productivity \
+    --scope user \
+    -- npx -y super-productivity-mcp
+  added="$added $CONFIG_DIR"
+done
 
-CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add super-productivity \
-  --scope user \
-  -- npx -y super-productivity-mcp
-
-echo "super-productivity: registered in the $PROFILE profile. Two manual steps remain, both inside the app:"
+[ -n "$added" ] || exit 0
+echo "super-productivity: registered in:$added. Two manual steps remain, both inside the app:"
 echo "  1. npx -y super-productivity-mcp@latest --extract-plugin"
 echo "     then Settings -> Plugins -> Upload Plugin, pick plugin.zip, restart the app."
 echo "  2. Accept the one-time Node execution consent dialog SP raises afterwards."

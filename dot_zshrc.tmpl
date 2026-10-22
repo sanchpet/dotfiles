@@ -311,10 +311,12 @@ redock() {
 # registrations (.claude.json) and session history — so each account authenticates on its
 # own and work connectors never mix with personal ones. chezmoi deploys the same
 # settings.json into every profile dir and symlinks the shared CLAUDE.md into it, so the
-# profiles differ only by identity, never by configuration.
-claude-work()     { CLAUDE_CONFIG_DIR="$HOME/.claude-work"     claude "$@" }
+# profiles differ only by identity, never by configuration. Work has one profile per team
+# subscription (.chezmoidata/claude-work-profiles.toml), to switch to when one hits its limit.
 claude-personal() { CLAUDE_CONFIG_DIR="$HOME/.claude-personal" claude "$@" }
-
+{{ range .claudeWorkProfiles -}}
+claude-work-{{ .name }}() { CLAUDE_CONFIG_DIR="$HOME/.claude-work-{{ .name }}" claude "$@" }
+{{ end }}
 # --- Aliases: kubectl extras (the omz `kubectl` plugin provides k/kl/kgp/kgaa/...) ---
 # Only what the plugin lacks. Note: plugin's `kga` = `get all`, all-namespaces = `kgaa`.
 alias kg="kubectl get"             # plain get

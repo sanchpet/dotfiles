@@ -1,0 +1,11 @@
+# Claude Code WORK profiles, one per team subscription — switched to when one runs out of its
+# limit. Each entry becomes ~/.claude-work-<name> (a private_dot_claude-work-<name>/ source dir
+# beside this file's consumers), a `claude-work-<name>` shell function, a statusline marker, and
+# a target of every work MCP registration script, which loop over this list.
+#
+# sharesProjectsWith: this profile's projects/ is a symlink into that profile's, so session
+# history is common and `--continue` picks up a session another subscription started.
+claudeWorkProfiles = [
+  { name = "team-0" },
+  { name = "team-2", sharesProjectsWith = "team-0" },
+]
