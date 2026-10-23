@@ -1,0 +1,8 @@
+#!/bin/sh
+# SSH_ASKPASS that asks in a macOS dialog with hidden input and prints the answer.
+# The prompt arrives as $1 and goes to osascript as an argument, never into its source.
+exec osascript - "${1:-Passphrase}" <<'EOF'
+on run argv
+  text returned of (display dialog (item 1 of argv) with title "ssh" default answer "" with hidden answer buttons {"Cancel", "OK"} default button "OK")
+end run
+EOF

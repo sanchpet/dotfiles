@@ -1,0 +1,34 @@
+#!/bin/zsh
+# yk-ensure: make the YubiKey PIV key (slot 84) available to ssh on its own agent,
+# starting the agent and loading the key only when they are missing.
+#
+# Run by ssh itself for work hosts (`Match tagged tv-ldap exec` in ~/.ssh/conf.d), so
+# nobody has to remember `yk` after a reboot: the first ssh to a work host asks for the
+# PIN in a macOS dialog, every later one finds the key loaded. Always exits 0 — a
+# failing Match exec would silently drop the work hosts back to the default agent.
+sock="$HOME/.ssh/agent-yubikey.sock"
+lib=$(ls /opt/homebrew/Cellar/yubico-piv-tool/*/lib/libykcs11.*.*.dylib 2>/dev/null | tail -1)
+[[ -n $lib ]] || { print -u2 "yk-ensure: libykcs11 not found — brew install yubico-piv-tool"; exit 0 }
+
+SSH_AUTH_SOCK=$sock ssh-add -l >/dev/null 2>&1
+case $? in
+  0) exit 0 ;;  # key already loaded: the common case, one ssh-add round-trip
+  2)
+    # No agent behind the socket. One can outlive its socket file and then ssh fails
+    # with "Connection closed by UNKNOWN port 65535", so reap it by the socket path.
+    pkill -f "ssh-agent -a $sock" 2>/dev/null
+    rm -f $sock
+    ssh-agent -a $sock -P "${lib:h}/*" >/dev/null || exit 0
+    ;;
+esac
+
+# ProxyJump runs one ssh per hop and each evaluates the config: hold a lock so the
+# hops wait for one PIN dialog instead of each opening their own.
+lock="${TMPDIR:-/tmp}/yk-ensure.lock"
+for _ in {1..120}; do mkdir $lock 2>/dev/null && break; sleep 0.5; done
+trap 'rmdir $lock 2>/dev/null' EXIT
+SSH_AUTH_SOCK=$sock ssh-add -l >/dev/null 2>&1 && exit 0
+
+SSH_AUTH_SOCK=$sock SSH_ASKPASS="$HOME/.local/bin/askpass-macos" SSH_ASKPASS_REQUIRE=force \
+  ssh-add -s $lib </dev/null >/dev/null 2>&1
+exit 0
