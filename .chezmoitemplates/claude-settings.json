@@ -46,6 +46,9 @@
       }
     ]
   },
+{{- if dig "remoteControl" false . }}
+  "remoteControlAtStartup": true,
+{{- end }}
   "language": "Russian",
   "editorMode": "normal",
   "modelSettings": {
