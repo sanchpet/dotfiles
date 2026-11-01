@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+"""claude-refresh — restart idle cmux Claude sessions that still run a replaced claude binary.
+
+`mise upgrade` repoints installs/claude/latest, but a running session keeps the binary it
+was started from, so new features reach a session only through a restart. A session is
+restarted in place (`/exit`, then `cmux restore --surface`, which resumes the same
+conversation with its saved flags and env) only when every guard passes; otherwise it waits
+for the next sweep.
+
+Driven by the Claude Code Stop hook, not launchd: the cmux socket admits only processes
+started inside cmux, and a hook is one. So sweeps happen while some session is in use.
+
+  claude-refresh            restart every stale session that passes the guards
+  claude-refresh --dry-run  print each stale session and what it waits on; touch nothing
+  claude-refresh --kick     hook entry: at most one sweep per 5 min, detached, returns at once
+"""
+import fcntl
+import glob
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+from datetime import datetime
+
+CMUX = "/Applications/cmux.app/Contents/Resources/bin/cmux"
+MISE_DATA = os.environ.get("MISE_DATA_DIR", os.path.expanduser("~/.local/share/mise"))
+LATEST = os.path.join(MISE_DATA, "installs/claude/latest/claude")
+STATE_DIR = os.path.expanduser("~/.local/state/claude-refresh")
+LOG = os.path.expanduser("~/Library/Logs/claude-refresh.log")
+KICK_INTERVAL_SECONDS = 5 * 60
+# A turn can sit in one long tool call with the lifecycle flag stale; a quarter of an hour
+# without a timestamped transcript entry is what "the owner has walked away" looks like.
+QUIET_SECONDS = 15 * 60
+EXIT_WAIT_SECONDS = 20
+RESTORE_WAIT_SECONDS = 30
+# The Bash tool runs every command, foreground or background, as a direct child of the
+# session: `zsh -c source <config>/shell-snapshots/snapshot-…`.
+TOOL_SHELL = re.compile(r"/shell-snapshots/snapshot-")
+ENV_KEYS = re.compile(r"(?:^|\s)(CMUX_SURFACE_ID|CMUX_WORKSPACE_ID|CLAUDE_CONFIG_DIR)=(\S+)")
+
+dry_run = "--dry-run" in sys.argv[1:]
+
+
+def log(msg):
+    print(time.strftime("%Y-%m-%d %H:%M:%S"), msg, flush=True)
+
+
+def run(*args, timeout=20):
+    try:
+        return subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return subprocess.CompletedProcess(args, 1, "", str(e))
+
+
+def cmux_json(*args):
+    r = run(CMUX, "--id-format", "uuids", *args)
+    if r.returncode != 0:
+        return None
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError:
+        return None
+
+
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def wait_gone(pid, seconds):
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        if not alive(pid):
+            return True
+        time.sleep(0.5)
+    return not alive(pid)
+
+
+def process_table():
+    table = {}
+    for line in run("ps", "-axo", "pid=,ppid=,command=").stdout.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) == 3:
+            table[int(parts[0])] = (int(parts[1]), parts[2])
+    return table
+
+
+def is_claude(command):
+    return os.path.basename(command.split(" ", 1)[0]) == "claude"
+
+
+def loaded_binary(pid):
+    out = run("lsof", "-a", "-p", str(pid), "-d", "txt", "-Fn").stdout
+    for line in out.splitlines():
+        path = line[1:]
+        if line.startswith("n") and "/installs/claude/" in path and path.endswith("/claude"):
+            return path
+    return None
+
+
+def proc_env(pid):
+    # Environment follows argv in `ps eww`; the last match wins so an argv token cannot shadow it.
+    env = {}
+    for key, value in ENV_KEYS.findall(run("ps", "eww", "-o", "command=", "-p", str(pid)).stdout):
+        env[key] = value
+    return env
+
+
+def last_entry(path):
+    # Not the file mtime: an idle session still rewrites metadata lines (bridge-session) with
+    # no timestamp, so only the newest timestamped entry says when the session last did anything.
+    try:
+        with open(path, "rb") as f:
+            f.seek(max(0, os.path.getsize(path) - 256 * 1024))
+            tail = f.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return None
+    newest = None
+    for line in tail:
+        match = re.search(r'"timestamp":"([^"]+)"', line)
+        if match:
+            try:
+                ts = datetime.fromisoformat(match.group(1).replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                continue
+            newest = ts if newest is None else max(newest, ts)
+    return newest
+
+
+def last_activity(config_dir, session_id):
+    # The session's own transcript plus its subagents' — a running subagent writes only there.
+    paths = glob.glob(os.path.join(config_dir, "projects", "*", session_id + ".jsonl"))
+    paths += glob.glob(os.path.join(config_dir, "projects", "*", session_id, "subagents", "*.jsonl"))
+    times = [t for t in map(last_entry, paths) if t is not None]
+    return max(times) if times else None
+
+
+def lifecycles():
+    data = cmux_json("sessions", "list", "--all", "--json") or {}
+    states = {}
+    for rec in data.get("sessions", []):
+        if rec.get("agent") == "claude" and rec.get("stored_pid_exists") and rec.get("pid"):
+            if rec.get("active_for_surface") or rec["pid"] not in states:
+                states[rec["pid"]] = rec.get("agent_lifecycle")
+    return states
+
+
+def blocker(pid, table, states, focused):
+    """Return why this stale session must wait, or None plus its target when it may restart."""
+    ppid, command = table.get(pid, (0, ""))
+    if re.search(r"\s(-p|--print)(\s|$)", command):
+        return "headless run", None
+    p = ppid
+    while p > 1:
+        if is_claude(table.get(p, (0, ""))[1]):
+            return "spawned by another session", None
+        p = table.get(p, (0, ""))[0]
+    env = proc_env(pid)
+    surface, workspace = env.get("CMUX_SURFACE_ID"), env.get("CMUX_WORKSPACE_ID")
+    if not surface or not workspace:
+        return "not in a cmux surface", None
+    target = {"surface": surface, "workspace": workspace}
+    if surface == focused:
+        return "surface has focus", target
+    shown = cmux_json("surface", "resume", "show", "--json", "--workspace", workspace, "--surface", surface) or {}
+    record = shown.get("restore_record") or {}
+    session_id = record.get("checkpoint_id")
+    if record.get("kind") != "claude" or not session_id:
+        return "no restore record for the surface", target
+    target["session"] = session_id
+    state = states.get(pid)
+    if state not in (None, "idle"):
+        return f"lifecycle is {state}", target
+    if any(pp == pid and TOOL_SHELL.search(cmd) for pp, cmd in table.values()):
+        return "a Bash tool command is running", target
+    config_dir = env.get("CLAUDE_CONFIG_DIR", os.path.expanduser("~/.claude"))
+    written = last_activity(config_dir, session_id)
+    if written is None:
+        return "no timestamped transcript entry", target
+    quiet = time.time() - written
+    if quiet < QUIET_SECONDS:
+        return f"last activity {int(quiet // 60)} min ago", target
+    return None, target
+
+
+def restart(pid, target):
+    where = ["--workspace", target["workspace"], "--surface", target["surface"]]
+    # cmux refuses to type over a prompt draft or into an open dialog: that is the draft guard.
+    sent = run(CMUX, "send", *where, "/exit\\n")
+    if sent.returncode != 0:
+        return "waits: " + (sent.stderr.strip() or "send refused")
+    if not wait_gone(pid, EXIT_WAIT_SECONDS):
+        os.kill(pid, signal.SIGTERM)
+        if not wait_gone(pid, 10):
+            return "FAILED: process outlived /exit and SIGTERM"
+    run(CMUX, "send", *where, CMUX + " restore --surface\\n")
+    deadline = time.time() + RESTORE_WAIT_SECONDS
+    while time.time() < deadline:
+        time.sleep(1)
+        for new_pid, (_, cmd) in process_table().items():
+            if is_claude(cmd) and proc_env(new_pid).get("CMUX_SURFACE_ID") == target["surface"]:
+                return f"restarted as pid {new_pid}"
+    return "FAILED: exited, but no session came back in the surface — run `cmux restore --surface` there"
+
+
+def notify_once(version, restarted, waiting):
+    marker = os.path.join(STATE_DIR, "notified")
+    try:
+        with open(marker) as f:
+            if f.read().strip() == version:
+                return
+    except FileNotFoundError:
+        pass
+    body = f"restarted {restarted}" + (f", {waiting} waiting (claude-refresh --dry-run)" if waiting else "")
+    run(CMUX, "notify", "--title", f"claude {version}", "--body", body)
+    with open(marker, "w") as f:
+        f.write(version)
+
+
+def main():
+    if not os.path.exists(LATEST) or not os.access(CMUX, os.X_OK):
+        return
+    identity = cmux_json("identify", "--no-caller")
+    if identity is None:
+        if "CMUX_SURFACE_ID" in os.environ:
+            log("cmux socket refused or unreachable from inside cmux")
+        return
+    os.makedirs(STATE_DIR, exist_ok=True)
+    lock = open(os.path.join(STATE_DIR, "lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return
+
+    latest = os.path.realpath(LATEST)
+    version = os.path.basename(os.path.dirname(latest))
+    table = process_table()
+    stale = []
+    for pid, (_, command) in table.items():
+        if is_claude(command):
+            loaded = loaded_binary(pid)
+            if loaded and os.path.realpath(loaded) != latest:
+                stale.append((pid, os.path.basename(os.path.dirname(loaded))))
+    if not stale:
+        if dry_run:
+            print(f"all sessions run claude {version}")
+        return
+
+    states = lifecycles()
+    focused = (identity.get("focused") or {}).get("surface_id")
+    restarted = waiting = 0
+    for pid, old in sorted(stale):
+        why, target = blocker(pid, table, states, focused)
+        label = f"pid {pid} ({old})" + (f" session {target['session'][:8]}" if target and "session" in target else "")
+        if target is None:
+            if dry_run:
+                print(f"{label}: skipped — {why}")
+            continue
+        if why or dry_run:
+            waiting += 1
+            if dry_run:
+                print(f"{label}: {'waits — ' + why if why else 'would restart'}")
+            continue
+        outcome = restart(pid, target)
+        log(f"{label} → {version}: {outcome}")
+        if outcome.startswith("restarted"):
+            restarted += 1
+        else:
+            waiting += 1
+        time.sleep(2)
+    if restarted and not dry_run:
+        notify_once(version, restarted, waiting)
+
+
+def kick():
+    if "CMUX_SURFACE_ID" not in os.environ:
+        return  # a session outside cmux: the socket would refuse the sweep anyway
+    os.makedirs(STATE_DIR, exist_ok=True)
+    stamp = os.path.join(STATE_DIR, "kicked")
+    try:
+        if time.time() - os.path.getmtime(stamp) < KICK_INTERVAL_SECONDS:
+            return
+    except FileNotFoundError:
+        pass
+    open(stamp, "w").close()
+    # Detach twice and drop the hook's pipes: the sweep outlives the hook, and may outlive the
+    # very session whose hook started it.
+    if os.fork():
+        return
+    os.setsid()
+    if os.fork():
+        os._exit(0)
+    devnull = os.open(os.devnull, os.O_RDONLY)
+    out = os.open(LOG, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+    os.dup2(devnull, 0)
+    os.dup2(out, 1)
+    os.dup2(out, 2)
+    try:
+        main()
+    finally:
+        os._exit(0)
+
+
+if __name__ == "__main__":
+    if "--kick" in sys.argv[1:]:
+        kick()
+    else:
+        main()

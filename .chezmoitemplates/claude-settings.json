@@ -34,6 +34,18 @@
   "extraKnownMarketplaces": {{ .marketplaces | toJson }},
   "enabledPlugins": {{ .enabled | toJson }},
 {{- end }}
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ .chezmoi.homeDir }}/.local/bin/claude-refresh --kick"
+          }
+        ]
+      }
+    ]
+  },
   "language": "Russian",
   "editorMode": "normal",
   "modelSettings": {
