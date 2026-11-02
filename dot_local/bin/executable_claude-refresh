@@ -174,6 +174,12 @@ def blocker(pid, table, states, focused):
     if record.get("kind") != "claude" or not session_id:
         return "no restore record for the surface", target
     target["session"] = session_id
+    # cmux restores only if the transcript exists under the record's config dir; a record
+    # captured before that dir was renamed would turn /exit into a lost session.
+    record_dir = ((record.get("launch_command") or {}).get("environment") or {}).get(
+        "CLAUDE_CONFIG_DIR", os.path.expanduser("~/.claude"))
+    if not glob.glob(os.path.join(record_dir, "projects", "*", session_id + ".jsonl")):
+        return f"restore record is stale (no transcript under {record_dir})", target
     state = states.get(pid)
     if state not in (None, "idle"):
         return f"lifecycle is {state}", target
