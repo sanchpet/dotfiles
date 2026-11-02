@@ -53,10 +53,12 @@
   "editorMode": "normal",
   "modelSettings": {
     "claude-opus-5": {
-      "effortLevel": "high"
+      "effortLevel": "high",
+      "autoCompactWindow": 512000
     },
     "claude-opus-5-5": {
-      "effortLevel": "high"
+      "effortLevel": "high",
+      "autoCompactWindow": 512000
     }
   }
 }
