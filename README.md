@@ -191,6 +191,7 @@ Same groups, same order. Most casks go on every machine; where one does not, its
 | Slack | Team chat client (self-updating cask) — **personal profile only**; the corporate workspace runs on the MDM-supplied build | [site](https://slack.com) |
 | Super Productivity | To-do list + Pomodoro + time tracking (MIT, local-first) — the time-accounting instrument; see [Agent access](#agent-access-mcp) | [github](https://github.com/super-productivity/super-productivity) |
 | WakaTime | Menu-bar time tracker — whole-system activity beyond editor plugins | [docs](https://wakatime.com/mac) |
+| f.lux | Screen colour temperature by time of day — finer than Night Shift; turn Night Shift off so they don't stack | [site](https://justgetflux.com) |
 | Pearcleaner | App uninstaller + orphaned-file finder (open-source CleanMyMac alt) | [github](https://github.com/alienator88/Pearcleaner) |
 | SwiftBar | Runs a script on a timer and renders its stdout in the menu bar — hosts the `workday` plugin below | [github](https://github.com/swiftbar/SwiftBar) |
 
