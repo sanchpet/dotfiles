@@ -220,6 +220,7 @@ Installed on every machine, so the profile column is dropped in favour of the gr
 | gnupg | `gpg` — verifies the signed helm plugin tarballs (`run_onchange_after_install-helm-plugins.sh`); declared in its own right rather than inherited through skopeo, which is what let skopeo be dropped without taking plugin verification with it | Cloud, secrets & networking | [site](https://gnupg.org) |
 | ffmpeg | Video/audio transcoding — mise offers only `conda:` (a conda backend with its own cache) or an asdf plugin that builds from source; brew's bottle ships the encoders needed (svt-av1, libvpx, x264, opus) | Media & documents | [site](https://ffmpeg.org) |
 | qrencode | QR encoder — not in the mise registry, and upstream ships source only | Media & documents | [site](https://fukuchi.org/works/qrencode/) |
+| graphviz | `dot` — renders DOT graphs to SVG/PNG (`ansible-playbook-grapher` calls it); not in the mise registry, upstream ships source only | Media & documents | [site](https://graphviz.org) |
 | gnu-sed | GNU sed as `gsed` — Darwin-aware build scripts call it for in-place edits BSD sed can't do (external-secrets' `make reviewable`); not in the mise registry | System & productivity | [docs](https://www.gnu.org/software/sed/) |
 | mas | Mac App Store CLI — installs/declares the App Store apps above | System & productivity | [github](https://github.com/mas-cli/mas) |
 
