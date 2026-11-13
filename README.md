@@ -153,7 +153,7 @@ Declared in the repo-local `mise.toml` and `.pre-commit-config.yaml`, not in the
 
 ### GUI (Homebrew cask)
 
-Same groups, same order. Most casks go on every machine; where one does not, its purpose says so. The personal-only and work-only ones sit in profile-guarded blocks in `Brewfile.tmpl`, so their physical position there differs from their group position here.
+Same groups, same order. Most casks go on every machine; where one does not, its purpose says so. The personal-only ones sit in a profile-guarded block in `Brewfile.tmpl`, so their physical position there differs from their group position here.
 
 #### Shell, terminal & editing
 
@@ -183,7 +183,6 @@ Same groups, same order. Most casks go on every machine; where one does not, its
 | Tool | Purpose | Link |
 |------|---------|------|
 | Yandex Music | Desktop music player (self-updating cask) | [site](https://music.yandex.ru) |
-| NAPS2 | Document scanner — reaches a network MFP over eSCL, no vendor driver. **Work profile only**: the office MFP has no scan-to-email, scans are pulled to the laptop | [site](https://www.naps2.com/) |
 
 #### System & productivity
 
