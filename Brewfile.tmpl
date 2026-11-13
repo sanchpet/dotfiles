@@ -7,8 +7,8 @@
 # CLI tools — via mise (mise-first), see ~/.config/mise/config.toml.
 # Brewfile holds only GUI casks and formulae that mise can't provide.
 #
-# Two guards split the file, and the split by mechanism is load-bearing: the mas entries must
-# stay inside the CI guard and the personal-only casks inside the profile guard. Within each
+# Guards split the file, and the split by mechanism is load-bearing: the mas entries must
+# stay inside the CI guard and the profile-only casks inside their profile guard. Within each
 # block, entries follow the same purpose groups in the same order as ~/.config/mise/config.toml
 # and the README.
 
@@ -67,6 +67,13 @@ cask "amneziavpn"         # AmneziaVPN client — the desktop side of the VPN fl
 cask "glkvm"              # GL.iNet KVM-over-IP client — remote console/BIOS access to homelab nodes. Cask, not mas: the App Store entry and the vendor download are different channels for the same app, and updating from the vendor site (which the app prompts for) leaves a mas declaration unsatisfiable
 # System & productivity
 cask "slack"              # Slack desktop client (self-updating cask, auto_updates)
+{{- end }}
+
+# === Work machine only (profile = work) ===
+# Tools whose only use is the office: nothing on a personal machine reaches that hardware.
+{{ if eq (dig "profile" "personal" .) "work" -}}
+# Media & documents
+cask "naps2"              # document scanner (eSCL over the network, no vendor driver) — the office MFP has no scan-to-email; scans are pulled to the laptop
 {{- end }}
 
 # === Mac App Store apps (mas) — real machines only ===
