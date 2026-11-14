@@ -173,9 +173,11 @@ yq = "4.53.3"
 # a sub-table to follow every plain key. Not in the mise registry (closed source, no GitHub
 # Releases), so the http backend: version pin + sha256 = reproducibility and supply-chain.
 # To update: bump version + url + checksum (sha256 of the new binary), then commit.
-# Latest version: curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/stable
+# version_list_url gives `mise outdated` / `mise latest http:yc` the stable release; without it
+# the http backend has no version list and every upgrade check errors on yc.
 [tools."http:yc"]
 version = "1.12.0"
+version_list_url = "https://storage.yandexcloud.net/yandexcloud-yc/release/stable"
 
 [tools."http:yc".platforms.macos-arm64]
 url = "https://storage.yandexcloud.net/yandexcloud-yc/release/1.12.0/darwin/arm64/yc"
