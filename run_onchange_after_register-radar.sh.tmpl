@@ -1,16 +1,15 @@
 #!/bin/sh
 # Register Radar's built-in MCP server (the binary is declared in dot_config/mise/config.toml)
-# with every WORK Claude profile. Like the registrations beside it, this otherwise lives only as
-# hand-typed state under ~/.claude-work-* and is lost the moment that profile is rebuilt or the
+# with the machine's Claude profiles. Like the registrations beside it, this otherwise lives only
+# as hand-typed state under the profile dir and is lost the moment that profile is rebuilt or the
 # machine is replaced.
 #
-# revision: 2  — bump to force a re-run after editing the intent below.
+# revision: 3  — bump to force a re-run after editing the intent below.
 #
-# Work MACHINE only — a stronger condition than the work profile serena settles for, and the
-# same one super-productivity-mcp uses: the clusters Radar reads are reachable from nowhere else,
-# so a registration on a personal machine would be an endpoint that can never answer.
-# CLAUDE_CONFIG_DIR is still set explicitly rather than inherited from whatever shell runs
-# `chezmoi apply`.
+# A work machine registers into every work profile, a personal one into the personal profile —
+# the same split super-productivity-mcp uses. Each machine has its own clusters in its kubeconfig,
+# so the endpoint answers wherever the registration lands. CLAUDE_CONFIG_DIR is set explicitly
+# rather than inherited from whatever shell runs `chezmoi apply`.
 #
 # HTTP at a fixed port rather than stdio, because Radar's stdio mode serves only the tool catalog
 # for registry introspection and cannot answer a cluster-backed call. So this attaches to a Radar
@@ -23,10 +22,11 @@
 # merely not allowed.
 set -eu
 
-{{ if ne .profile "work" -}}
-echo "radar: not a work machine — skipping MCP registration"
-exit 0
-{{ end -}}
+PROFILE="{{ dig "profile" "personal" . }}"
+case "$PROFILE" in
+  work) CONFIG_DIRS="{{ range $i, $p := .claudeWorkProfiles }}{{ if $i }} {{ end }}$HOME/.claude-work-{{ $p.name }}{{ end }}" ;;
+  *)    CONFIG_DIRS="$HOME/.claude-personal" ;;
+esac
 
 ENDPOINT="http://localhost:9280/mcp"
 
@@ -34,15 +34,14 @@ command -v claude >/dev/null 2>&1 || { echo "radar: claude not on PATH — skipp
 [ -x "$HOME/.local/share/mise/shims/kubectl-radar" ] || { echo "radar: binary not installed (mise not applied yet?) — skipping"; exit 0; }
 
 added=""
-for name in{{ range .claudeWorkProfiles }} {{ .name }}{{ end }}; do
-  CONFIG_DIR="$HOME/.claude-work-$name"
+for CONFIG_DIR in $CONFIG_DIRS; do
   # Idempotent: already registered is the steady state, not an error.
   if CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp list 2>/dev/null | grep -q '^radar'; then
-    echo "radar: already registered in the work-$name profile"
+    echo "radar: already registered in $CONFIG_DIR"
     continue
   fi
   CLAUDE_CONFIG_DIR="$CONFIG_DIR" claude mcp add radar --scope user --transport http "$ENDPOINT"
-  added="$added work-$name"
+  added="$added $CONFIG_DIR"
 done
 
 [ -n "$added" ] || exit 0
