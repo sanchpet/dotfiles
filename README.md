@@ -514,3 +514,20 @@ claude-codex --resume SESSION_ID --fork-session
 `codex-proxy` generates the private runtime config and a random local client key under `~/.local/state/codex-proxy/` (directories 0700, files 0600). OAuth files stay there and never enter chezmoi or Git. The listener binds only to loopback, management is disabled, and request logging is off. Application errors go to `~/Library/Logs/codex-proxy.log`. The agent starts at login once the state directory exists. Subscription access uses third-party protocol translation; compatibility with long Claude histories and model-specific features needs verification when upgrading the pinned adapter.
 
 The statusline detects this gateway by `ANTHROPIC_BASE_URL`. `codex-statusline` reads its single active Codex credential and queries the ChatGPT usage endpoint, without refreshing or writing OAuth tokens. Account-wide five-hour and seven-day windows are mapped by their reported duration into ailine's stdin `rate_limits`; other window lengths are ignored. Results (including failures) are cached for 60 seconds, scoped to the account, with a non-blocking lock and a three-second network timeout. Failed or expired readings are omitted rather than displayed as fresh; diagnostics go to stderr without tokens. Multiple active Codex accounts are refused because the statusline cannot identify which the gateway selected. The existing five-second redraw picks this up in running `claude-codex` sessions. Anthropic's platform-status and API-cost segments are disabled for these subscription sessions, including when quota is temporarily unavailable.
+
+### Claude Code with the Kimi subscription
+
+`claude-kimi` runs Claude Code against the Kimi for Coding Anthropic-compatible endpoint (`https://api.kimi.ai/coding`), reusing the personal profile's transcript store. Unlike the Codex gateway, no local proxy is needed: Moonshot speaks the Anthropic Messages API directly, so the wrapper only swaps the base URL, the bearer token and the model defaults. It defaults to `k3.1-pro`; set `CLAUDE_KIMI_MODEL` to another subscription model (`k3`, `k3-256k`, `kimi-for-coding`, `kimi-for-coding-highspeed`, `k3.1-pro-highspeed`). Background Opus/Sonnet/Haiku aliases also use the selected Kimi model, so title generation and other background tasks draw on the same subscription. Ordinary `claude-personal` keeps its existing routing. Endpoint and model ids follow [lexfrei's setup](https://gist.github.com/lexfrei/27757aeb7199577cb8b44aa0771b6162).
+
+Create a Kimi for Coding API key at <https://www.kimi.ai/code/console> (a key is shown once at creation) and store it in `~/.local/state/claude-kimi/api-key` (0600, never enters chezmoi or Git):
+
+```sh
+mkdir -p ~/.local/state/claude-kimi && chmod 700 ~/.local/state/claude-kimi
+cat > ~/.local/state/claude-kimi/api-key   # paste the sk-kimi-... key, then Ctrl-D
+chmod 600 ~/.local/state/claude-kimi/api-key
+claude-kimi
+# Resume an existing personal-profile conversation on a new branch of its history:
+claude-kimi --resume SESSION_ID --fork-session
+```
+
+The statusline falls through to plain ailine for these sessions: the Kimi backend sends no rate-limit headers, so there is no quota segment the way `codex-statusline` builds one for the Codex gateway. The wrapper reads the key file only; nothing is sent anywhere except the Kimi endpoint.

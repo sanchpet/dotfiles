@@ -1,0 +1,22 @@
+#!/bin/sh
+# Keep the personal transcript store while routing inference through the Kimi for Coding subscription.
+set -eu
+key_file="$HOME/.local/state/claude-kimi/api-key"
+if [ ! -r "$key_file" ]; then
+    echo 'Create a Kimi for Coding API key at https://www.kimi.ai/code/console' >&2
+    echo 'and store it in ~/.local/state/claude-kimi/api-key (chmod 600).' >&2
+    exit 1
+fi
+unset ANTHROPIC_API_KEY CLAUDE_CODE_OAUTH_TOKEN
+unset CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
+export CLAUDE_CONFIG_DIR="$HOME/.claude-personal"
+export ANTHROPIC_BASE_URL="https://api.kimi.ai/coding"
+ANTHROPIC_AUTH_TOKEN=$(cat "$key_file")
+export ANTHROPIC_AUTH_TOKEN
+model=${CLAUDE_KIMI_MODEL:-k3.1-pro}
+export ANTHROPIC_CUSTOM_MODEL_OPTION="$model"
+export ANTHROPIC_CUSTOM_MODEL_OPTION_NAME="Kimi ($model)"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="$model"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="$model"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="$model"
+exec claude --model "$model" "$@"
