@@ -43,4 +43,5 @@ Library/LaunchAgents/dev.sanchpet.mcp-tg-agent.plist
 Library/LaunchAgents/dev.sanchpet.dispositif.plist
 Library/LaunchAgents/dev.sanchpet.comet.plist
 Library/LaunchAgents/dev.sanchpet.codex-proxy.plist
+Library/LaunchAgents/dev.sanchpet.claude-sanitize.plist
 {{ end }}

@@ -1,0 +1,188 @@
+#!/usr/bin/python3
+"""Sanitize Claude Messages traffic between Claude Code and the local gateway.
+
+Claude Code's mid-conversation-tool-changes beta emits tool_addition/tool_removal
+blocks (on assistant and system messages) whenever the tool set changes — at resume
+when MCP configuration drifted, and mid-session on MCP reconnects. Anthropic accepts
+these blocks; the gateway's other Anthropic-compatible upstreams (Kimi) reject the
+whole request with a generic 400. This proxy listens on loopback in front of the
+gateway, strips those blocks from /v1/messages bodies, and forwards the rest:
+non-Kimi models to the gateway, Kimi models straight to the upstream (see below),
+SSE streams included.
+
+Kimi models bypass the gateway entirely: the gateway's kimi leg intermittently gets
+Cloudflare-fingerprint-blocked on its way to api.kimi.ai (error storms make it worse),
+while direct calls with an honest User-Agent pass consistently. The OAuth token is read
+from the gateway's auth directory on every request, so the gateway's background refresh
+keeps it current; the gateway stays the credential owner, this proxy only borrows it.
+"""
+
+import glob
+import http.client
+import http.server
+import json
+import pathlib
+import sys
+import urllib.parse
+
+LISTEN = ("127.0.0.1", 8319)
+GATEWAY = ("127.0.0.1", 8317)
+KIMI_AUTH_GLOB = "~/.local/state/codex-proxy/auth/kimi-*.json"
+REMOVE = {"tool_addition", "tool_removal"}
+KIMI_MODEL_PREFIXES = ("kimi-", "k3")
+HOP_BY_HOP = {
+    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+    "te", "trailer", "transfer-encoding", "upgrade", "host", "content-length",
+}
+
+
+def scrub(node):
+    if isinstance(node, dict):
+        for value in node.values():
+            scrub(value)
+    elif isinstance(node, list):
+        for index in range(len(node) - 1, -1, -1):
+            item = node[index]
+            if isinstance(item, dict) and item.get("type") in REMOVE:
+                del node[index]
+            else:
+                scrub(item)
+
+
+def kimi_target():
+    """Resolve the current Kimi OAuth token and endpoint from the gateway's auth dir."""
+    for path in glob.glob(pathlib.Path(KIMI_AUTH_GLOB).expanduser().as_posix()):
+        account = json.loads(pathlib.Path(path).read_text())
+        if account.get("disabled"):
+            continue
+        base = (account.get("base_url") or "https://api.kimi.ai/coding").rstrip("/")
+        return base + "/v1/messages", account["access_token"]
+    return None
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def handle_one_request(self):
+        try:
+            super().handle_one_request()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _read_body(self):
+        if "chunked" in (self.headers.get("Transfer-Encoding") or "").lower():
+            chunks = []
+            while True:
+                size_line = self.rfile.readline(65536).strip()
+                if not size_line:
+                    continue
+                size = int(size_line.split(b";")[0], 16)
+                if size == 0:
+                    while True:  # trailers end at a blank line
+                        line = self.rfile.readline(65536)
+                        if line in (b"\r\n", b"\n", b""):
+                            break
+                    break
+                chunks.append(self.rfile.read(size))
+                self.rfile.read(2)  # trailing CRLF
+            return b"".join(chunks)
+        length = int(self.headers.get("Content-Length") or 0)
+        return self.rfile.read(length) if length else None
+
+    def _forward(self, scrub_body):
+        body = self._read_body()
+        headers = {
+            name: value
+            for name, value in self.headers.items()
+            if name.lower() not in HOP_BY_HOP
+        }
+        target = None
+        if scrub_body and body:
+            try:
+                payload = json.loads(body)
+                scrub(payload)
+                body = json.dumps(payload, ensure_ascii=False).encode()
+            except (ValueError, TypeError):
+                payload = None  # not JSON we understand: forward untouched
+            if payload is not None:
+                model = str(payload.get("model") or "")
+                if model.startswith(KIMI_MODEL_PREFIXES):
+                    target = kimi_target()
+                    if target is None:
+                        self.send_response(503)
+                        self.send_header("Content-Type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(json.dumps({
+                            "type": "error",
+                            "error": {"type": "api_error", "message": "sanitize-proxy: no active Kimi credential in the gateway auth dir"},
+                        }).encode())
+                        return
+        if target is not None:
+            url, token = target
+            connection = http.client.HTTPSConnection(
+                url.split("/", 3)[2], timeout=600,
+            )
+            path = "/" + url.split("/", 3)[3]
+            headers["Authorization"] = "Bearer " + token
+            headers["User-Agent"] = "claude-sanitize-proxy/1.0 (local subscription gateway)"
+        else:
+            connection = http.client.HTTPConnection(*GATEWAY, timeout=600)
+            path = self.path
+        try:
+            connection.request(self.command, path, body=body, headers=headers)
+            response = connection.getresponse()
+        except OSError as error:
+            connection.close()
+            self.send_response(502)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "type": "error",
+                "error": {"type": "api_error", "message": f"sanitize-proxy: upstream unavailable: {error}"},
+            }).encode())
+            return
+        self.send_response(response.status)
+        has_length = False
+        for name, value in response.getheaders():
+            if name.lower() not in HOP_BY_HOP:
+                self.send_header(name, value)
+                if name.lower() == "content-length":
+                    has_length = True
+        if not has_length:
+            # Streaming bodies (SSE) arrive without a length: chunk them downstream.
+            self.send_header("Transfer-Encoding", "chunked")
+        self.end_headers()
+        while True:
+            chunk = response.read(65536)
+            if not chunk:
+                break
+            if has_length:
+                self.wfile.write(chunk)
+            else:
+                self.wfile.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
+            self.wfile.flush()
+        if not has_length:
+            self.wfile.write(b"0\r\n\r\n")
+            self.wfile.flush()
+        connection.close()
+
+    def do_POST(self):
+        path = urllib.parse.urlsplit(self.path).path
+        self._forward(scrub_body=path.rstrip("/").endswith("/v1/messages"))
+
+    def do_GET(self):
+        self._forward(scrub_body=False)
+
+    def log_message(self, format, *args):
+        print(f"sanitize-proxy: {args[0]}", file=sys.stderr)
+
+
+def main():
+    server = http.server.ThreadingHTTPServer(LISTEN, Handler)
+    server.daemon_threads = True
+    print(f"sanitize-proxy: listening on {LISTEN[0]}:{LISTEN[1]}, gateway {GATEWAY[1]}", file=sys.stderr)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

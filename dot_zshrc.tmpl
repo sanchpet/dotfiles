@@ -302,14 +302,18 @@ redock() {
 # profiles differ only by identity, never by configuration. Work has one profile per team
 # subscription (.chezmoidata/claude-work-profiles.toml), to switch to when one hits its limit.
 # claude-personal additionally routes through the local gateway (codex-proxy, CLIProxyAPI on
-# 127.0.0.1:8317), which holds one credential per subscription — Codex OAuth, Kimi OAuth, and
-# Claude OAuth once logged in. One process: gateway model discovery fills the /model picker
-# with every provider's models, and switching models switches subscriptions mid-session.
-# CLAUDE_PERSONAL_MODEL overrides the default (kimi-k3.1-pro); the background Opus/Sonnet/Haiku
-# aliases point at the same pool (Haiku tasks go to the half-quota kimi-k3-256k).
+# 127.0.0.1:8317) via a sanitizing loopback proxy (127.0.0.1:8319), which holds one credential
+# per subscription — Codex OAuth, Kimi OAuth, and Claude OAuth once logged in. The sanitizer
+# strips tool_addition/tool_removal blocks that Claude Code emits on MCP tool-set changes:
+# Anthropic accepts them, the gateway's other upstreams (Kimi) 400 the whole request, and CC
+# regenerates them live at resume, so transcript-level scrubbing cannot keep up.
+# One process: gateway model discovery fills the /model picker with every provider's
+# models, and switching models switches subscriptions mid-session. CLAUDE_PERSONAL_MODEL
+# overrides the default (kimi-k3.1-pro); the background Opus/Sonnet/Haiku aliases point at
+# the same pool (Haiku tasks go to the half-quota kimi-k3-256k).
 claude-personal() {
   CLAUDE_CONFIG_DIR="$HOME/.claude-personal" \
-  ANTHROPIC_BASE_URL="http://127.0.0.1:8317" \
+  ANTHROPIC_BASE_URL="http://127.0.0.1:8319" \
   ANTHROPIC_AUTH_TOKEN="$(cat "$HOME/.local/state/codex-proxy/api-key")" \
   CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1 \
   ANTHROPIC_DEFAULT_HAIKU_MODEL="${CLAUDE_PERSONAL_HAIKU:-kimi-k3-256k}" \
