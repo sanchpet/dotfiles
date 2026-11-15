@@ -42,6 +42,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | Tool | Purpose | Link |
 |------|---------|------|
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
+| CLIProxyAPI (`cli-proxy-api`) | Pinned local Anthropic Messages / Codex Responses adapter, installed through mise's GitHub backend (no registry entry) | [source](https://github.com/router-for-me/CLIProxyAPI) |
 | ailine | Real-time Claude Code statusline (quota / context / model), formerly claudeline — wired via `~/.claude/settings.json` `statusLine`. github backend until aqua-registry catches up with the rename | [github](https://github.com/lexfrei/ailine) |
 | mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. `latest` although it holds a session that authorises the whole account: the author is known and trusted. Runs as one shared HTTP daemon. See [Agent access](#agent-access-mcp) | [github](https://github.com/lexfrei/mcp-tg) |
 | wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned**: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement | [github](https://github.com/mekedron/wolt-cli) |
@@ -496,3 +497,18 @@ For interactive use, `bwu` (defined in `.zshrc`) logs in once per machine and un
 The zsh config (`dot_zshrc.tmpl`) is kept as a `.tmpl` so a `{{ bitwarden ... }}` secret line can be added later without a rename — see [Zsh shell](#zsh-shell-oh-my-zsh) for the plugin set and prompt.
 
 > **Pending:** the `OBSIDIAN_API_KEY` secret reference (via Bitwarden) is not wired yet — `.zshrc` is kept as a `.tmpl` so the `{{ bitwarden ... }}` line can be added without a rename.
+
+### Claude Code with the Codex subscription
+
+`claude-codex` runs Claude Code against CLIProxyAPI on `127.0.0.1:8317`, using the personal profile's existing transcript store. It defaults to `gpt-6.1-sol`; set `CLAUDE_CODEX_MODEL` to another model exposed by the gateway. The `/model` picker discovers gateway models. Background Opus/Sonnet/Haiku aliases also use the selected OpenAI model. Ordinary `claude-personal` keeps its existing routing.
+
+Run `codex-proxy -codex-login` once for a separate ChatGPT OAuth login. The proxy owns this login, independently of Codex CLI's refresh tokens. Then start its personal-only login agent:
+
+```sh
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/dev.sanchpet.codex-proxy.plist"
+claude-codex
+# Resume an existing conversation on a new branch of its history:
+claude-codex --resume SESSION_ID --fork-session
+```
+
+`codex-proxy` generates the private runtime config and a random local client key under `~/.local/state/codex-proxy/` (directories 0700, files 0600). OAuth files stay there and never enter chezmoi or Git. The listener binds only to loopback, management is disabled, and request logging is off. Application errors go to `~/Library/Logs/codex-proxy.log`. The agent starts at login once the state directory exists. Subscription access uses third-party protocol translation; compatibility with long Claude histories and model-specific features needs verification when upgrading the pinned adapter.

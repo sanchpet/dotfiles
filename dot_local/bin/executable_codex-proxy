@@ -1,0 +1,49 @@
+#!/usr/bin/python3
+"""Run the local Claude Messages / Codex Responses adapter."""
+
+import json
+import os
+from pathlib import Path
+import secrets
+import shutil
+import subprocess
+import sys
+
+
+def main():
+    os.umask(0o077)
+    state = Path.home() / ".local/state/codex-proxy"
+    state.mkdir(parents=True, exist_ok=True, mode=0o700)
+    auth = state / "auth"
+    auth.mkdir(exist_ok=True, mode=0o700)
+    key_path = state / "api-key"
+    try:
+        with key_path.open("x") as key_file:
+            key_file.write(secrets.token_urlsafe(32) + "\n")
+    except FileExistsError:
+        pass
+    config = {
+        "config-version": 8,
+        "server": {"host": "127.0.0.1", "port": 8317},
+        "access": {"api-keys": [key_path.read_text().strip()]},
+        "management": {"allow-remote": False, "disable-control-panel": True},
+        "oauth": {"auth-dir": str(auth)},
+        "observability": {
+            "logs": {"debug": False, "request-log": False},
+            "usage": {"usage-statistics-enabled": False},
+        },
+    }
+    config_path = state / "config.json"
+    temporary = state / ("config." + str(os.getpid()) + ".tmp")
+    temporary.write_text(json.dumps(config) + "\n")
+    temporary.replace(config_path)
+    mise = shutil.which("mise") or str(Path.home() / ".local/bin/mise")
+    binary = subprocess.check_output(
+        [mise, "which", "cli-proxy-api"], text=True
+    ).strip()
+    os.chdir(state)
+    os.execv(binary, [binary, "-config", str(config_path), *sys.argv[1:]])
+
+
+if __name__ == "__main__":
+    main()
