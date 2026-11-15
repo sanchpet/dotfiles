@@ -4,7 +4,8 @@
 # ailine renders fixed segments (model, repo, context, quota, credits, …) and has no
 # custom-text segment, so the profile marker is prepended here instead of dropping any of
 # them. Claude Code passes the session JSON on stdin and reads one line from stdout; the
-# marker is written first, then ailine inherits stdin untouched.
+# marker is written first. The Codex gateway path fills quota windows before rendering;
+# other profiles pass stdin to ailine untouched.
 #
 # CLAUDE_CONFIG_DIR is set by the claude-work-* / claude-personal shell functions and is
 # inherited by the process Claude Code spawns for the statusline, which is what makes the
@@ -14,4 +15,8 @@ case "${CLAUDE_CONFIG_DIR:-}" in
   *-personal) printf '🏠 ' ;;
 esac
 
+case "${ANTHROPIC_BASE_URL:-}" in
+  http://127.0.0.1:8317|http://127.0.0.1:8317/)
+    exec "$HOME/.local/bin/codex-statusline" "$@" ;;
+esac
 exec ailine "$@"
