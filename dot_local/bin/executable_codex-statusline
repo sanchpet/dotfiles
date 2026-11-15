@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-"""Supply ailine with subscription windows from the local gateway's Codex account."""
+"""Supply ailine with subscription windows from the gateway's Codex account when the
+session runs a Codex model; subscription sessions never show the API-cost segment."""
 
 import fcntl
 import hashlib
@@ -87,14 +88,22 @@ def quota(state=STATE):
 def main():
     os.umask(0o077)
     data = json.load(sys.stdin)
-    try:
-        data["rate_limits"] = quota()
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        print("codex-statusline: quota unavailable (" + type(error).__name__ + ")", file=sys.stderr)
-        data["rate_limits"] = {}
-    # The platform status segment concerns Anthropic, not this inference provider.
-    result = subprocess.run(["ailine", "--no-status", "--cost", "false", *sys.argv[1:]],
-                            input=json.dumps(data), text=True, check=False)
+    model_field = data.get("model") or ""
+    model = model_field if isinstance(model_field, str) else str(model_field.get("id") or "")
+    codex_model = model.startswith(("gpt-", "codex", "o3", "o4"))
+    if codex_model:
+        try:
+            data["rate_limits"] = quota()
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print("codex-statusline: quota unavailable (" + type(error).__name__ + ")", file=sys.stderr)
+            data["rate_limits"] = {}
+    args = ["ailine"]
+    if codex_model or model.startswith(("kimi-", "k3")):
+        # The platform status segment concerns Anthropic, not this inference provider.
+        args.append("--no-status")
+    # All gateway sessions run on subscriptions, where API-cost segments are meaningless.
+    args += ["--cost", "false", *sys.argv[1:]]
+    result = subprocess.run(args, input=json.dumps(data), text=True, check=False)
     raise SystemExit(result.returncode)
 
 
