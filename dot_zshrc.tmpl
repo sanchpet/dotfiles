@@ -322,6 +322,20 @@ claude-personal() {
   ANTHROPIC_DEFAULT_OPUS_MODEL="${CLAUDE_PERSONAL_MODEL:-kimi-k3.1-pro}" \
   claude --model "${CLAUDE_PERSONAL_MODEL:-kimi-k3.1-pro}" "$@"
 }
+# Same personal profile, but direct Claude OAuth instead of the gateway. Clearing inherited
+# provider variables is required: an explicit ANTHROPIC_BASE_URL or token would win over /login.
+claude-personal-sub() {
+  env -u ANTHROPIC_BASE_URL \
+      -u ANTHROPIC_AUTH_TOKEN \
+      -u ANTHROPIC_API_KEY \
+      -u ANTHROPIC_DEFAULT_HAIKU_MODEL \
+      -u ANTHROPIC_DEFAULT_SONNET_MODEL \
+      -u ANTHROPIC_DEFAULT_OPUS_MODEL \
+      -u CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY \
+      -u CLAUDE_CODE_SUBAGENT_MODEL_FORCE \
+      CLAUDE_CONFIG_DIR="$HOME/.claude-personal" \
+      claude --model opus "$@"
+}
 {{ range .claudeWorkProfiles -}}
 claude-work-{{ .name }}() { CLAUDE_CONFIG_DIR="$HOME/.claude-work-{{ .name }}" claude "$@" }
 {{ end }}
