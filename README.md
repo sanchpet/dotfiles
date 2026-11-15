@@ -42,6 +42,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | Tool | Purpose | Link |
 |------|---------|------|
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
+| Codex CLI (`codex`) | OpenAI agentic CLI on the ChatGPT/Codex subscription — the native harness next to `claude-codex` in the one-terminal rotation | [github](https://github.com/openai/codex) |
 | CLIProxyAPI (`cli-proxy-api`) | Pinned local Anthropic Messages / Codex Responses adapter, installed through mise's GitHub backend (no registry entry) | [source](https://github.com/router-for-me/CLIProxyAPI) |
 | ailine | Real-time Claude Code statusline (quota / context / model), formerly claudeline — wired via `~/.claude/settings.json` `statusLine`. github backend until aqua-registry catches up with the rename | [github](https://github.com/lexfrei/ailine) |
 | mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. `latest` although it holds a session that authorises the whole account: the author is known and trusted. Runs as one shared HTTP daemon. See [Agent access](#agent-access-mcp) | [github](https://github.com/lexfrei/mcp-tg) |
