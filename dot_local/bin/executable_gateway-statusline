@@ -1,0 +1,170 @@
+#!/usr/bin/python3
+"""Attach subscription quota windows to ailine stdin for gateway sessions.
+
+Codex models read the gateway's single active Codex credential and query the ChatGPT
+usage endpoint; Kimi models read the gateway's single active Kimi credential and query
+the Kimi for Coding /v1/usages endpoint. Both cache for 60 seconds, scoped to the
+account, with a non-blocking lock and a three-second timeout. Subscription sessions
+never show the API-cost segment; the Anthropic platform-status segment is hidden for
+non-Anthropic providers.
+"""
+
+import fcntl
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime
+
+
+STATE = Path.home() / ".local/state/codex-proxy"
+TTL = 60
+USAGE_UA = "gateway-statusline/1.0 (local subscription quota reader)"
+CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
+
+
+def windows_from_usage(usage, now):
+    windows = {}
+    limits = usage.get("rate_limit") or {}
+    for field in ("primary_window", "secondary_window"):
+        window = limits.get(field) or {}
+        name = {18000: "five_hour", 604800: "seven_day"}.get(
+            window.get("limit_window_seconds")
+        )
+        used, reset = window.get("used_percent"), window.get("reset_at")
+        if not name or not all(type(value) in (int, float) for value in (used, reset)):
+            continue
+        if not (math.isfinite(used) and math.isfinite(reset) and 0 <= used <= 100 and reset > now):
+            continue
+        windows[name] = {"used_percentage": used, "resets_at": reset}
+    return windows
+
+
+def fetch_usage(account):
+    request = urllib.request.Request(CODEX_USAGE_URL, headers={
+        "Authorization": "Bearer " + account["access_token"],
+        "ChatGPT-Account-Id": account["account_id"],
+        "User-Agent": "codex_cli_rs/0.169.0",
+    })
+    with urllib.request.urlopen(request, timeout=3) as response:
+        return json.load(response)
+
+
+def load_account(provider):
+    accounts = []
+    for path in (STATE / "auth").glob(f"{provider}-*.json"):
+        account = json.loads(path.read_text())
+        if str(account.get("type") or "").startswith(provider) and not account.get("disabled"):
+            accounts.append(account)
+    if len(accounts) != 1:
+        raise ValueError(f"expected exactly one active {provider} account")
+    return accounts[0]
+
+
+def cached_windows(cache_name, scope, fetch, now):
+    cache_path = STATE / cache_name
+    with (STATE / (cache_name + ".lock")).open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return {}
+        try:
+            cache = json.loads(cache_path.read_text())
+        except (OSError, ValueError):
+            cache = {}
+        if cache.get("account") == scope and 0 <= now - cache.get("checked_at", 0) < TTL:
+            return {name: window for name, window in cache.get("windows", {}).items()
+                    if window["resets_at"] > now}
+        try:
+            windows = fetch()
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            # Cache failures too: a redraw every five seconds must not hammer the API.
+            detail = "HTTP " + str(error.code) if isinstance(error, urllib.error.HTTPError) else type(error).__name__
+            print(f"gateway-statusline: quota unavailable ({detail})", file=sys.stderr)
+            windows = {}
+        cache = {"account": scope, "checked_at": now, "windows": windows}
+        temporary = cache_path.with_suffix("." + str(os.getpid()) + ".tmp")
+        temporary.write_text(json.dumps(cache) + "\n")
+        temporary.replace(cache_path)
+        return windows
+
+
+def codex_quota(now):
+    account = load_account("codex")
+    scope = hashlib.sha256(account["account_id"].encode()).hexdigest()
+    return cached_windows("statusline-quota.json", scope,
+                          lambda: windows_from_usage(fetch_usage(account), now), now)
+
+
+def kimi_windows(body, now):
+    windows = {}
+    usages = body.get("usages") or {}
+    for field, name in (("limit_5h", "five_hour"), ("limit_month_total", "seven_day")):
+        usage = usages.get(field) or {}
+        ratio, reset = usage.get("used_ratio"), usage.get("reset_time")
+        if not all(type(value) in (int, float, str) for value in (ratio, reset)) or not reset:
+            continue
+        try:
+            resets_at = datetime.fromisoformat(str(reset).replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            continue
+        used = float(ratio) * 100
+        if not (math.isfinite(used) and 0 <= used <= 100 and resets_at > now):
+            continue
+        windows[name] = {"used_percentage": used, "resets_at": resets_at}
+    return windows
+
+
+def fetch_kimi_usage(account):
+    base = (account.get("base_url") or "https://api.kimi.ai/coding").rstrip("/")
+    request = urllib.request.Request(base + "/v1/usages", headers={
+        "Authorization": "Bearer " + account["access_token"],
+        "User-Agent": USAGE_UA,
+    })
+    with urllib.request.urlopen(request, timeout=3) as response:
+        return json.load(response)
+
+
+def kimi_quota(now):
+    account = load_account("kimi")
+    scope = hashlib.sha256(account["access_token"].encode()).hexdigest()
+    return cached_windows("statusline-kimi-quota.json", scope,
+                          lambda: kimi_windows(fetch_kimi_usage(account), now), now)
+
+
+def main():
+    os.umask(0o077)
+    data = json.load(sys.stdin)
+    model_field = data.get("model") or ""
+    model = model_field if isinstance(model_field, str) else str(model_field.get("id") or "")
+    now = time.time()
+    quota = None
+    provider = "claude"
+    if model.startswith(("gpt-", "codex", "o3", "o4")):
+        quota, provider = codex_quota, "codex"
+    elif model.startswith(("kimi-", "k3")):
+        quota, provider = kimi_quota, "kimi"
+    if quota is not None:
+        try:
+            data["rate_limits"] = quota(now)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print("gateway-statusline: quota unavailable (" + type(error).__name__ + ")", file=sys.stderr)
+            data["rate_limits"] = {}
+    args = ["ailine"]
+    if model and provider != "claude":
+        # The platform status segment concerns Anthropic, not this inference provider.
+        args.append("--no-status")
+    # All gateway sessions run on subscriptions, where API-cost segments are meaningless.
+    args += ["--cost", "false", *sys.argv[1:]]
+    result = subprocess.run(args, input=json.dumps(data), text=True, check=False)
+    raise SystemExit(result.returncode)
+
+
+if __name__ == "__main__":
+    main()

@@ -17,6 +17,6 @@ esac
 
 case "${ANTHROPIC_BASE_URL:-}" in
   http://127.0.0.1:8317|http://127.0.0.1:8317/)
-    exec "$HOME/.local/bin/codex-statusline" "$@" ;;
+    exec "$HOME/.local/bin/gateway-statusline" "$@" ;;
 esac
 exec ailine "$@"
