@@ -309,13 +309,14 @@ redock() {
 # regenerates them live at resume, so transcript-level scrubbing cannot keep up.
 # One process: gateway model discovery fills the /model picker with every provider's
 # models, and switching models switches subscriptions mid-session. CLAUDE_PERSONAL_MODEL
-# overrides the default (kimi-k3.1-pro); the background Opus/Sonnet/Haiku aliases point at
-# the same pool (Haiku tasks go to the half-quota kimi-k3-256k).
+# overrides the default (kimi-k3.1-pro); Claude Code subagents follow the selected model, not
+# a provider-specific alias in an agent definition.
 claude-personal() {
   CLAUDE_CONFIG_DIR="$HOME/.claude-personal" \
   ANTHROPIC_BASE_URL="http://127.0.0.1:8319" \
   ANTHROPIC_AUTH_TOKEN="$(cat "$HOME/.local/state/codex-proxy/api-key")" \
   CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1 \
+  CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 \
   ANTHROPIC_DEFAULT_HAIKU_MODEL="${CLAUDE_PERSONAL_HAIKU:-kimi-k3-256k}" \
   ANTHROPIC_DEFAULT_SONNET_MODEL="${CLAUDE_PERSONAL_MODEL:-kimi-k3.1-pro}" \
   ANTHROPIC_DEFAULT_OPUS_MODEL="${CLAUDE_PERSONAL_MODEL:-kimi-k3.1-pro}" \
