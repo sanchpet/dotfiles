@@ -1,0 +1,84 @@
+#!/usr/bin/python3
+"""Strip tool_addition/tool_removal blocks from Claude Code transcripts.
+
+Claude Code's mid-conversation-tool-changes beta records these blocks (on assistant
+AND system messages) when MCP tools re-register. Anthropic accepts them; other
+Anthropic-compatible upstreams (Kimi) answer the whole request with a generic
+400 "Invalid request Error", and every resumed turn keeps failing. Scrub them so a
+resumed session can route to such upstreams; Claude sessions do not need the blocks
+either (tool registration is replayed from the initial tool list).
+
+Usage: claude-scrub-tool-blocks [TRANSCRIPT.jsonl ...]
+With no arguments, scrubs every transcript under ~/.claude-personal/projects.
+Each file is backed up next to itself (once, .pre-kimi-fix.bak) before rewriting.
+"""
+
+import json
+import pathlib
+import shutil
+import sys
+
+
+REMOVE = {"tool_addition", "tool_removal"}
+
+
+def scrub(node):
+    if isinstance(node, dict):
+        for value in node.values():
+            scrub(value)
+    elif isinstance(node, list):
+        for index in range(len(node) - 1, -1, -1):
+            item = node[index]
+            if isinstance(item, dict) and item.get("type") in REMOVE:
+                del node[index]
+            else:
+                scrub(item)
+
+
+def scrub_file(path):
+    path = pathlib.Path(path)
+    dirty = [
+        line
+        for line in path.open()
+        if '"tool_addition"' in line or '"tool_removal"' in line
+    ]
+    if not dirty:
+        return "clean"
+    backup = path.with_suffix(".jsonl.pre-kimi-fix.bak")
+    if not backup.exists():
+        shutil.copy2(path, backup)
+    rewritten, removed = [], 0
+    for line in path.open():
+        if '"tool_addition"' not in line and '"tool_removal"' not in line:
+            rewritten.append(line)
+            continue
+        record = json.loads(line)
+        before = json.dumps(record).count('"tool_addition"') + json.dumps(record).count('"tool_removal"')
+        scrub(record)
+        removed += before - (
+            json.dumps(record).count('"tool_addition"') + json.dumps(record).count('"tool_removal"')
+        )
+        rewritten.append(json.dumps(record, ensure_ascii=False) + "\n")
+    path.write_text("".join(rewritten))
+    for line in path.open():
+        json.loads(line)
+    return f"removed {removed} blocks (backup: {backup.name})"
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        args = [
+            str(path)
+            for path in (pathlib.Path.home() / ".claude-personal/projects").glob("*/*.jsonl")
+        ]
+    if not args:
+        print("no transcripts found", file=sys.stderr)
+        return 1
+    for arg in args:
+        print(f"{pathlib.Path(arg).name[:8]}: {scrub_file(arg)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
