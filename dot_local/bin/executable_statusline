@@ -15,8 +15,11 @@ case "${CLAUDE_CONFIG_DIR:-}" in
   *-personal) printf '🏠 ' ;;
 esac
 
-# claude-personal points at the sanitizing proxy (8319) in front of the gateway (8317); work
-# profiles never set ANTHROPIC_BASE_URL and fall through to plain ailine.
+# claude-personal always uses the gateway. Route by its inherited profile marker first;
+# the gateway URL is not a reliable discriminator for this child process.
+case "${CLAUDE_CONFIG_DIR:-}" in
+  *-personal) exec "$HOME/.local/bin/gateway-statusline" "$@" ;;
+esac
 case "${ANTHROPIC_BASE_URL:-}" in
   http://127.0.0.1:8319|http://127.0.0.1:8319/|http://127.0.0.1:8317|http://127.0.0.1:8317/)
     exec "$HOME/.local/bin/gateway-statusline" "$@" ;;
