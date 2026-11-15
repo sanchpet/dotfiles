@@ -42,8 +42,8 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 | Tool | Purpose | Link |
 |------|---------|------|
 | Claude Code (`claude`) | Anthropic agentic CLI — self-update off (`DISABLE_AUTOUPDATER`), update via `mise up claude` | [docs](https://docs.claude.com/en/docs/claude-code) |
-| Codex CLI (`codex`) | OpenAI agentic CLI on the ChatGPT/Codex subscription — the native harness next to `claude-codex` in the one-terminal rotation | [github](https://github.com/openai/codex) |
-| CLIProxyAPI (`cli-proxy-api`) | Pinned local Anthropic Messages / Codex Responses adapter, installed through mise's GitHub backend (no registry entry) | [source](https://github.com/router-for-me/CLIProxyAPI) |
+| Codex CLI (`codex`) | OpenAI agentic CLI on the ChatGPT/Codex subscription — the native harness for that subscription, alongside `claude-personal` on the local gateway | [github](https://github.com/openai/codex) |
+| CLIProxyAPI (`cli-proxy-api`) | Pinned local gateway: one OAuth credential per subscription (Codex, Kimi, Claude) routed by model name behind an Anthropic Messages API, installed through mise's GitHub backend (no registry entry). See [One process, every subscription](#one-process-every-subscription) | [source](https://github.com/router-for-me/CLIProxyAPI) |
 | ailine | Real-time Claude Code statusline (quota / context / model), formerly claudeline — wired via `~/.claude/settings.json` `statusLine`. github backend until aqua-registry catches up with the rename | [github](https://github.com/lexfrei/ailine) |
 | mcp-tg | Telegram MCP server — lets an agent read chats over MTProto. `latest` although it holds a session that authorises the whole account: the author is known and trusted. Runs as one shared HTTP daemon. See [Agent access](#agent-access-mcp) | [github](https://github.com/lexfrei/mcp-tg) |
 | wolt (`wolt`, `wolt-mcp`) | Unofficial Wolt CLI + MCP server — venue search, menus, cart, checkout preview. One archive, both binaries. **Version-pinned**: it holds a session tied to payment methods. Ordering still happens in the app; the tool has no order placement | [github](https://github.com/mekedron/wolt-cli) |
@@ -419,7 +419,7 @@ Note that a closed lid still sleeps an Apple Silicon laptop without an external 
 | `dot_local/bin/` | Executable scripts symlinked to `~/.local/bin/` by chezmoi |
 | `dot_local/bin/executable_cleanup` | `~/.local/bin/cleanup` — disk-reclaim tool (reports by default; `--apply` deletes Tier 1 caches + orphan caches of removed tools, `--deep` adds Go modcache) |
 | `dot_local/bin/executable_updates` | `~/.local/bin/updates` — reports available mise + Homebrew package updates |
-| `dot_local/bin/executable_statusline` | `~/.local/bin/statusline` — prefixes the active account profile (`🏢0`/`🏢2` work, `🏠` personal), then runs ailine. Sessions routed through the local Codex gateway first obtain Codex subscription windows through `codex-statusline` |
+| `dot_local/bin/executable_statusline` | `~/.local/bin/statusline` — prefixes the active account profile (`🏢0`/`🏢2` work, `🏠` personal), then runs ailine. Sessions routed through the local gateway obtain Codex subscription windows through `codex-statusline` while a Codex model is active |
 | `dot_local/bin/executable_git-agent-sign.tmpl` | `~/.local/bin/git-agent-sign` — signing shim: forces this machine's vault agent socket, then execs `ssh-keygen`, so non-login shells sign too |
 | `dot_local/bin/executable_bwa.tmpl` | `~/.local/bin/bwa` — `bw` as the agent's own Vaultwarden account (`agent@sanch.pet`), which sees only the organization collection the owner shares with it. Unlocks unattended from the login Keychain (service `bw-agent`, created by `bwa init`) and keeps its CLI state in `~/.config/bw-agent`, so the owner's `bw` session is untouched |
 | `dot_local/bin/executable_cdp-fill` | `~/.local/bin/cdp-fill` — puts a secret from stdin into a form field of an open browser tab over CDP (port 9222), e.g. `bwa get password <item> \| cdp-fill <url-part> <selector>`, so an agent filling a login never holds the value itself |
@@ -499,36 +499,14 @@ The zsh config (`dot_zshrc.tmpl`) is kept as a `.tmpl` so a `{{ bitwarden ... }}
 
 > **Pending:** the `OBSIDIAN_API_KEY` secret reference (via Bitwarden) is not wired yet — `.zshrc` is kept as a `.tmpl` so the `{{ bitwarden ... }}` line can be added without a rename.
 
-### Claude Code with the Codex subscription
+### One process, every subscription
 
-`claude-codex` runs Claude Code against CLIProxyAPI on `127.0.0.1:8317`, using the personal profile's existing transcript store. It defaults to `gpt-6.1-sol`; set `CLAUDE_CODEX_MODEL` to another model exposed by the gateway. The `/model` picker discovers gateway models. Background Opus/Sonnet/Haiku aliases also use the selected OpenAI model. Ordinary `claude-personal` keeps its existing routing.
+`claude-personal` runs Claude Code against the local gateway — `codex-proxy` (CLIProxyAPI) on `127.0.0.1:8317`, using the personal profile's existing transcript store. Despite the name, the gateway is not Codex-only: it holds one credential per subscription in `~/.local/state/codex-proxy/auth/` and routes by model name, so a single session picks any available model in `/model`:
 
-Run `codex-proxy -codex-login` once for a separate ChatGPT OAuth login. The proxy owns this login, independently of Codex CLI's refresh tokens. Then start its personal-only login agent:
+- Codex OAuth (`codex-proxy -codex-login`) serves `gpt-*`.
+- Kimi OAuth (`codex-proxy -kimi-ai-login`, the Kimi Code plan) serves `kimi-*` — K3.1 Pro, K3, K2.8 Code and siblings.
+- Claude OAuth (`codex-proxy -claude-login`) serves `claude-*` — run it once the subscription is back, and Anthropic models join the same picker.
 
-```sh
-launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/dev.sanchpet.codex-proxy.plist"
-claude-codex
-# Resume an existing conversation on a new branch of its history:
-claude-codex --resume SESSION_ID --fork-session
-```
+Gateway model discovery (`CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1`) populates the `/model` picker with the merged catalog; switching models mid-session switches subscriptions, transcripts and skills stay put. The default model is `kimi-k3.1-pro` (`CLAUDE_PERSONAL_MODEL` overrides it); the background Opus/Sonnet/Haiku aliases point at the same pool, with Haiku tasks on the half-quota `kimi-k3-256k` (`CLAUDE_PERSONAL_HAIKU`). The statusline detects the gateway by `ANTHROPIC_BASE_URL` and shows Codex subscription windows only while the session runs a Codex model; the API-cost segment stays off for all subscription sessions. Resume works like any personal-profile session: `claude-personal --resume SESSION_ID --fork-session`.
 
-`codex-proxy` generates the private runtime config and a random local client key under `~/.local/state/codex-proxy/` (directories 0700, files 0600). OAuth files stay there and never enter chezmoi or Git. The listener binds only to loopback, management is disabled, and request logging is off. Application errors go to `~/Library/Logs/codex-proxy.log`. The agent starts at login once the state directory exists. Subscription access uses third-party protocol translation; compatibility with long Claude histories and model-specific features needs verification when upgrading the pinned adapter.
-
-The statusline detects this gateway by `ANTHROPIC_BASE_URL`. `codex-statusline` reads its single active Codex credential and queries the ChatGPT usage endpoint, without refreshing or writing OAuth tokens. Account-wide five-hour and seven-day windows are mapped by their reported duration into ailine's stdin `rate_limits`; other window lengths are ignored. Results (including failures) are cached for 60 seconds, scoped to the account, with a non-blocking lock and a three-second network timeout. Failed or expired readings are omitted rather than displayed as fresh; diagnostics go to stderr without tokens. Multiple active Codex accounts are refused because the statusline cannot identify which the gateway selected. The existing five-second redraw picks this up in running `claude-codex` sessions. Anthropic's platform-status and API-cost segments are disabled for these subscription sessions, including when quota is temporarily unavailable.
-
-### Claude Code with the Kimi subscription
-
-`claude-kimi` runs Claude Code against the Kimi for Coding Anthropic-compatible endpoint (`https://api.kimi.ai/coding`), reusing the personal profile's transcript store. Unlike the Codex gateway, no local proxy is needed: Moonshot speaks the Anthropic Messages API directly, so the wrapper only swaps the base URL, the bearer token and the model defaults. It defaults to `k3.1-pro`; set `CLAUDE_KIMI_MODEL` to another subscription model (`k3`, `k3-256k`, `kimi-for-coding`, `kimi-for-coding-highspeed`, `k3.1-pro-highspeed`). Background Opus/Sonnet/Haiku aliases also use the selected Kimi model, so title generation and other background tasks draw on the same subscription. Ordinary `claude-personal` keeps its existing routing. Endpoint and model ids follow [lexfrei's setup](https://gist.github.com/lexfrei/27757aeb7199577cb8b44aa0771b6162).
-
-Create a Kimi for Coding API key at <https://www.kimi.ai/code/console> (a key is shown once at creation) and store it in `~/.local/state/claude-kimi/api-key` (0600, never enters chezmoi or Git):
-
-```sh
-mkdir -p ~/.local/state/claude-kimi && chmod 700 ~/.local/state/claude-kimi
-cat > ~/.local/state/claude-kimi/api-key   # paste the sk-kimi-... key, then Ctrl-D
-chmod 600 ~/.local/state/claude-kimi/api-key
-claude-kimi
-# Resume an existing personal-profile conversation on a new branch of its history:
-claude-kimi --resume SESSION_ID --fork-session
-```
-
-The statusline falls through to plain ailine for these sessions: the Kimi backend sends no rate-limit headers, so there is no quota segment the way `codex-statusline` builds one for the Codex gateway. The wrapper reads the key file only; nothing is sent anywhere except the Kimi endpoint.
+Logins are per-provider browser OAuth against the gateway's own auth dir, independent of any CLI's stored tokens — Codex CLI and kimi-code keep theirs, the gateway owns its copies. `codex-proxy` generates the private runtime config and the random local client key under `~/.local/state/codex-proxy/` (directories 0700, files 0600); OAuth files never enter chezmoi or Git. The listener binds loopback only, management is disabled, request logging is off, errors go to `~/Library/Logs/codex-proxy.log`, and the login agent starts at login once the state directory exists. Subscription access uses third-party protocol translation; verify compatibility with long Claude histories and model-specific features before upgrading the pinned adapter.

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Run the local Claude Messages / Codex Responses adapter."""
+"""Run the local multi-subscription gateway (Claude Messages in front; Codex, Kimi, Claude OAuth behind)."""
 
 import json
 import os
