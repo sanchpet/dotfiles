@@ -4,8 +4,11 @@
 # Unlike claudePlugins for the work profile, this set lives in the repository:
 # both marketplaces are the owner's own and carry nothing an employer owns, so
 # keeping it here is what makes a fresh personal machine arrive with its tools
-# instead of silently having none. A machine that needs a different set still
-# wins — data in ~/.config/chezmoi/chezmoi.toml overrides a .chezmoidata file.
+# instead of silently having none. Third-party plugins are not added as their
+# own marketplaces here: armamentarium references them at a pinned commit, so
+# this file only connects marketplaces and switches plugins on. A machine
+# that needs a different set still wins — data in ~/.config/chezmoi/chezmoi.toml
+# overrides a .chezmoidata file.
 
 [claudePluginsPersonal.marketplaces.armamentarium.source]
     source = "github"
@@ -18,6 +21,9 @@
     "think@armamentarium" = true
     "verify@armamentarium" = true
     "techdoc@armamentarium" = true
+    "dialectic@armamentarium" = true
+    "modern-web-guidance@armamentarium" = true
+    "codex@armamentarium" = true
     "humanize@armamentarium-privatum" = true
     "humanize-gate@armamentarium-privatum" = true
     "dotfiles@armamentarium-privatum" = true
