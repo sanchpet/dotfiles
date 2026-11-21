@@ -145,6 +145,7 @@ teleport-community = "latest"
 # (homelab wstunnel_hub role); this is the client side. No mise registry entry, hence github:.
 "github:erebe/wstunnel" = "latest"
 "github:sanchpet/sweb" = "latest" # my SpaceWeb hosting CLI (excluded from minimum_release_age above)
+upctl = "latest" # UpCloud CLI (registry: aqua:UpCloudLtd/upcloud-cli)
 # yc belongs here too — TOML puts its [tools."http:yc"] table after every plain key, at the
 # bottom of this file. 1password-cli lives in conf.d/work.toml.
 

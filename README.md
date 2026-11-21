@@ -109,6 +109,7 @@ Grouped by purpose. The same groups, in the same order, run through `dot_config/
 |------|---------|------|
 | awscli (`aws`) | AWS CLI | [docs](https://aws.amazon.com/cli/) |
 | Yandex Cloud CLI (`yc`) | Manage Yandex Cloud resources (IAM, compute, k8s, …) | [docs](https://yandex.cloud/docs/cli/) |
+| UpCloud CLI (`upctl`) | Manage UpCloud servers, networks and API tokens; token kept in the system keyring by `upctl account login --with-token` | [docs](https://upcloudltd.github.io/upcloud-cli/) |
 | vault | Secrets management CLI | [docs](https://developer.hashicorp.com/vault) |
 | Bitwarden CLI (`bw`) | Secret retrieval at `chezmoi apply` | <https://bitwarden.com/help/cli/> · [github](https://github.com/bitwarden/clients) |
 | 1Password CLI (`op`) | Secret retrieval on work machines — **work profile only**; personal machines use `bw` | [docs](https://developer.1password.com/docs/cli/) |
