@@ -24,8 +24,17 @@
     "dialectic@armamentarium" = true
     "modern-web-guidance@armamentarium" = true
     "codex@armamentarium" = true
+    "impeccable@armamentarium" = true
     "humanize@armamentarium-privatum" = true
     "humanize-gate@armamentarium-privatum" = true
     "dotfiles@armamentarium-privatum" = true
     "yaml-madness@armamentarium-privatum" = true
     "cc-plugin-you-should-know@builtin" = true
+
+# Environment of every session in the profile, for switches a plugin reads.
+[claudePluginsPersonal.env]
+    # impeccable ships hooks on every edit and on stop; its commands are used
+    # on demand, so the hooks stay off.
+    IMPECCABLE_HOOK_DISABLED = "1"
+    # Its live mode would otherwise start a second agent with permission checks off.
+    IMPECCABLE_LIVE_COPY_AGENT = "chat"

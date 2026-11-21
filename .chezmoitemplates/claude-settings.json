@@ -33,6 +33,9 @@
 {{- with .plugins }}
   "extraKnownMarketplaces": {{ .marketplaces | toJson }},
   "enabledPlugins": {{ .enabled | toJson }},
+{{- with dig "env" false . }}
+  "env": {{ . | toJson }},
+{{- end }}
 {{- end }}
   "hooks": {
     "Stop": [
