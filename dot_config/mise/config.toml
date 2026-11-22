@@ -77,7 +77,9 @@ hyperfine = "latest"
 # uutils (Rust), and it installs as a single multi-call binary: `coreutils shuf`, not `shuf`.
 # The names are exposed by ~/.local/bin/coreutils-shim, which uutils dispatches on argv[0];
 # only utilities absent from macOS get a symlink there, never ls/cp/date/sort.
-coreutils = "latest"
+# Pinned: 0.13.0 shipped without macOS binaries (uutils/coreutils#16744). Back to "latest"
+# once a release carries apple-darwin assets again.
+coreutils = "0.12.0"
 
 # === Git & forges ===
 gh = "latest"
@@ -135,7 +137,10 @@ regctl = "latest"
 # === Cloud, secrets & networking ===
 awscli = { version = "latest", symlink_bins = "true" }
 vault = "latest"
-bitwarden = "latest" # bw — secret retrieval at `chezmoi apply`
+# bw — secret retrieval at `chezmoi apply`. Pinned: 2026.11.0 renamed its release assets
+# (bw-oss-/bw-bit-), and the aqua entry mise embeds cannot find them. Fixed upstream in
+# aquaproj/aqua-registry#64947; back to "latest" once a mise release ships that registry.
+bitwarden = "2026.10.1"
 age = "latest"
 # ykman — YubiKey CLI. Not in the mise registry; Yubico ships only a .pkg installer for
 # macOS, so pipx: over github:. Key is the PyPI name, the binary it installs is `ykman`.
