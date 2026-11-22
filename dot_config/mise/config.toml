@@ -149,6 +149,9 @@ teleport-community = "latest"
 # Tunnel over websocket/HTTP2. Ansible installs its own pinned Linux build on the hub
 # (homelab wstunnel_hub role); this is the client side. No mise registry entry, hence github:.
 "github:erebe/wstunnel" = "latest"
+# sherlock — find a username across social networks (OSINT). Python-only, no release binaries and
+# no mise registry entry, hence pipx:. Key is the PyPI name; the binary it installs is `sherlock`.
+"pipx:sherlock-project" = "latest"
 "github:sanchpet/sweb" = "latest" # my SpaceWeb hosting CLI (excluded from minimum_release_age above)
 upctl = "latest" # UpCloud CLI (registry: aqua:UpCloudLtd/upcloud-cli)
 # yc belongs here too — TOML puts its [tools."http:yc"] table after every plain key, at the
