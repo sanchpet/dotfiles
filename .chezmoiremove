@@ -3,3 +3,6 @@
 .claude-personal/RTK.md
 .claude-work/RTK.md
 .local/bin/codex-statusline
+.config/teleport/teleport.yaml
+Library/LaunchAgents/dev.sanchpet.teleport-node.plist
+.local/bin/home-desktop
