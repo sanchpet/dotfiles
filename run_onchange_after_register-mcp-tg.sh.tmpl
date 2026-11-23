@@ -14,13 +14,13 @@
 # The credentials are NOT in this repo. They come from Vault at apply time
 # (homelab/telegram/mcp-tg, kind=credential) into ~/.config/mcp-tg/env (0600), which keeps a
 # Telegram account credential out of git while still letting a fresh machine converge. VAULT_ADDR
-# from the environment wins (e.g. a Teleport app proxy); an unreachable Vault skips this step with
+# from the environment wins (default: the hub Vault over wg-mgmt); an unreachable Vault skips this step with
 # a message — bootstrap must not hard-fail on a reachability problem.
 set -eu
 
 CONFIG_DIR="$HOME/.claude-personal"
 VAULT_PATH="homelab/telegram/mcp-tg"
-VAULT_ADDR="${VAULT_ADDR:-http://10.10.0.1:8200}"
+VAULT_ADDR="${VAULT_ADDR:-https://vault.hub.sanch.pet}"
 export VAULT_ADDR
 
 command -v claude >/dev/null 2>&1 || { echo "mcp-tg: claude not on PATH — skipping registration"; exit 0; }
