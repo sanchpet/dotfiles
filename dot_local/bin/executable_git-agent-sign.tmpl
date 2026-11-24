@@ -29,4 +29,20 @@ for candidate in "$HOME/.bitwarden-ssh-agent.sock" \
 done
 {{- end }}
 [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
+
+# Claude Code sessions sign with their own on-disk key (~/.ssh/agent_ed25519), so unattended
+# commits never wait on the vault agent's approval prompt. Only `-Y sign` is rewritten: the key
+# file replaces git's public-key temp file, and -U (key is in the agent) is dropped.
+agent_key="$HOME/.ssh/agent_ed25519"
+if [ -n "$CLAUDECODE" ] && [ -r "$agent_key" ] && [ "$1" = "-Y" ] && [ "$2" = "sign" ]; then
+  n=$#
+  while [ "$n" -gt 0 ]; do
+    a=$1; shift; n=$((n - 1))
+    case $a in
+      -U) ;;
+      -f) shift; n=$((n - 1)); set -- "$@" -f "$agent_key" ;;
+      *) set -- "$@" "$a" ;;
+    esac
+  done
+fi
 exec ssh-keygen "$@"

@@ -6,11 +6,13 @@
 {{- /* or user name); the principal below is what identifies the signer.               */ -}}
 {{- $p := `petrov@sanch.pet namespaces="git"` -}}
 {{- /* Order below: the work machine (1Password), signing@personal (Bitwarden, shared by  */ -}}
-{{- /* machines on that agent), then an older machine key kept for verifying its history. */ -}}
+{{- /* machines on that agent), an older machine key kept for verifying its history, then */ -}}
+{{- /* agent@mac, the on-disk key Claude Code sessions sign with (git-agent-sign).        */ -}}
 {{- $keys := list
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINSCsm9B3frrCuWpHdF4U/wzKaUIgGqnv7tIeHJjf1XD"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINnwqHSKmXOt1E0jPvBCAmxvpujzZrvPwDRk5Gvg83s+"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClhHPS1tykz5l1eFtbMgHxGzbF0Jn7dqwOVUofWv+Q5"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFIWAS4O0ZDckAuOem2g381D0FDwJs5FutiqGz9g3YZJ"
 -}}
 {{- $lines := list -}}
 {{- range $keys -}}{{- $lines = append $lines (printf "%s %s" $p .) -}}{{- end -}}

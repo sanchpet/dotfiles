@@ -1,7 +1,8 @@
 # Managed by chezmoi. Keys live in the machine's vault and are served over its SSH
 # agent — IdentityAgent points ssh at that agent for every host, so nothing has to
 # sit in ~/.ssh. Commit signing goes through ~/.local/bin/git-agent-sign, which
-# forces the same socket for non-login shells.
+# forces the same socket for non-login shells. The one exception is the Claude Code
+# key (~/.ssh/agent_ed25519), see the Match block below.
 
 # OrbStack's 'orb' host for its Linux machines. Must stay above any Host block.
 Include ~/.orbstack/ssh/config
@@ -11,6 +12,11 @@ Include ~/.orbstack/ssh/config
 # publishable, so a work machine keeps ~/.ssh/conf.d/tv.conf outside this repository.
 # A glob that matches nothing is not an error, so this line is inert elsewhere.
 Include ~/.ssh/conf.d/*.conf
+
+# Claude Code sessions offer their own key first, so unattended runs never wait on the vault
+# agent's approval prompt. Hosts that do not know the key fall through to the vault keys below.
+Match exec "test -n \"$CLAUDECODE\" -a -r ~/.ssh/agent_ed25519"
+	IdentityFile ~/.ssh/agent_ed25519
 
 Host *
 {{ if eq (dig "agent" "kind" "" .) "1password" -}}

@@ -267,6 +267,10 @@ ${XDG_CONFIG_HOME:-$HOME/.config}/zsh/work.d/*.zsh
 
 **What belongs there:** shell code a tool prints for itself. That is the property that makes an untracked file safe — losing it costs one command, not an afternoon of remembering what was in it. Settings typed by hand belong in this repository, sanitised, or nowhere.
 
+## Agent SSH key
+
+Claude Code sessions run unattended, often at night, while the vault's SSH agent asks a human to approve every signature. So they get their own key, `~/.ssh/agent_ed25519` (`agent@mac`, no passphrase, never in this repository): `~/.ssh/config` offers it first when `CLAUDECODE` is set and falls through to the vault keys on hosts that do not know it, and `git-agent-sign` signs with it in those sessions. It is registered on GitHub as an authentication and a signing key and listed in `allowed_signers`; servers trust it only where their own repository adds it. It widens nothing: what those sessions can already reach unattended (the `gh` token, the secrets readable through `bwa`) is more than this key opens. Revoke it on GitHub and in those repositories without touching the personal keys.
+
 ## Agent access (MCP)
 
 Six MCP servers give Claude Code a browser, a Telegram reader, the time-accounting instrument, that instrument's UI, a Kubernetes cluster, and the iximiuz Labs practice platform. Each hands an agent something with real reach, so what bounds that reach is written down here rather than left implicit.
