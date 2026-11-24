@@ -13,9 +13,11 @@ Include ~/.orbstack/ssh/config
 # A glob that matches nothing is not an error, so this line is inert elsewhere.
 Include ~/.ssh/conf.d/*.conf
 
-# Claude Code sessions offer their own key first, so unattended runs never wait on the vault
-# agent's approval prompt. Hosts that do not know the key fall through to the vault keys below.
+# Claude Code sessions use only their own key, so unattended runs never wait on the vault agent's
+# approval prompt. ssh offers agent keys before any IdentityFile, so the agent is switched off
+# rather than kept as a fallback: a host that does not know this key refuses the session.
 Match exec "test -n \"$CLAUDECODE\" -a -r ~/.ssh/agent_ed25519"
+	IdentityAgent none
 	IdentityFile ~/.ssh/agent_ed25519
 
 Host *
